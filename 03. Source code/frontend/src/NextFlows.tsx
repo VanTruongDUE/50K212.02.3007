@@ -1,0 +1,423 @@
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import './nextFlows.css'
+
+type Props = { screen: string; go: (screen: string) => void }
+type Campaign = { name: string; status: string; progress: string; date: string; description?: string; subject?: string; body?: string; sender?: string; pauseReason?: string }
+type Response = { code: string; customer: string; received: string; kind: string; status: string; email?: string; phone?: string; content?: string; hidden?: boolean }
+type Reply = { code: string; content: string; time: string; channel: 'Email' | 'SMS'; recipient: string }
+type StatusChange = { code: string; status: string; time: string; note: string }
+type Followup = { customer: string; code: string; time: string; channel: string; attempt: string; status: string }
+
+const initialCampaigns: Campaign[] = [
+  { name: 'Ưu đãi gói CRM Quý 4', status: 'Đang gửi', progress: '320/800', date: '21/10/2026' },
+  { name: 'Giới thiệu giải pháp HRM', status: 'Đã lên lịch', progress: '0/450', date: '25/10/2026' },
+  { name: 'Hội thảo chuyển đổi số tháng 11', status: 'Đã tạm dừng', progress: '180/600', date: '18/10/2026', description: 'Mời doanh nghiệp sản xuất tham dự hội thảo chuyển đổi số.', subject: 'Mời {{Họ tên}} tham dự hội thảo chuyển đổi số', body: 'V5 trân trọng mời quý anh/chị tại {{Tên doanh nghiệp}} tham dự hội thảo "Chuyển đổi số cho doanh nghiệp sản xuất" ngày 20/11/2026.', sender: 'marketing01@example.com', pauseReason: 'Cần sửa đường dẫn đăng ký trong nội dung' },
+  { name: 'Webinar bảo mật dữ liệu 2026', status: 'Danh sách đã duyệt', progress: '0/800', date: '03/11/2026', subject: 'Mời {{Họ tên}} tham dự webinar bảo mật dữ liệu 2026', body: 'Kính gửi {{Họ tên}},\nV5 trân trọng mời quý anh/chị tại {{Tên doanh nghiệp}} tham dự webinar “Bảo mật dữ liệu 2026” vào 15/11/2026.\nĐăng ký tham dự', sender: 'marketing01@example.com' },
+  { name: 'Bản tin khách hàng tháng 11', status: 'Đã có nội dung', progress: '0/500', date: '31/10/2026' },
+  { name: 'Khuyến mãi phần mềm kế toán', status: 'Đã chọn tài khoản', progress: '0/300', date: '29/10/2026' },
+  { name: 'Thư cảm ơn đối tác 2026', status: 'Chờ xác nhận', progress: '0/120', date: '28/10/2026' },
+  { name: 'Khảo sát nhu cầu phần mềm kế toán', status: 'Chờ kiểm tra danh sách', progress: '0/350', date: '01/11/2026' },
+  { name: 'Chương trình khách hàng thân thiết', status: 'Danh sách không đạt', progress: '0/150', date: '30/10/2026', description: 'Tri ân khách hàng thân thiết năm 2026.' },
+  { name: 'Bản tin tháng 10', status: 'Hoàn thành', progress: '1.200/1.200', date: '01/10/2026' },
+]
+const initialResponses: Response[] = [
+  { code: 'RSP-031', customer: 'An Phú', received: '03/11/2026 09:15', kind: 'Cần xử lý', status: 'Mới', email: 'anphu@example.com', phone: '090 000 0031', content: 'Khách hàng muốn nhận thông tin giới thiệu giải pháp qua email.' },
+  { code: 'RSP-032', customer: 'Minh Long', received: '03/11/2026 08:40', kind: 'Cần xử lý', status: 'Đang xử lý' },
+  { code: 'RSP-033', customer: 'Việt Tín', received: '02/11/2026 15:30', kind: 'Cần xử lý', status: 'Đã phản hồi' },
+  { code: 'RSP-034', customer: 'Nam Việt', received: '02/11/2026 14:20', kind: 'Từ chối nhận email', status: 'Hủy' },
+  { code: 'RSP-035', customer: 'Bình An', received: '02/11/2026 10:10', kind: 'Rác', status: 'Mới' },
+]
+const sampleReplies: Reply[] = [
+  { code: 'RSP-031', time: '03/11/2026 09:40', channel: 'Email', recipient: 'anphu@example.com', content: 'Cảm ơn anh/chị đã quan tâm. Chúng tôi gửi thông tin giải pháp.' },
+  { code: 'RSP-031', time: '03/11/2026 10:05', channel: 'SMS', recipient: '090 000 0031', content: 'Đã gửi thông tin theo yêu cầu của anh/chị.' },
+]
+const sampleStatusChanges: StatusChange[] = [
+  { code: 'RSP-031', time: '03/11/2026 09:25', status: 'Đang xử lý', note: 'NV-01 rà soát thông tin liên hệ và nhu cầu của khách hàng.' },
+  { code: 'RSP-031', time: '03/11/2026 09:40', status: 'Đã phản hồi', note: 'NV-01 gửi thông tin giải pháp qua email; trạng thái được cập nhật.' },
+]
+const initialFollowups: Followup[] = [
+  { customer: 'An Phú', code: 'RSP-031', time: '12/11/2026 09:00', channel: 'Email', attempt: '1 / 2', status: 'Chờ thực hiện' },
+  { customer: 'Minh Long', code: 'RSP-032', time: '11/11/2026 10:00', channel: 'Gọi điện', attempt: '2 / 3', status: 'Chờ thực hiện' },
+  { customer: 'Việt Tín', code: 'RSP-033', time: '02/11/2026 10:00', channel: 'Gọi điện', attempt: '1 / 1', status: 'Có phản hồi' },
+  { customer: 'Bình Minh', code: 'RSP-036', time: '01/11/2026 09:00', channel: 'SMS', attempt: '2 / 2', status: 'Không phản hồi' },
+]
+const contactLists = [
+  { name: 'Doanh nghiệp CNTT Đà Nẵng', count: 420 },
+  { name: 'Khách hàng sản xuất miền Trung', count: 315 },
+  { name: 'Khách mời Techfest 2026', count: 180 },
+]
+const steps = ['Chọn danh sách contact', 'Chọn/soạn mẫu email', 'Chọn tài khoản gửi', 'Thiết lập lịch gửi', 'Xác nhận chiến dịch']
+const previewStates: Record<string, { section: string; page: string; description: string; label: string; title: string; message: string; hint: string; action: string; target: string; secondaryAction?: string; secondaryTarget?: string }> = {
+  'response-empty': { section: 'Response', page: 'Quản lý Response', description: 'Xem phản hồi thuộc phạm vi phụ trách.', label: 'KHÔNG CÓ KẾT QUẢ', title: 'Không tìm thấy Response phù hợp', message: 'Không có Response phù hợp trong phạm vi bạn phụ trách.', hint: 'Phạm vi: Response được phân công · 30 ngày gần nhất.', action: 'Thêm Response', target: 'response-add', secondaryAction: 'Điều chỉnh bộ lọc', secondaryTarget: 'response-list' },
+  'response-load-error': { section: 'Response', page: 'Quản lý Response', description: 'Xem phản hồi thuộc phạm vi phụ trách.', label: 'LỖI TẢI DỮ LIỆU', title: 'Không thể tải danh sách Response', message: 'Không thể tải dữ liệu.', hint: 'Lỗi truy vấn phải được hiển thị riêng, không xem như danh sách Response rỗng.', action: 'Thử tải lại', target: 'response-list' },
+  'response-access-denied': { section: 'Response', page: 'Chi tiết Response', description: 'Không có quyền truy cập', label: 'KHÔNG THỂ TRUY CẬP', title: 'Không thể xem Response này', message: 'Response không tồn tại hoặc không do Nhân viên Marketing phụ trách.', hint: 'Thông tin Response ngoài phạm vi phân quyền không được hiển thị.', action: 'Về danh sách Response', target: 'response-list' },
+  'followup-duplicate': { section: 'Follow-up', page: 'Lập lịch Follow-up', description: 'Kiểm tra lịch hẹn trước khi lưu', label: 'LỊCH FOLLOW-UP ĐANG TỒN TẠI', title: 'Không thể tạo thêm lịch Follow-up', message: 'Response này đã có lịch hẹn đang chờ thực hiện, không thể tạo thêm lịch mới.', hint: 'Biểu mẫu được giữ nguyên để Nhân viên Marketing kiểm tra lại.', action: 'Quay lại biểu mẫu', target: 'followup-create' },
+  'followup-optout': { section: 'Follow-up', page: 'Lập lịch Follow-up', description: 'Kiểm tra hình thức liên hệ trước khi lưu', label: 'EMAIL ĐÃ BỊ TỪ CHỐI', title: 'Không thể tạo Follow-up qua Email', message: 'Khách hàng đã từ chối nhận Email.', hint: 'Lịch chưa được lưu. Quay lại biểu mẫu để chọn kênh liên hệ phù hợp.', action: 'Quay lại biểu mẫu', target: 'followup-create' },
+  'followup-chain--create-failed': { section: 'Follow-up', page: 'Chuỗi Follow-up', description: 'Không thể tạo lịch tiếp theo', label: 'KHÔNG THỂ LƯU LỊCH', title: 'Follow-up tiếp theo chưa được tạo', message: 'Hệ thống ghi nhận lỗi khi lưu lịch Follow-up mới.', hint: 'Hệ thống không ghi nhận lịch mới là đã tạo thành công.', action: 'Về danh sách Follow-up', target: 'followup-list' },
+  'followup-list--missing-record': { section: 'Follow-up', page: 'Thông tin khách hàng', description: 'Không tìm thấy hồ sơ hoặc Response đã chọn', label: 'KHÔNG CÓ DỮ LIỆU', title: 'Không tìm thấy khách hàng hoặc Response', message: 'Hồ sơ hoặc phản hồi đã chọn không còn trong phạm vi được phép xem.', hint: 'Quay lại danh sách để chọn bản ghi khác; không hiển thị dữ liệu ngoài quyền.', action: 'Về danh sách Follow-up', target: 'followup-list' },
+  'followup-list--load-error': { section: 'Follow-up', page: 'Thông tin khách hàng', description: 'Lỗi tải hồ sơ khách hàng', label: 'LỖI TẢI DỮ LIỆU', title: 'Không thể tải thông tin khách hàng', message: 'Truy xuất hồ sơ hoặc lịch sử Response chưa thành công.', hint: 'Chưa thể lập lịch từ dữ liệu này; thử tải lại.', action: 'Thử tải lại', target: 'followup-list' },
+  'followup-result--save-error': { section: 'Follow-up', page: 'Kết quả Follow-up', description: 'Việt Tín · RSP-033', label: 'KHÔNG THỂ LƯU TRẠNG THÁI', title: 'Cập nhật trạng thái chưa thành công', message: 'Trạng thái Có phản hồi của RSP-033 chưa được ghi vào cơ sở dữ liệu.', hint: 'Trạng thái hiện tại giữ nguyên; hệ thống ghi nhận lỗi để thử lại.', action: 'Về danh sách Follow-up', target: 'followup-list' },
+  'followup-success': { section: 'Follow-up', page: 'Lập lịch Follow-up', description: 'Xác nhận kết quả lưu', label: 'ĐÃ LƯU LỊCH FOLLOW-UP', title: 'Đã thêm lịch Follow-up FU-0142', message: 'Khách hàng An Phú · Response RSP-031 · Kênh Email.', hint: 'Hẹn 12/11/2026 · 09:00 qua Email · Nhắc sau 3 ngày, tối đa 2 lần. Trạng thái: Chờ thực hiện; đã đồng bộ vào danh sách Follow-up.', action: 'Tạo lịch khác', target: 'response-list', secondaryAction: 'Về danh sách Follow-up', secondaryTarget: 'followup-list' },
+}
+
+const scenarioMessages: Record<string, { title: string; detail: string }> = {
+  'response-add--invalid': { title: 'Dữ liệu Response chưa hợp lệ', detail: 'Nội dung phản hồi đang trống; Email “anphu@” sai định dạng.' },
+  'response-edit--invalid': { title: 'Không thể lưu thay đổi', detail: 'Email “anphu@” sai định dạng. Sửa email rồi lưu lại.' },
+  'response-reply--invalid': { title: 'Chưa thể gửi phản hồi', detail: 'Nội dung phản hồi đang trống. Nhập nội dung rồi gửi lại.' },
+  'response-status--invalid': { title: 'Chuyển trạng thái không đúng quy trình', detail: 'Từ Mới không thể chuyển thẳng sang Đã chốt nhu cầu.' },
+  'followup-create--missing-goal': { title: 'Thiếu nội dung Follow-up', detail: 'Nội dung / Mục tiêu còn trống. Nhập mục tiêu làm việc rồi lưu lịch.' },
+  'followup-create--time-error': { title: 'Mốc thời gian chưa hợp lệ', detail: '04/11/2026 09:00 đã qua. Chọn thời điểm Follow-up trong tương lai.' },
+  'followup-create--parameter-error': { title: 'Thông số Follow-up chưa hợp lệ', detail: 'Thời gian chờ phản hồi là 0 ngày. Nhập số nguyên dương.' },
+  'response-reply--send-error': { title: 'Gửi phản hồi thất bại', detail: 'Hệ thống gửi thư chưa phản hồi. Chưa ghi nhận lần gửi này. Bản nháp vẫn được giữ.' },
+  'followup-note--save-error': { title: 'Không thể lưu ghi chú', detail: 'Hệ thống chưa ghi nhận ghi chú kết quả. Nội dung đã nhập vẫn được giữ.' },
+  'campaign-list--detail-error': { title: 'Không tải được thông tin chiến dịch', detail: 'Chiến dịch vừa bị xóa hoặc lỗi máy chủ. Danh sách đã được tải lại.' },
+  'campaign-list--pause-error': { title: 'Tạm dừng thất bại', detail: 'Lỗi máy chủ hoặc hết thời gian chờ. Chiến dịch giữ nguyên trạng thái.' },
+  'campaign-list--delete-error': { title: 'Xóa thất bại', detail: 'Chiến dịch giữ nguyên.' },
+  'campaign-list--cannot-delete': { title: 'Không thể xóa chiến dịch', detail: 'Chiến dịch "Hội thảo chuyển đổi số tháng 11" đã gửi email nên không thể xóa để giữ lịch sử liên hệ.' },
+  'campaign-list--edit-forbidden': { title: 'Chiến dịch không còn được phép sửa', detail: 'Chiến dịch "Giới thiệu giải pháp HRM" còn dưới 15 phút trước thời điểm gửi. Cần tạm dừng trước khi sửa.' },
+  'campaign-resume--quota-error': { title: 'Cần đổi tài khoản gửi', detail: 'Tài khoản gửi không đủ hạn mức cho 420 email còn lại. Chiến dịch giữ trạng thái "Đã tạm dừng".' },
+  'campaign-resume--send-error': { title: 'Tiếp tục gửi thất bại', detail: 'Mất kết nối hoặc lỗi máy chủ. Không có email nào được gửi; chiến dịch giữ trạng thái "Đã tạm dừng".' },
+  'campaign-contacts--no-lists': { title: 'Chưa có danh sách khả dụng', detail: 'Chưa có danh sách contact nào ở trạng thái "Đã xác nhận".' },
+  'campaign-filtered--zero': { title: 'Danh sách không đủ dữ liệu hợp lệ', detail: 'Số contact bị loại theo lý do: email trùng 5; khách hàng đã từ chối nhận email 12; email trống hoặc sai định dạng 18.' },
+  'campaign-filtered--save-error': { title: 'Lỗi lưu dữ liệu', detail: 'Không lưu được danh sách người nhận. Các lựa chọn được giữ nguyên.' },
+  'campaign-editor--variable-error': { title: 'Nội dung không hợp lệ', detail: 'Biến {{Chuc vu}} không nằm trong danh sách biến hệ thống hỗ trợ.' },
+  'campaign-editor--save-error': { title: 'Lỗi lưu nội dung', detail: 'Mất kết nối hoặc lỗi máy chủ. Nội dung đang soạn được giữ nguyên.' },
+  'campaign-preview--variable-error': { title: 'Biến lỗi', detail: 'Biến sai cú pháp hoặc không tồn tại: {{Chuc vu}}.' },
+  'campaign-preview--render-error': { title: 'Không tạo được bản xem trước', detail: 'Nội dung đang soạn được giữ nguyên.' },
+  'campaign-sender--no-accounts': { title: 'Hết tài khoản để sử dụng', detail: 'Không có tài khoản gửi đang hoạt động hoặc mọi tài khoản đều đã gần ngưỡng. Hệ thống đã gửi thông báo đến Trưởng phòng để xử lý tài khoản gửi. Chiến dịch giữ nguyên trạng thái.' },
+  'campaign-sender--invalid-name': { title: 'Tên người gửi trống.', detail: 'Nhập tên người gửi hiển thị để xác nhận tài khoản.' },
+  'campaign-sender--save-error': { title: 'Lỗi lưu dữ liệu', detail: 'Không lưu được tài khoản gửi. Lựa chọn được giữ nguyên.' },
+  'campaign-schedule--save-error': { title: 'Lỗi lưu dữ liệu', detail: 'Không lưu được lịch gửi. Các giá trị đã nhập được giữ nguyên.' },
+  'campaign-confirm--save-error': { title: 'Lưu thất bại', detail: 'Lỗi máy chủ hoặc hạn mức vừa bị chiến dịch khác sử dụng. Cấu hình không bị khóa, không gửi email nào.' },
+  'campaign-confirm--needs-attention': { title: 'Cần xử lý', detail: 'Thời điểm bắt đầu đã qua. Chỉ cho phép Chỉnh sửa.' },
+  'campaign-confirm--invalid-schedule': { title: 'Lịch gửi không còn hợp lệ', detail: 'Thời điểm gửi còn dưới 15 phút. Chiến dịch giữ nguyên trạng thái.' },
+  'campaign-confirm--summary-error': { title: 'Không tải được dữ liệu tóm tắt', detail: 'Hết thời gian chờ hoặc lỗi máy chủ.' },
+}
+
+function Button({ children, onClick, primary = false, danger = false, disabled = false, type = 'button' }: { children: ReactNode; onClick?: () => void; primary?: boolean; danger?: boolean; disabled?: boolean; type?: 'button' | 'submit' }) {
+  return <button className={'next-button' + (primary ? ' primary' : '') + (danger ? ' danger' : '')} type={type} onClick={onClick} disabled={disabled}>{children}</button>
+}
+
+function Badge({ children }: { children: ReactNode }) {
+  const value = String(children)
+  return <span className={'next-badge ' + (/lỗi|không đạt|Hủy|Từ chối/i.test(value) ? 'bad' : /tạm dừng|Chờ/i.test(value) ? 'waiting' : /Hoàn thành|Hợp lệ|Có phản hồi|Đã duyệt/i.test(value) ? 'good' : '')}>{children}</span>
+}
+
+function Page({ section, title, description, go, children }: { section: string; title: string; description?: string; go: Props['go']; children: ReactNode }) {
+  const target = section === 'Chiến dịch' ? 'campaign-list' : section === 'Response' ? 'response-list' : 'followup-list'
+  return <section className="next-page">
+    <div className="next-breadcrumb">{section === title ? <span>{section}</span> : <><button type="button" onClick={() => go(target)}>{section}</button><span aria-hidden="true">›</span><span>{title}</span></>}</div>
+    <div className="next-title"><h1>{title}</h1>{description && <p>{description}</p>}</div>
+    {children}
+  </section>
+}
+
+function Stepper({ current }: { current: number }) {
+  return <ol className="next-stepper">{steps.map((step, index) => <li key={step} className={index + 1 === current ? 'current' : index + 1 < current ? 'done' : ''}><span>{index + 1 < current ? '✓' : index + 1}</span>{step}</li>)}</ol>
+}
+
+function CampaignInfo({ name, count }: { name: string; count: string }) {
+  return <div className="next-campaign-info"><div><span>Chiến dịch</span><strong>{name}</strong></div><div><span>Số người nhận đã duyệt</span><strong>{count}</strong></div></div>
+}
+
+function previewBody(value: string) {
+  return value.split(/(\*\*[^*]+\*\*|_[^_]+_|~[^~]+~)/g).map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index}>{part.slice(2, -2)}</strong> : part.startsWith('_') && part.endsWith('_') ? <em key={index}>{part.slice(1, -1)}</em> : part.startsWith('~') && part.endsWith('~') ? <u key={index}>{part.slice(1, -1)}</u> : part)
+}
+
+function invalidEmailVariable(value: string) {
+  const variables = [...value.matchAll(/\{\{([^{}]+)\}\}/g)]
+  const unsupported = variables.find(([, name]) => !['Họ tên', 'Tên doanh nghiệp'].includes(name.trim()))?.[0]
+  if (unsupported) return `Biến ${unsupported} không nằm trong danh sách biến hệ thống hỗ trợ.`
+  return /\{\{|\}\}/.test(value.replace(/\{\{[^{}]+\}\}/g, '')) ? 'Biến cá nhân hóa sai cú pháp.' : ''
+}
+
+function formatFollowTime(value: string) {
+  const [date, time] = value.split('T')
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year} ${time}`
+}
+
+function Field({ label, value, onChange, placeholder, error, type = 'text', required = false, rows }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; error?: string; type?: string; required?: boolean; rows?: number }) {
+  const id = label.replace(/\W+/g, '-').toLowerCase()
+  return <div className="next-field"><label htmlFor={id}>{label}{required && <span> *</span>}</label>{rows ? <textarea id={id} rows={rows} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} /> : <input id={id} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />}{error && <small id={`${id}-error`} role="alert">{error}</small>}</div>
+}
+
+function Dialog({ title, children, onClose, onConfirm, confirmLabel, danger = false }: { title: string; children: ReactNode; onClose: () => void; onConfirm?: () => void; confirmLabel?: string; danger?: boolean }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    dialogRef.current?.querySelector<HTMLElement>('button, input, select')?.focus()
+    const handle = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current()
+      if (event.key !== 'Tab') return
+      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]') ?? [])]
+      if (!focusable.length) return
+      if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable.at(-1)?.focus() }
+      else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0].focus() }
+    }
+    document.addEventListener('keydown', handle)
+    return () => { document.removeEventListener('keydown', handle); previousFocus?.focus() }
+  }, [])
+  return <div className="next-scrim" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="next-dialog" role="dialog" aria-modal="true" aria-label={title}><h2>{title}</h2><div>{children}</div><div className="next-actions"><Button onClick={onClose}>Đóng</Button>{onConfirm && <Button danger={danger} primary={!danger} onClick={onConfirm}>{confirmLabel}</Button>}</div></div></div>
+}
+
+export default function NextFlows({ screen: requestedScreen, go }: Props) {
+  const [screen, scenario] = requestedScreen.split('--')
+  const [campaigns, setCampaigns] = useState(initialCampaigns)
+  const [responses, setResponses] = useState(initialResponses)
+  const [replies, setReplies] = useState<Reply[]>(screen === 'response-history' ? sampleReplies : [])
+  const [statusChanges, setStatusChanges] = useState<StatusChange[]>(screen === 'response-status-history' ? sampleStatusChanges : [])
+  const [followups, setFollowups] = useState(initialFollowups)
+  const [campaignIndex, setCampaignIndex] = useState(() => screen === 'campaign-resume' || scenario === 'cannot-delete' ? 2 : ['delete-error', 'edit-forbidden'].includes(scenario) && screen === 'campaign-list' ? 1 : ['campaign-email', 'campaign-layouts', 'campaign-editor', 'campaign-preview', 'campaign-sender', 'campaign-schedule', 'campaign-confirm'].includes(screen) ? initialCampaigns.findIndex(item => item.name === 'Webinar bảo mật dữ liệu 2026') : 0)
+  const [responseIndex, setResponseIndex] = useState(0)
+  const [hideCode, setHideCode] = useState('RSP-035')
+  const [followupIndex, setFollowupIndex] = useState(() => ['followup-result', 'followup-note'].includes(screen) ? 2 : 0)
+  const [dialog, setDialog] = useState(() => scenario === 'pause-error' ? 'campaign-pause' : scenario === 'delete-error' ? 'campaign-delete' : scenario === 'edit-general' ? 'campaign-edit-general' : '')
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+  const section = screen.split('-')[0]
+  const previousSection = useRef(section)
+  useLayoutEffect(() => {
+    if (previousSection.current === section) return
+    previousSection.current = section
+    setNotice('')
+    setError('')
+    setDialog('')
+  }, [section])
+  const [campaignName, setCampaignName] = useState(screen === 'campaign-filtered' ? 'Webinar bảo mật dữ liệu 2026' : '')
+  const [description, setDescription] = useState(screen === 'campaign-filtered' ? 'Mời khách hàng doanh nghiệp tham dự webinar về bảo mật dữ liệu.' : '')
+  const [editName, setEditName] = useState(() => scenario === 'edit-general' ? initialCampaigns[campaignIndex]?.name ?? '' : '')
+  const [editDescription, setEditDescription] = useState('')
+  const [selectedLists, setSelectedLists] = useState<string[]>(screen === 'campaign-filtered' ? contactLists.map(item => item.name) : [])
+  const [subject, setSubject] = useState(() => initialCampaigns[campaignIndex]?.subject ?? '')
+  const [body, setBody] = useState(() => {
+    const initialBody = initialCampaigns[campaignIndex]?.body ?? ''
+    return scenario === 'variable-error' ? initialBody.replace('\nĐăng ký tham dự', '\nChức vụ: {{Chuc vu}}\nĐăng ký tham dự') : initialBody
+  })
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const [logoName, setLogoName] = useState('Logo V5 (logo-v5.png)')
+  const [attachmentNames, setAttachmentNames] = useState<string[]>(['Brochure-webinar.pdf'])
+  const [previewed, setPreviewed] = useState(scenario === 'save-error' && screen === 'campaign-editor')
+  const [emailLayout, setEmailLayout] = useState(1)
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'phone'>('desktop')
+  const [previewContact, setPreviewContact] = useState('Nguyễn Thu Hà')
+  const [sender, setSender] = useState(() => initialCampaigns[campaignIndex]?.sender ?? '')
+  const [senderName, setSenderName] = useState(scenario === 'invalid-name' ? '' : 'V5 Marketing')
+  const [pauseReason, setPauseReason] = useState('')
+  const [sendDate, setSendDate] = useState(scenario === 'save-error' && screen === 'campaign-schedule' ? '2026-11-10' : '')
+  const [sendTime, setSendTime] = useState('')
+  const [sendMode, setSendMode] = useState('Hẹn giờ')
+  const [scheduleCalculated, setScheduleCalculated] = useState(scenario === 'save-error' && screen === 'campaign-schedule')
+  const [recipient, setRecipient] = useState(() => scenario === 'invalid' && ['response-add', 'response-edit'].includes(screen) ? 'anphu@' : screen === 'response-edit' || screen === 'response-reply' ? 'anphu@example.com' : '')
+  const [customer, setCustomer] = useState(() => screen === 'response-edit' || scenario === 'invalid' && screen === 'response-add' ? 'An Phú' : '')
+  const [phone, setPhone] = useState(() => screen === 'response-edit' || scenario === 'invalid' && screen === 'response-add' ? '090 000 0031' : '')
+  const [responseText, setResponseText] = useState(() => screen === 'response-edit' ? 'Khách hàng muốn nhận thông tin giới thiệu giải pháp qua email.' : screen === 'response-status' ? 'Tiếp nhận và kiểm tra nhu cầu' : screen === 'response-reply' && scenario !== 'invalid' ? 'Chào anh/chị, cảm ơn đã quan tâm.' : '')
+  const [replyChannel, setReplyChannel] = useState<'Email' | 'SMS'>('Email')
+  const [replyTemplate, setReplyTemplate] = useState(() => screen === 'response-reply' ? 'Giới thiệu giải pháp' : '')
+  const [responseStatus, setResponseStatus] = useState(scenario === 'invalid' && screen === 'response-status' ? 'Đã chốt nhu cầu' : 'Đang xử lý')
+  const [followTime, setFollowTime] = useState(scenario === 'time-error' ? '2026-11-04T09:00' : '2026-11-12T09:00')
+  const [followChannel, setFollowChannel] = useState('Email')
+  const [followGoal, setFollowGoal] = useState(() => screen === 'followup-create' && scenario !== 'missing-goal' ? 'Trao đổi nhu cầu về giải pháp B2B' : screen === 'followup-note' ? 'Khách hàng đề nghị trao đổi thêm.' : '')
+  const [followNotes, setFollowNotes] = useState<Record<string, string>>({ 'RSP-033': 'Khách hàng đề nghị trao đổi thêm.' })
+  const [reminder, setReminder] = useState('')
+  const [waitDays, setWaitDays] = useState(scenario === 'parameter-error' ? '0' : '3')
+  const [maxAttempts, setMaxAttempts] = useState('2')
+  const [intervalDays, setIntervalDays] = useState('2')
+
+  const campaign = campaigns[campaignIndex] ?? campaigns[0]
+  const isReturnedCampaign = campaign.status === 'Danh sách không đạt' && campaignName === campaign.name
+  const response = responses[responseIndex] ?? responses[0]
+  const followup = followups[followupIndex] ?? followups[0]
+  const nextResponseStatuses = response.status === 'Mới' ? ['Đang xử lý', 'Hủy'] : response.status === 'Đang xử lý' ? ['Đã phản hồi', 'Hủy'] : response.status === 'Đã phản hồi' ? ['Đã chốt nhu cầu', 'Hủy'] : []
+  const contactCount = selectedLists.reduce((sum, name) => sum + (contactLists.find(item => item.name === name)?.count ?? 0), 0)
+  const sampleFilter = selectedLists.length === contactLists.length
+  const previewCompany = previewContact === 'Nguyễn Thu Hà' ? 'Công ty TNHH Giải pháp Số' : 'Công ty Cơ khí Hòa Phát'
+  const personalize = (value: string) => value.replaceAll('{{Họ tên}}', previewContact).replaceAll('{{Tên doanh nghiệp}}', previewCompany)
+  const hasSignupCta = body.endsWith('\nĐăng ký tham dự')
+  const editableBody = hasSignupCta ? body.slice(0, -'\nĐăng ký tham dự'.length) : body
+  const message = notice && <div className="next-notice" role="status">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Đóng thông báo">×</button></div>
+  const scenarioMessage = scenarioMessages[requestedScreen]
+  const scenarioAlert = scenarioMessage && <div className="next-scenario-alert" role="alert"><strong>{scenarioMessage.title}</strong><span>{scenarioMessage.detail}</span></div>
+  const actions = (left: ReactNode, right: ReactNode) => <div className="next-actions-bar"><div>{left}</div><div>{right}</div></div>
+  const updateCampaign = (changes: Partial<Campaign>) => setCampaigns(items => items.map((item, index) => index === campaignIndex ? { ...item, ...changes } : item))
+  const selectCampaign = (index: number) => {
+    const selected = campaigns[index]
+    setCampaignIndex(index)
+    setSubject(selected?.subject ?? '')
+    setBody(selected?.body ?? '')
+    setSender(selected?.sender ?? '')
+    setPauseReason(selected?.pauseReason ?? '')
+    setPreviewed(false)
+  }
+  const updateResponse = (changes: Partial<Response>) => setResponses(items => items.map((item, index) => index === responseIndex ? { ...item, ...changes } : item))
+  function insertAtCursor(before: string, after = '') {
+    const input = bodyRef.current
+    if (!input) return
+    const start = input.selectionStart
+    const end = input.selectionEnd
+    setBody(current => current.slice(0, start) + before + current.slice(start, end) + after + current.slice(end))
+    setPreviewed(false)
+    requestAnimationFrame(() => { input.focus(); input.setSelectionRange(start + before.length, end + before.length) })
+  }
+
+  const previewState = previewStates[requestedScreen]
+  if (previewState) return <Page section={previewState.section} title={previewState.page} description={previewState.description} go={go}><div className={'next-state' + (previewState.label.startsWith('ĐÃ') ? ' success' : '')}><div><span>{previewState.label}</span><h2>{previewState.title}</h2><p>{requestedScreen === 'followup-success' ? `Khách hàng ${followup.customer} · Response ${followup.code} · Kênh ${followup.channel}.` : previewState.message}</p><small>{requestedScreen === 'followup-success' ? `Hẹn ${followup.time} qua ${followup.channel} · Nhắc sau ${waitDays} ngày, tối đa ${maxAttempts} lần. Trạng thái: ${followup.status}; đã đồng bộ vào danh sách Follow-up.` : previewState.hint}</small></div><div className="next-state-actions">{requestedScreen === 'followup-success' && <Button primary onClick={() => go(previewState.target)}>{previewState.action}</Button>}{previewState.secondaryAction && <Button onClick={() => go(previewState.secondaryTarget ?? previewState.target)}>{previewState.secondaryAction}</Button>}{requestedScreen !== 'followup-success' && <Button primary onClick={() => go(previewState.target)}>{previewState.action}</Button>}</div></div></Page>
+
+  if (screen === 'campaign-list' && scenario === 'empty') return <Page section="Chiến dịch" title="Chiến dịch" description="Quản lý các chiến dịch email marketing của phòng Marketing." go={go}><div className="next-toolbar"><Button primary onClick={() => { setCampaignName(''); setDescription(''); setSelectedLists([]); go('campaign-contacts') }}>＋ Tạo chiến dịch mới</Button></div><div className="next-scenario-empty centered"><img src="/icons/campaign.svg" alt="" /><strong>Chưa có chiến dịch</strong><span>Hiện chưa có chiến dịch nào.</span></div></Page>
+  if (screen === 'campaign-list') return <Page section="Chiến dịch" title="Chiến dịch" description="Quản lý các chiến dịch email marketing của phòng Marketing." go={go}>{message}{scenario !== 'pause-error' && scenario !== 'delete-error' && scenarioAlert}<div className="next-toolbar"><Button primary onClick={() => { setCampaignName(''); setDescription(''); setSelectedLists([]); setError(''); go('campaign-contacts') }}>＋ Tạo chiến dịch mới</Button></div><div className="next-table-wrap"><table className="next-table next-campaign-table"><thead><tr><th>Tên</th><th>Trạng thái</th><th>Tiến độ</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{campaigns.map((item, index) => scenario === 'base' && item.name === 'Webinar bảo mật dữ liệu 2026' ? null : <tr key={item.name}><td><strong>{item.name}</strong></td><td><Badge>{item.status}</Badge></td><td>{item.progress}</td><td>{item.date}</td><td className="next-row-actions"><div className="next-campaign-actions"><button onClick={() => { selectCampaign(index); setDialog('campaign-detail') }}>Xem</button>{!['Hoàn thành', 'Chờ kiểm tra danh sách', 'Đang gửi', 'Đã lên lịch'].includes(item.status) && <button onClick={() => { selectCampaign(index); if (item.status === 'Danh sách không đạt') { setCampaignName(item.name); setDescription(item.description ?? ''); setSelectedLists([contactLists[1].name, contactLists[2].name]); setError('') } go(item.status === 'Danh sách không đạt' ? 'campaign-contacts' : item.status === 'Đã tạm dừng' ? 'campaign-resume' : item.status === 'Danh sách đã duyệt' ? 'campaign-email' : item.status === 'Đã có nội dung' ? 'campaign-sender' : item.status === 'Đã chọn tài khoản' ? 'campaign-schedule' : 'campaign-confirm') }}>{item.status === 'Đã tạm dừng' ? 'Tiếp tục gửi' : 'Mở'}</button>}{['Đã lên lịch', 'Đã tạm dừng', 'Chờ xác nhận'].includes(item.status) && <button onClick={() => { selectCampaign(index); setEditName(item.name); setEditDescription(item.description ?? ''); setError(''); setDialog('campaign-edit-choice') }}>Chỉnh sửa</button>}{['Đang gửi', 'Đã lên lịch'].includes(item.status) && <Button primary onClick={() => { selectCampaign(index); setDialog('campaign-pause') }}>Tạm dừng</Button>}{!['Hoàn thành', 'Đang gửi'].includes(item.status) && <button className="danger-link" onClick={() => { selectCampaign(index); setDialog('campaign-delete') }}>Xóa chiến dịch</button>}</div></td></tr>)}</tbody></table></div>{dialog === 'campaign-detail' && <Dialog title="Thông tin chiến dịch" onClose={() => setDialog('')}><dl className="next-details"><dt>Tên</dt><dd>{campaign.name}</dd><dt>Trạng thái</dt><dd>{campaign.status}</dd><dt>Số người nhận</dt><dd>{campaign.progress.split("/")[1] ?? "—"}</dd><dt>Tiêu đề email</dt><dd>{campaign.name === 'Ưu đãi gói CRM Quý 4' ? 'Ưu đãi riêng cho {{Họ tên}} trong Quý 4' : campaign.subject || '—'}</dd><dt>Tài khoản gửi</dt><dd>{campaign.name === 'Ưu đãi gói CRM Quý 4' ? 'marketing01@example.com' : campaign.sender || '—'}</dd><dt>Thời điểm bắt đầu</dt><dd>{campaign.name === 'Ưu đãi gói CRM Quý 4' ? '22/10/2026 09:00' : sendDate ? sendDate + ' ' + sendTime : '—'}</dd></dl></Dialog>}{dialog === 'campaign-pause' && <Dialog title="Tạm dừng chiến dịch?" onClose={() => setDialog('')} onConfirm={() => { if (scenario === 'pause-error') { setDialog(''); go('campaign-list'); return } if (pauseReason.length > 250) { setError('Lý do tối đa 250 ký tự.'); return } updateCampaign({ status: 'Đã tạm dừng', pauseReason }); setDialog(''); setNotice('Đã tạm dừng chiến dịch.') }} confirmLabel="Tạm dừng"><p>Chiến dịch sẽ ngừng gửi cho những người nhận còn lại.</p><dl className="next-details"><dt>Số email đã gửi</dt><dd>{campaign.progress.split('/')[0]}</dd><dt>Số email chưa gửi</dt><dd>{Number(campaign.progress.split('/')[1]) - Number(campaign.progress.split('/')[0])}</dd></dl><Field label="Lý do tạm dừng" value={pauseReason} onChange={setPauseReason} rows={3} /><p>Không bắt buộc, tối đa 250 ký tự.</p>{scenario === 'pause-error' && scenarioAlert}</Dialog>}{dialog === 'campaign-delete' && <Dialog title="Xóa chiến dịch?" onClose={() => setDialog('')} onConfirm={() => { if (scenario === 'delete-error') { setDialog(''); go('campaign-list'); return } if (campaign.progress.startsWith('0/')) { setCampaigns(items => items.filter((_, index) => index !== campaignIndex)); setNotice('Đã xóa chiến dịch.'); setDialog('') } else { setDialog(''); setNotice('Không thể xóa chiến dịch đã gửi email. Hãy tạm dừng nếu cần.') } }} confirmLabel="Xóa chiến dịch" danger><p>Chỉ chiến dịch chưa gửi email nào được xóa.</p>{scenario === 'delete-error' && scenarioAlert}</Dialog>}{dialog === 'campaign-edit-choice' && <Dialog title={'Chỉnh sửa chiến dịch “' + campaign.name + '”'} onClose={() => setDialog('')}><p>Chọn mục cần sửa:</p><div className="next-dialog-links"><Button onClick={() => setDialog('campaign-edit-general')}>Thông tin chung</Button><Button onClick={() => { setDialog(''); go('campaign-editor') }}>Nội dung email</Button><Button onClick={() => { setDialog(''); go('campaign-sender') }}>Tài khoản gửi</Button><Button onClick={() => { setDialog(''); go('campaign-schedule') }}>Lịch gửi</Button></div></Dialog>}{dialog === 'campaign-edit-general' && <Dialog title="Thông tin chung" onClose={() => setDialog('')} onConfirm={() => { if (!editName.trim() || editName.trim().length > 100 || campaigns.some((item, index) => index !== campaignIndex && item.name.toLowerCase() === editName.trim().toLowerCase() && item.status !== 'Hoàn thành')) { setError('Tên chiến dịch trống, quá 100 ký tự hoặc đã tồn tại.'); return } updateCampaign({ name: editName.trim(), description: editDescription.trim() }); setDialog(''); setNotice('Đã lưu thông tin chung trong bản demo.') }} confirmLabel="Lưu"><Field label="Tên chiến dịch" required value={editName} onChange={setEditName} error={error || undefined} /><Field label="Mô tả" value={editDescription} onChange={setEditDescription} rows={4} /></Dialog>}</Page>
+
+  if (screen === 'campaign-contacts') {
+    function submit(event: FormEvent) { event.preventDefault(); if (!campaignName.trim()) { setError('Vui lòng nhập tên chiến dịch.'); return } if (campaignName.trim().length > 100) { setError('Tên chiến dịch tối đa 100 ký tự.'); return } if (campaigns.some((item, index) => (!isReturnedCampaign || index !== campaignIndex) && item.name.toLowerCase() === campaignName.trim().toLowerCase() && item.status !== 'Hoàn thành')) { setError('Tên chiến dịch đã tồn tại. Vui lòng chọn tên khác.'); return } if (!selectedLists.length) { setError('Chọn ít nhất một danh sách đã xác nhận.'); return } setError(''); go('campaign-filtered') }
+    if (scenario === 'no-lists') return <Page section="Chiến dịch" title="Tạo chiến dịch mới" go={go}><Stepper current={1} /><div className="next-scenario-alert info" role="status"><strong>{scenarioMessage.title}</strong><span>{scenarioMessage.detail}</span></div></Page>
+    return <Page section="Chiến dịch" title={isReturnedCampaign ? campaign.name : 'Tạo chiến dịch mới'} go={go}><Stepper current={1} />{isReturnedCampaign && <div className="next-rule returned"><strong>Nhận xét của Trưởng phòng</strong><span>Danh sách “Khách mời Techfest 2026” có nhiều contact không thuộc nhóm khách hàng thân thiết. Đề nghị bỏ danh sách này.</span></div>}<form onSubmit={submit}><div className="next-grid"><section className="next-card"><h2>Thông tin chiến dịch</h2><Field label="Tên chiến dịch" required value={campaignName} onChange={setCampaignName} placeholder="Nhập tên chiến dịch" error={error.includes('tên') || error.includes('Tên') ? error : undefined} /><p className="next-hint">Tối đa 100 ký tự.</p><Field label="Mô tả" value={description} onChange={setDescription} placeholder="Không bắt buộc" rows={4} /></section><section className="next-card"><h2>Danh sách contact “Đã xác nhận”</h2>{contactLists.map(item => <label className="next-choice" key={item.name}><input type="checkbox" checked={selectedLists.includes(item.name)} onChange={event => setSelectedLists(current => event.target.checked ? [...current, item.name] : current.filter(name => name !== item.name))} /><span>{item.name}</span><small>{item.count} contact</small></label>)}{error.includes('danh sách') && <p className="next-error" role="alert">{error}</p>}</section></div>{actions(null, <Button primary type="submit">Áp dụng</Button>)}</form></Page>
+  }
+  if (screen === 'campaign-filtered') return <Page section="Chiến dịch" title={campaignName} description="Kết quả lọc danh sách người nhận" go={go}><Stepper current={1} /><section className="next-card next-summary"><h2>Kết quả lọc</h2><dl className="next-details"><dt>Danh sách đã chọn</dt><dd>{selectedLists.join('; ')}</dd><dt>Contact ban đầu</dt><dd>{scenario === 'zero' ? 35 : contactCount}</dd><dt>Contact bị loại</dt><dd>{scenario === 'zero' ? 35 : sampleFilter ? 115 : '—'}</dd><dt>Contact hợp lệ</dt><dd>{scenario === 'zero' ? 0 : sampleFilter ? 800 : '—'}</dd></dl>{scenarioAlert}<p className="next-hint">Số liệu lọc là minh họa theo frame Figma khi chọn đủ ba danh sách; danh sách khác cần API để tính chính xác.</p></section>{actions(<Button onClick={() => go('campaign-contacts')}>Chọn lại</Button>, <Button primary disabled={scenario === 'zero'} onClick={() => { if (scenario === 'save-error') { go('campaign-filtered'); return }; if (isReturnedCampaign) updateCampaign({ status: 'Chờ kiểm tra danh sách', progress: `0/${sampleFilter ? 800 : '—'}`, description }); else setCampaigns(items => [{ name: campaignName.trim(), status: 'Chờ kiểm tra danh sách', progress: `0/${sampleFilter ? 800 : '—'}`, date: new Date().toLocaleDateString('vi-VN'), description }, ...items]); setNotice('Đã mô phỏng gửi danh sách cho Trưởng phòng kiểm tra; chưa lưu trên máy chủ.'); go('campaign-list') }}>Xác nhận danh sách người nhận</Button>)}</Page>
+
+  if (screen === 'campaign-layouts') return <Page section="Chiến dịch" title={campaign.name} go={go}><Stepper current={2} /><CampaignInfo name={campaign.name} count={campaign.progress.split('/')[1] ?? '—'} /><section className="next-card"><h2>Bố cục trống</h2><div className="next-layout-grid">{[1, 2, 3].map(number => <div className="next-layout-option" key={number}><div aria-hidden="true"><span /><span /><span /></div><strong>Bố cục trống {number}</strong><Button onClick={() => { setEmailLayout(number); setSubject(''); setBody(''); setPreviewed(false); go('campaign-editor') }}>Chọn bố cục</Button></div>)}</div></section></Page>
+  if (screen === 'campaign-email') return <Page section="Chiến dịch" title={campaign.name} go={go}><Stepper current={2} /><CampaignInfo name={campaign.name} count={campaign.progress.split('/')[1] ?? '—'} /><div className="next-toolbar compact"><Button onClick={() => go('campaign-layouts')}>＋ Soạn email mới</Button></div><section className="next-card next-library"><h2>Thư viện mẫu email</h2><table className="next-table"><thead><tr><th>Tên mẫu</th><th>Danh mục</th><th>Ngày cập nhật</th><th><span className="sr-only">Thao tác</span></th></tr></thead><tbody>{[['Giới thiệu sản phẩm', 'Bán hàng', '12/10/2026'], ['Thư mời sự kiện', 'Sự kiện', '05/10/2026'], ['Bản tin định kỳ', 'Bản tin', '28/09/2026']].map(row => <tr key={row[0]}>{row.map(cell => <td key={cell}>{cell}</td>)}<td><Button onClick={() => { setSubject('Mời {{Họ tên}} tham dự webinar bảo mật dữ liệu 2026'); setBody('Kính gửi {{Họ tên}},\nV5 trân trọng mời quý anh/chị tại {{Tên doanh nghiệp}} tham dự webinar “Bảo mật dữ liệu 2026” vào 15/11/2026.'); setPreviewed(false); go('campaign-editor') }}>Chọn mẫu</Button></td></tr>)}</tbody></table></section></Page>
+  if (screen === 'campaign-editor') return <Page section="Chiến dịch" title={campaign.name} go={go}>
+    <Stepper current={2} />
+    <CampaignInfo name={campaign.name} count={campaign.progress.split('/')[1] ?? '—'} />
+    {(scenario !== 'variable-error' || invalidEmailVariable(subject + ' ' + body)) && scenarioAlert}
+    <div className="next-editor-layout">
+      <section className="next-card next-editor-main">
+        <h2>Trình soạn thảo</h2>
+        <Field label="Tiêu đề email" required value={subject} onChange={value => { setSubject(value); setError(''); setPreviewed(false) }} error={error === 'subject' ? 'Nhập tiêu đề tối đa 150 ký tự.' : undefined} />
+        <p className="next-hint">Tối đa 150 ký tự.</p>
+        <div className="next-editor-toolbar" role="toolbar" aria-label="Định dạng nội dung">
+          <button type="button" onClick={() => insertAtCursor('**', '**')}>Đậm</button>
+          <button type="button" onClick={() => insertAtCursor('_', '_')}>Nghiêng</button>
+          <button type="button" onClick={() => insertAtCursor('~', '~')}>Gạch chân</button>
+          <button type="button" onClick={() => insertAtCursor('\n• ')}>Danh sách</button>
+          <button type="button" onClick={() => insertAtCursor('https://')}>Liên kết</button>
+        </div>
+        <div className={'next-email-canvas layout-' + emailLayout}>
+          <span className="next-logo-chip">{logoName}</span>
+          <label htmlFor="editor-body" className="sr-only">Nội dung email</label>
+          <textarea id="editor-body" ref={bodyRef} rows={4} value={editableBody} onChange={event => { setBody(event.target.value + (hasSignupCta ? '\nĐăng ký tham dự' : '')); setError(''); setPreviewed(false) }} aria-invalid={error === 'body'} placeholder="Nhập nội dung email" />
+          {hasSignupCta && <span className="next-email-cta">Đăng ký tham dự</span>}
+          <div className="next-unsubscribe">Liên kết từ chối nhận email (tự động, không xóa được)</div>
+        </div>
+        {error === 'body' && <p className="next-error" role="alert">Vui lòng nhập nội dung email.</p>}
+      </section>
+      <aside className="next-editor-aside">
+        <section className="next-card"><h2>Khối kéo thả</h2>{['Văn bản', 'Hình ảnh', 'Nút', 'Đường phân cách'].map(label => <Button key={label} onClick={() => insertAtCursor('\n' + label + '\n')}>{label}</Button>)}</section>
+        <section className="next-card"><h2>Chèn</h2><Button onClick={() => insertAtCursor('{{Họ tên}}')}>Chèn biến cá nhân hóa</Button><Button onClick={() => setLogoName('Logo V5 (logo-v5.png)')}>Chọn logo từ thư viện</Button><label className="next-button next-file-button">Tải ảnh logo lên<input type="file" accept=".png,.jpg,.jpeg,.svg" onChange={event => { const file = event.target.files?.[0]; if (!file) return; if (!/\.(png|jpe?g|svg)$/i.test(file.name) || file.size > 2_000_000) { setError('Ảnh logo phải là PNG, JPG hoặc SVG và không quá 2 MB.'); return } setError(''); setLogoName(file.name); setPreviewed(false) }} /></label><label className="next-button next-file-button">Đính kèm brochure PDF<input type="file" accept=".pdf" multiple onChange={event => { const files = [...(event.target.files ?? [])]; if (files.length > 3 || files.some(file => !/\.pdf$/i.test(file.name) || file.size > 10_000_000)) { setError('Chỉ chọn tối đa 3 tệp PDF, mỗi tệp không quá 10 MB.'); return } setError(''); setAttachmentNames(files.map(file => file.name)); setPreviewed(false) }} /></label></section>
+        <section className="next-card"><h2>Tệp đính kèm</h2>{attachmentNames.length ? attachmentNames.map(name => <p key={name}>{name}</p>) : <p>Chưa có tệp đính kèm</p>}</section>
+      </aside>
+    </div>
+    {error && !['subject', 'body'].includes(error) && <p className="next-error" role="alert">{error}</p>}
+    <p className="next-hint">Nội dung {previewed ? 'đã được xem trước' : 'chưa được xem trước sau lần chỉnh sửa cuối'}.</p>
+    {actions(<Button onClick={() => { if (!subject.trim() || subject.length > 150) { setError('subject'); return } if (!body.trim()) { setError('body'); return } const variableError = invalidEmailVariable(subject + ' ' + body); if (variableError) { setError(variableError); return } setError(''); go('campaign-preview') }}>Xem trước</Button>, <Button primary disabled={!previewed} onClick={() => { const variableError = invalidEmailVariable(subject + ' ' + body); if (variableError) { setError(variableError); return } if (scenario === 'save-error') { go('campaign-editor'); return }; updateCampaign({ subject, body, status: 'Đã có nội dung' }); setError(''); go('campaign-sender') }}>Lưu nội dung</Button>)}
+  </Page>
+  if (screen === 'campaign-preview' && scenario === 'render-error') return <Page section="Chiến dịch" title="Xem trước email" go={go}><div className="next-scenario-alert info" role="alert"><strong>{scenarioMessage.title}</strong><span>{scenarioMessage.detail}</span></div>{actions(null, <Button onClick={() => go('campaign-editor')}>Quay lại trình soạn thảo</Button>)}</Page>
+  if (screen === 'campaign-preview') return <Page section="Chiến dịch" title="Xem trước email" go={go}>
+    <div className="next-preview-controls"><div className="next-inline" role="group" aria-label="Kiểu hiển thị"><Button primary={previewDevice === 'desktop'} onClick={() => setPreviewDevice('desktop')}>Máy tính</Button><Button primary={previewDevice === 'phone'} onClick={() => setPreviewDevice('phone')}>Điện thoại</Button></div><div className="next-field"><label htmlFor="preview-contact">Contact dùng để xem trước *</label><select id="preview-contact" value={previewContact} onChange={event => setPreviewContact(event.target.value)}><option value="Nguyễn Thu Hà">Nguyễn Thu Hà - ha.nguyen@example.com</option><option value="Lê Quốc Bảo">Lê Quốc Bảo - bao.le@example.com</option></select><small>Mặc định: contact đầu tiên trong danh sách người nhận.</small></div></div>
+    {scenarioAlert}
+    <section className="next-preview-stage"><div className={'next-card next-mail ' + (previewDevice === 'phone' ? 'phone' : '')}>
+      <h2>Tiêu đề: {personalize(subject)}</h2><span className="next-logo-chip">{logoName}</span>
+      <p>{previewBody(personalize(scenario === 'variable-error' ? editableBody.replace('\nChức vụ: {{Chuc vu}}', '') : editableBody))}</p>
+      {scenario === 'variable-error' && <span className="next-invalid-variable">Chức vụ: {'{{Chuc vu}}'}</span>}
+      {hasSignupCta && <span className="next-email-cta">Đăng ký tham dự</span>}
+      {attachmentNames.map(name => <small key={name}>📎 {name}</small>)}
+      <a href="#unsubscribe" onClick={event => event.preventDefault()}>Từ chối nhận email</a>
+    </div></section>
+    {actions(null, <Button primary onClick={() => { setPreviewed(scenario !== 'variable-error'); go('campaign-editor') }}>Đóng xem trước</Button>)}
+  </Page>
+  if (screen === 'campaign-sender' && scenario === 'no-accounts') return <Page section="Chiến dịch" title={campaign.name} go={go}><Stepper current={3} /><CampaignInfo name={campaign.name} count={campaign.progress.split('/')[1] ?? '—'} /><div className="next-scenario-alert info" role="status"><strong>{scenarioMessage.title}</strong><span>{scenarioMessage.detail}</span></div></Page>
+  if (screen === 'campaign-sender') return <Page section="Chiến dịch" title={campaign.name} go={go}>
+    <Stepper current={3} /><CampaignInfo name={campaign.name} count={campaign.progress.split('/')[1] ?? '—'} />
+    <section className="next-card"><h2>Tài khoản gửi “Hoạt động”</h2><table className="next-table"><thead><tr><th><span className="sr-only">Chọn</span></th><th>Địa chỉ email</th><th>Tên hiển thị</th><th>Giới hạn gửi mỗi ngày</th><th>Đã gửi trong ngày</th><th>Hạn mức còn lại</th></tr></thead><tbody>{[['marketing01@example.com', 'V5 Marketing', '2.000/ngày', '300', '1.700'], ['sales@example.com', 'Phòng Kinh doanh V5', '1.000/ngày', '850', '150'], ['news@example.com', 'Bản tin V5', '1.000/ngày', '100', '900']].map((row, index) => <tr key={row[0]}><td><input type="radio" name="sender" aria-label={`Chọn ${row[0]}`} checked={sender === row[0]} disabled={index === 1} onChange={() => { setSender(row[0]); setSenderName(row[1]); setError('') }} /></td>{row.map(cell => <td key={cell}>{cell}</td>)}</tr>)}</tbody></table></section>
+    {sender && <><div className="next-rule good"><strong>Tài khoản đủ điều kiện gửi</strong><span>{sender}: kết nối máy chủ email thành công; hạn mức đã dùng dưới 80%.</span></div><section className="next-card"><h2>Người gửi</h2><Field label="Tên người gửi hiển thị" required value={senderName} onChange={value => { setSenderName(value); setError('') }} error={error === 'sender-name' || scenario === 'invalid-name' && !senderName.trim() ? 'Tên người gửi trống.' : undefined} /><p className="next-hint">Tối đa 50 ký tự.</p><div className="next-field"><label htmlFor="sender-address">Địa chỉ email gửi</label><input id="sender-address" value={sender} readOnly /><small>Không sửa địa chỉ email gửi ở bước này.</small></div></section></>}
+    {scenario === 'save-error' && scenarioAlert}
+    {error === 'sender' && <p className="next-error" role="alert">Vui lòng chọn một tài khoản đủ điều kiện.</p>}
+    {actions(null, <Button primary onClick={() => { if (!sender) { setError('sender'); return } if (!senderName.trim() || senderName.length > 50) { setError('sender-name'); return } if (scenario === 'save-error') { go('campaign-sender'); return }; updateCampaign({ sender }); setError(''); go('campaign-schedule') }}>Xác nhận tài khoản</Button>)}
+  </Page>
+  if (screen === 'campaign-schedule') return <Page section="Chiến dịch" title={campaign.name} go={go}>
+    <Stepper current={4} />
+    <div className="next-campaign-info"><div><span>Số người nhận</span><strong>{campaign.progress.split('/')[1] ?? '—'}</strong></div><div><span>Tài khoản gửi</span><strong>{sender || 'marketing01@example.com'}</strong></div><div><span>Giới hạn gửi mỗi ngày</span><strong>2.000</strong></div></div>
+    <section className="next-card next-summary"><h2>Lịch gửi</h2><div className="next-field"><label>Kiểu gửi</label><div className="next-inline"><label><input type="radio" name="mode" checked={sendMode === 'Hẹn giờ'} onChange={() => { setSendMode('Hẹn giờ'); setScheduleCalculated(false) }} /> Hẹn giờ</label><label><input type="radio" name="mode" checked={sendMode === 'Gửi ngay'} onChange={() => { setSendMode('Gửi ngay'); setScheduleCalculated(false) }} /> Gửi ngay</label></div></div>
+      {sendMode === 'Hẹn giờ' && <div className="next-grid"><Field label="Ngày bắt đầu" type="date" value={sendDate} onChange={value => { setSendDate(value); setScheduleCalculated(false) }} /><Field label="Giờ bắt đầu" type="time" value={sendTime} onChange={value => { setSendTime(value); setScheduleCalculated(false) }} /></div>}
+      <p className="next-hint">Múi giờ GMT+7</p><div className="next-grid next-three"><div className="next-field"><label htmlFor="speed">Tốc độ gửi (email/giờ)</label><input id="speed" value="50" readOnly /><small>Mặc định 50 email/giờ.</small></div><div className="next-field"><label htmlFor="hours-from">Khung giờ gửi - từ</label><input id="hours-from" value="08:00" readOnly /></div><div className="next-field"><label htmlFor="hours-to">Khung giờ gửi - đến</label><input id="hours-to" value="17:00" readOnly /></div></div>
+      {error === 'schedule' && <p className="next-error" role="alert">Chọn thời điểm bắt đầu trong tương lai, trước ít nhất 15 phút và không quá 90 ngày.</p>}
+      {scheduleCalculated && <p className="next-rule"><strong>Lịch dự kiến</strong><span>{sendMode === 'Gửi ngay' ? 'Gửi sau khi xác nhận.' : 'Bắt đầu ' + sendDate + ' lúc ' + sendTime}. Tốc độ 50 email/giờ, trong khung 08:00–17:00. Thời điểm hoàn tất chính xác cần API.</span></p>}
+    </section>
+    {scenario === 'save-error' && scenarioAlert}
+    {actions(null, <><Button primary onClick={() => { if (sendMode === 'Hẹn giờ' && (!sendDate || !sendTime || new Date(sendDate + 'T' + sendTime).getTime() < Date.now() + 15 * 60_000 || new Date(sendDate + 'T' + sendTime).getTime() > Date.now() + 90 * 86_400_000)) { setError('schedule'); return } setError(''); setScheduleCalculated(true) }}>Tính lịch dự kiến</Button>{scheduleCalculated && <Button onClick={() => go(scenario === 'save-error' ? 'campaign-schedule' : 'campaign-confirm')}>Lưu lịch gửi</Button>}</>)}
+  </Page>
+  if (screen === 'campaign-confirm' || screen === 'campaign-resume') {
+    const resuming = screen === 'campaign-resume'
+    const [sent, total] = campaign.progress.split('/').map(Number)
+    const recipients = resuming ? Math.max(0, total - sent) : total
+    const emailSubject = campaign.subject ?? subject
+    const emailBody = campaign.body ?? body
+    const needsAttention = ['needs-attention', 'invalid-schedule', 'quota-error'].includes(scenario) || !emailSubject
+    const lists = resuming ? 'Khách hàng sản xuất miền Trung; Khách mời Techfest 2026' : campaign.name === 'Webinar bảo mật dữ liệu 2026' ? contactLists.map(item => item.name).join('; ') : selectedLists.join('; ') || 'Danh sách người nhận đã duyệt của chiến dịch'
+    const attachment = resuming ? 'Chuong-trinh-hoi-thao.pdf' : 'Brochure-webinar.pdf'
+    return <Page section="Chiến dịch" title={campaign.name} go={go}>
+      {resuming ? <section className="next-card"><h2>Tình trạng gửi</h2><dl className="next-details"><dt>Số email đã gửi</dt><dd>{sent}</dd><dt>Số contact “Chưa gửi”</dt><dd>{recipients}</dd><dt>Thời điểm tạm dừng</dt><dd>23/10/2026 14:30</dd><dt>Lý do tạm dừng</dt><dd>{campaign.pauseReason || '—'}</dd></dl></section> : <Stepper current={5} />}
+      {scenario === 'summary-error' ? <><div className="next-scenario-alert info" role="alert"><strong>{scenarioMessage.title}</strong><span>{scenarioMessage.detail}</span></div>{actions(null, <><Button onClick={() => go('campaign-confirm')}>Tải lại</Button><Button primary disabled>Xác nhận gửi</Button></>)}</> : <>
+        {scenario !== 'needs-attention' && scenarioAlert}
+        <div className="next-grid next-confirm-grid">
+          <section className="next-card"><div className="next-section-head"><h2>Danh sách người nhận</h2><Badge>Hợp lệ</Badge></div><dl className="next-details"><dt>Tên danh sách</dt><dd>{lists}</dd><dt>Số contact hợp lệ</dt><dd>{recipients}{resuming ? ' (chưa gửi)' : ''}</dd><dt>Người duyệt</dt><dd>Trưởng phòng Marketing</dd><dt>Thời điểm duyệt</dt><dd>{resuming ? '15/10/2026 10:05' : '04/11/2026 15:20'}</dd></dl></section>
+          <section className="next-card"><div className="next-section-head"><h2>Nội dung email</h2><Badge>{emailSubject ? 'Hợp lệ' : 'Cần xử lý'}</Badge></div><dl className="next-details"><dt>Tiêu đề</dt><dd>{emailSubject || '—'}</dd><dt>Ảnh thu nhỏ nội dung</dt><dd><div className="next-mail-thumb">{emailBody || 'Chưa có nội dung email.'}</div></dd><dt>Biến cá nhân hóa</dt><dd>{emailBody ? '{{Họ tên}}, {{Tên doanh nghiệp}}' : '—'}</dd><dt>Tệp đính kèm</dt><dd>{emailBody ? attachment : '—'}</dd></dl></section>
+          <section className="next-card"><div className="next-section-head"><h2>Tài khoản gửi</h2><Badge>{scenario === 'quota-error' ? 'Cần xử lý' : 'Hợp lệ'}</Badge></div><dl className="next-details"><dt>Địa chỉ email</dt><dd>{campaign.sender || sender || '—'}</dd><dt>Tên người gửi</dt><dd>{senderName}</dd><dt>Hạn mức còn lại</dt><dd>{scenario === 'quota-error' ? '120' : '1.700'}</dd></dl>{scenario === 'quota-error' && <p className="next-error">Hạn mức còn lại không đủ cho số email sẽ gửi.</p>}</section>
+          <section className="next-card"><div className="next-section-head"><h2>Lịch gửi</h2><Badge>{needsAttention ? 'Cần xử lý' : 'Hợp lệ'}</Badge></div><dl className="next-details"><dt>Thời điểm bắt đầu</dt><dd>{resuming ? 'Sau 15 phút kể từ khi tiếp tục' : scenario === 'needs-attention' ? '06/11/2026 08:00' : sendMode === 'Gửi ngay' ? 'Gửi ngay' : sendDate ? `${sendDate} ${sendTime}` : '10/11/2026 09:00'}</dd><dt>Tốc độ gửi</dt><dd>50 email/giờ</dd><dt>Thời điểm hoàn tất dự kiến</dt><dd>{resuming ? 'Sau 8 giờ 24 phút gửi trong khung 08:00 - 17:00' : scenario === 'needs-attention' ? '07/11/2026 15:00' : '11/11/2026 16:00'}</dd></dl>{needsAttention && <p className="next-error">{scenario === 'invalid-schedule' ? 'Thời điểm gửi còn dưới 15 phút.' : !emailSubject ? 'Chưa có nội dung email cho chiến dịch này.' : 'Thời điểm bắt đầu đã qua.'}</p>}</section>
+        </div>
+        {actions(<Button onClick={() => go('campaign-list')}>{resuming ? 'Để sau' : 'Quay lại'}</Button>, <><Button onClick={() => setDialog('email-preview')}>Xem nội dung email</Button><Button onClick={() => setDialog('campaign-edit')}>Chỉnh sửa</Button><Button primary disabled={dialog !== 'email-seen' || needsAttention} onClick={() => setDialog('campaign-final')}>{resuming ? 'Tiếp tục gửi' : 'Xác nhận gửi'}</Button></>)}
+        {dialog === 'email-preview' && <Dialog title="Xem nội dung email" onClose={() => setDialog('email-seen')}><p>{emailSubject || '—'}</p><p>{previewBody(emailBody || 'Chưa có nội dung email.')}</p></Dialog>}
+        {dialog === 'campaign-edit' && <Dialog title="Chọn mục sửa" onClose={() => setDialog('email-seen')}><div className="next-dialog-links"><Button onClick={() => { setEditName(campaign.name); setEditDescription(campaign.description ?? ''); setDialog('campaign-edit-general') }}>Thông tin chung</Button><Button onClick={() => { setDialog(''); go('campaign-editor') }}>Nội dung email</Button><Button onClick={() => { setDialog(''); go('campaign-sender') }}>Tài khoản gửi</Button><Button onClick={() => { setDialog(''); go('campaign-schedule') }}>Lịch gửi</Button></div></Dialog>}
+        {dialog === 'campaign-edit-general' && <Dialog title="Thông tin chung" onClose={() => setDialog('email-seen')} onConfirm={() => { if (!editName.trim() || editName.trim().length > 100) { setError('Tên chiến dịch bắt buộc và tối đa 100 ký tự.'); return } updateCampaign({ name: editName.trim(), description: editDescription.trim() }); setError(''); setDialog('email-seen') }} confirmLabel="Lưu"><Field label="Tên chiến dịch" required value={editName} onChange={setEditName} error={error || undefined} /><Field label="Mô tả" value={editDescription} onChange={setEditDescription} rows={3} /></Dialog>}
+        {dialog === 'campaign-final' && <Dialog title="Xác nhận chiến dịch?" onClose={() => setDialog('email-seen')} onConfirm={() => { if (scenario === 'save-error' || scenario === 'send-error') { setDialog('email-seen'); go(resuming ? 'campaign-resume' : 'campaign-confirm'); return } updateCampaign({ status: resuming || sendMode === 'Gửi ngay' ? 'Đang gửi' : 'Đã lên lịch' }); setDialog(''); setNotice(resuming ? 'Đã mô phỏng tiếp tục gửi; chưa gửi email thật.' : 'Đã mô phỏng xác nhận chiến dịch; chưa gửi email thật.'); go('campaign-list') }} confirmLabel="Đồng ý"><p>Số email sẽ gửi: {recipients}. Kiểm tra nội dung, tài khoản và lịch gửi trước khi đồng ý.</p></Dialog>}
+      </>}
+    </Page>
+  }
+
+  if (screen === 'response-list') return <Page section="Response" title="Quản lý Response" description="Xem phản hồi thuộc phạm vi phụ trách." go={go}>{message}<section className="next-card next-table-card next-response-list"><h2>Response do tôi phụ trách</h2><table className="next-table"><thead><tr><th>Mã / Khách hàng</th><th>Thời gian nhận</th><th>Loại phản hồi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{responses.map((item, index) => item.hidden ? null : <tr key={item.code}><td>{item.code} · {item.customer}</td><td className="next-received-time">{item.received.replace(' ', '\n')}</td><td>{item.kind}</td><td>{item.status}</td><td><button onClick={() => { setResponseIndex(index); go('response-detail') }}>Xem chi tiết</button></td></tr>)}</tbody></table></section>{actions(null, <><Button primary onClick={() => { setCustomer(''); setRecipient(''); setPhone(''); setResponseText(''); setError(''); go('response-add') }}>Thêm Response</Button><Button onClick={() => setDialog('response-hide')}>Ẩn Response</Button></>)}{dialog === 'response-hide' && <Dialog title="Ẩn Response" onClose={() => { setDialog(''); setError('') }} onConfirm={() => { const target = responses.find(item => item.code === hideCode); if (!target || !['Rác', 'Từ chối nhận email'].includes(target.kind) || (followups.some(item => item.code === hideCode) || replies.some(item => item.code === hideCode))) { setError('Chỉ Response loại Rác hoặc Từ chối nhận email chưa có lịch sử Follow-up mới được ẩn.'); return } setResponses(items => items.map(item => item.code === hideCode ? { ...item, hidden: true } : item)); setHideCode(responses.find(item => !item.hidden && item.code !== hideCode)?.code ?? ''); setDialog(''); setNotice('Đã ẩn Response khỏi danh sách làm việc. Dữ liệu vẫn được giữ lại.') }} confirmLabel="Ẩn Response"><div className="next-field"><label htmlFor="hide-response">Response cần ẩn</label><select id="hide-response" value={hideCode} onChange={event => setHideCode(event.target.value)}>{responses.filter(item => !item.hidden).map(item => <option key={item.code} value={item.code}>{item.code} · {item.customer}</option>)}</select></div>{error && <p className="next-error" role="alert">{error}</p>}</Dialog>}</Page>
+  if (screen === 'response-detail') return <Page section="Response" title="Chi tiết Response" description={`${response.code} · ${response.customer}`} go={go}>{message}
+    <section className="next-card next-response-detail"><h2>{response.code} · {response.customer} · {response.code === 'RSP-031' ? 'KH-031' : '—'}</h2><div className="next-response-fields"><div><span>Loại phản hồi</span><strong>{response.kind}</strong></div><div><span>Trạng thái</span><strong>{response.status}</strong></div><div><span>Phụ trách</span><strong>NV-01</strong></div><div><span>Thời gian nhận</span><strong>{response.received}</strong></div><div><span>Email</span><strong>{response.email || '—'}</strong></div><div><span>Số điện thoại</span><strong>{response.phone || '—'}</strong></div></div><div className="next-response-body"><span>Nội dung khách hàng</span><strong>{response.content || '—'}</strong></div></section>
+    <section className="next-card next-response-history"><h2>Lịch sử và lịch hẹn liên quan</h2><table className="next-table"><thead><tr><th>Nội dung</th><th>Thông tin hiện tại</th><th>Thao tác</th></tr></thead><tbody><tr><td>Phản hồi đã gửi</td><td>{replies.filter(item => item.code === response.code).at(-1)?.time ?? 'Chưa có phản hồi gửi đi'}</td><td><Button onClick={() => go('response-history')}>Xem lịch sử</Button></td></tr><tr><td>Lịch sử trạng thái</td><td>{response.received} · {response.status}</td><td><Button onClick={() => go('response-status-history')}>Xem lịch sử</Button></td></tr><tr><td>Lịch Follow-up</td><td>{followups.find(item => item.code === response.code)?.time ?? 'Chưa có lịch Follow-up'}</td><td><Button onClick={() => go('followup-list')}>Xem lịch sử</Button></td></tr></tbody></table></section>
+    {actions(null, <><Button primary onClick={() => { setRecipient(response.email ?? ''); setResponseText(''); go('response-reply') }}>Phản hồi</Button><Button onClick={() => go(followups.some(item => item.code === response.code && item.status === 'Chờ thực hiện') ? 'followup-list' : 'followup-create')}>{followups.some(item => item.code === response.code && item.status === 'Chờ thực hiện') ? 'Xem lịch Follow-up' : 'Tạo lịch Follow-up'}</Button><Button disabled={!nextResponseStatuses.length} onClick={() => { setResponseStatus(nextResponseStatuses[0]); setResponseText(''); setError(''); go('response-status') }}>Cập nhật trạng thái</Button><Button onClick={() => { setCustomer(response.customer); setRecipient(response.email ?? ''); setPhone(response.phone ?? ''); setResponseText(response.content ?? ''); go('response-edit') }} disabled={!['Mới', 'Đang xử lý'].includes(response.status)}>Sửa thông tin</Button></>)}
+  </Page>
+  if (screen === 'response-add' || screen === 'response-edit') return <Page section="Response" title={screen === 'response-add' ? 'Thêm Response' : 'Cập nhật Response'} go={go}><form noValidate onSubmit={event => { event.preventDefault(); if (!customer.trim() || !responseText.trim()) { setError('Nhập khách hàng và nội dung phản hồi.'); return } if (recipient && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) { setError('Email không đúng định dạng.'); return } if (phone && !/^[0-9+\s().-]{9,20}$/.test(phone)) { setError('Số điện thoại không đúng định dạng.'); return } if (screen === 'response-add') { const code = `RSP-${String(Math.max(36, ...responses.map(item => Number(item.code.slice(4)))) + 1).padStart(3, '0')}`; setResponses(items => [{ code, customer, received: new Date().toLocaleString('vi-VN'), kind: 'Cần xử lý', status: 'Mới', email: recipient, phone, content: responseText }, ...items]); setResponseIndex(0) } else updateResponse({ customer, email: recipient, phone, content: responseText }); setNotice('Đã lưu Response trong bản demo.'); go('response-list') }}><section className="next-card next-summary"><h2>{screen === 'response-edit' ? 'Thông tin khách hàng' : 'Thông tin Response ngoại tuyến'}</h2>{scenario === 'invalid' && scenarioAlert}<Field label="Khách hàng" required value={customer} onChange={setCustomer} placeholder="Chọn khách hàng" error={error.includes('khách hàng') ? error : undefined} /><div className="next-grid"><Field label="Email" type="email" value={recipient} onChange={setRecipient} placeholder="Nhập email" error={error.includes('Email') ? error : undefined} /><Field label="Số điện thoại" value={phone} onChange={setPhone} placeholder="Nhập số điện thoại" error={error.includes('điện thoại') ? error : undefined} /></div><Field label="Nội dung phản hồi" required value={responseText} onChange={setResponseText} rows={5} placeholder="Nhập nội dung khách hàng phản hồi" error={error.includes('nội dung') ? error : undefined} /><p className="next-hint">{screen === 'response-edit' ? 'Mã Response, thời điểm nhận và loại phản hồi do hệ thống quản lý; chỉ cập nhật khi trạng thái Mới hoặc Đang xử lý.' : 'Mã Response và thời gian nhận được hệ thống tự ghi khi lưu. Trạng thái ban đầu: Mới.'}</p></section>{actions(<Button onClick={() => go('response-list')}>Hủy</Button>, <Button primary type="submit">{screen === 'response-edit' ? 'Lưu thay đổi' : 'Lưu Response'}</Button>)}</form></Page>
+  if (screen === 'response-reply') return <Page section="Response" title="Soạn phản hồi" description={`${response.code} · ${response.customer}`} go={go}>
+    <form onSubmit={event => {
+      event.preventDefault()
+      if (!recipient.trim() || !responseText.trim()) { setError('Nhập người nhận và nội dung phản hồi.'); return }
+      if (replyChannel === 'Email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) { setError('Email người nhận không đúng định dạng.'); return }
+      if (replyChannel === 'SMS' && !/^[0-9+\s().-]{9,20}$/.test(recipient)) { setError('Số điện thoại người nhận không đúng định dạng.'); return }
+      if (scenario === 'send-error') { go('response-reply'); return }
+      setError('')
+      setReplies(items => [...items, { code: response.code, content: responseText, time: new Date().toLocaleString('vi-VN'), channel: replyChannel, recipient }])
+      setNotice(`Đã mô phỏng gửi ${replyChannel}; chưa gửi tin thật.`)
+      go('response-detail')
+    }}>
+      <section className="next-card next-summary">
+        <h2>Soạn phản hồi · {response.code}{response.code === 'RSP-031' ? ' · KH-031' : ''}</h2>
+        {scenarioAlert}
+        <div className="next-reply-grid">
+          <div className="next-field"><label htmlFor="reply-channel">Kênh gửi *</label><select id="reply-channel" value={replyChannel} onChange={event => { const channel = event.target.value as 'Email' | 'SMS'; setReplyChannel(channel); setRecipient(channel === 'SMS' ? response.phone ?? '' : response.email ?? ''); setError('') }}><option>Email</option><option>SMS</option></select></div>
+          <Field label="Người nhận" required value={recipient} onChange={setRecipient} error={error.includes('người nhận') ? error : undefined} />
+          <div className="next-field"><label htmlFor="reply-template">Mẫu phản hồi</label><select id="reply-template" value={replyTemplate} onChange={event => { setReplyTemplate(event.target.value); if (event.target.value) setResponseText('Chào anh/chị, cảm ơn đã quan tâm.') }}><option value="">Không dùng mẫu</option><option>Giới thiệu giải pháp</option></select></div>
+          <Field label="Nội dung phản hồi" required value={responseText} onChange={setResponseText} error={error.includes('nội dung') ? error : undefined} />
+        </div>
+        <p className="next-hint">Có thể chọn mẫu hoặc nhập nội dung mới. Mã Response, mã khách hàng, thời gian và người gửi được lưu tự động.</p>
+        {error && <p className="next-error" role="alert">{error}</p>}
+      </section>{actions(null, <><Button primary type="submit">{scenario === 'send-error' ? 'Thử gửi lại' : 'Gửi phản hồi'}</Button><Button onClick={() => go('response-detail')}>Hủy</Button></>)}
+    </form>
+  </Page>
+  if (screen === 'response-status') return <Page section="Response" title="Cập nhật trạng thái" description={response.code} go={go}><section className="next-card next-summary"><h2>Trạng thái xử lý · {response.code}</h2>{scenarioAlert}<dl className="next-details"><dt>Trạng thái hiện tại</dt><dd>{response.status}</dd></dl><div className="next-field"><label htmlFor="new-response-status">Trạng thái mới</label><select id="new-response-status" value={responseStatus} onChange={event => setResponseStatus(event.target.value)}>{scenario === 'invalid' && <option>Đã chốt nhu cầu</option>}{nextResponseStatuses.map(value => <option key={value}>{value}</option>)}</select></div><Field label="Lý do / Ghi chú" value={responseText} onChange={setResponseText} rows={3} /><p className="next-hint">Chuyển trạng thái phải theo luồng xử lý hợp lệ.</p>{error && <p className="next-error" role="alert">{error}</p>}</section>{actions(<Button onClick={() => go('response-detail')}>Hủy thao tác</Button>, <Button primary onClick={() => { if (!nextResponseStatuses.includes(responseStatus)) { setError('Chuyển trạng thái không đúng quy trình.'); return } updateResponse({ status: responseStatus }); setStatusChanges(items => [...items, { code: response.code, status: responseStatus, time: new Date().toLocaleString('vi-VN'), note: responseText }]); setError(''); setNotice('Đã cập nhật trạng thái.'); go('response-detail') }}>Xác nhận</Button>)}</Page>
+  if (screen === 'response-history') {
+    const history = replies.filter(item => item.code === response.code)
+    return <Page section="Response" title="Lịch sử phản hồi đã gửi" description={`${response.code} · ${response.customer}`} go={go}><section className="next-card"><h2>Phản hồi gửi đi · {history.length} lượt</h2><table className="next-table"><thead><tr><th>Thời điểm gửi</th><th>Kênh / Người gửi</th><th>Người nhận</th><th>Nội dung</th></tr></thead><tbody>{history.length ? history.map((item, index) => <tr key={index}><td>{item.time}</td><td>{item.channel} · NV-01</td><td>{item.recipient}</td><td>{item.content}</td></tr>) : <tr><td colSpan={4}>Chưa có phản hồi gửi đi</td></tr>}</tbody></table></section>{actions(<Button onClick={() => go('response-detail')}>Về chi tiết Response</Button>, null)}</Page>
+  }
+  if (screen === 'response-status-history') return <Page section="Response" title="Lịch sử trạng thái Response" description={`${response.code} · ${response.customer} · Phụ trách NV-01`} go={go}><section className="next-card"><h2>Lịch sử xử lý · {statusChanges.filter(item => item.code === response.code).length + 1} mốc</h2><table className="next-table"><thead><tr><th>Thời điểm</th><th>Trạng thái mới</th><th>Ghi chú</th></tr></thead><tbody><tr><td>{response.received}</td><td>{initialResponses.find(item => item.code === response.code)?.status ?? 'Mới'}</td><td>Hệ thống tiếp nhận Response từ khách hàng và giao cho NV-01.</td></tr>{statusChanges.filter(item => item.code === response.code).map((item, index) => <tr key={index}><td>{item.time}</td><td>{item.status}</td><td>{item.note || 'NV-01 cập nhật trạng thái.'}</td></tr>)}</tbody></table></section>{actions(<Button onClick={() => go('response-detail')}>Về chi tiết Response</Button>, null)}</Page>
+
+  if (screen === 'followup-list') return <Page section="Follow-up" title="Quản lý lịch Follow-up" description="Theo dõi lịch và kết quả của khách hàng." go={go}>{message}<section className="next-card next-table-card next-followup-list"><h2>Công việc Follow-up của tôi</h2><table className="next-table"><thead><tr><th>Khách hàng / Response</th><th>Ngày giờ / Hình thức</th><th>Lần / Tối đa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{followups.map((item, index) => <tr key={`${item.code}-${index}`}><td>{item.customer} · {item.code}</td><td>{item.time}<small>{item.channel}</small></td><td>{item.attempt}</td><td>{item.status}</td><td><button onClick={() => { setFollowupIndex(index); go('followup-result') }}>{item.status === 'Chờ thực hiện' ? 'Xem chi tiết' : 'Xem kết quả'}</button></td></tr>)}</tbody></table></section><div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép xóa.</span></div>{actions(null, <><Button primary onClick={() => go('response-list')}>Xem hồ sơ / Lập lịch</Button><Button onClick={() => setDialog('followup-delete')}>Xóa lịch Follow Up</Button></> )}{dialog === 'followup-delete' && <Dialog title="Xóa lịch Follow-up?" onClose={() => setDialog('')} onConfirm={() => { if (followup.status !== 'Chờ thực hiện') { setError('Chỉ lịch Chờ thực hiện được phép xóa.'); return } setFollowups(items => items.map((item, index) => index === followupIndex ? { ...item, status: 'Đã xóa' } : item)); setDialog(''); setNotice('Đã chuyển lịch Follow-up sang trạng thái Đã xóa.') }} confirmLabel="Xóa lịch" danger><p>{followup.customer} · {followup.code}</p>{error && <p className="next-error" role="alert">{error}</p>}</Dialog>}</Page>
+  if (screen === 'followup-create') return <Page section="Follow-up" title="Tạo lịch Follow-up" description={`${response.customer} · Response ${response.code}`} go={go}><form onSubmit={event => { event.preventDefault(); if (!followGoal.trim()) { setError('Nhập nội dung hoặc mục tiêu Follow-up.'); return } if (!Number.isFinite(Date.parse(followTime)) || Date.parse(followTime) <= Date.now()) { setError('Ngày giờ Follow-up phải ở tương lai.'); return } if ([waitDays, maxAttempts, intervalDays].some(value => !Number.isInteger(Number(value)) || Number(value) <= 0)) { setError('Thời gian chờ, số lần tối đa và khoảng cách phải là số nguyên dương.'); return } if (reminder && (!Number.isInteger(Number(reminder)) || Number(reminder) <= 0)) { setError('Thời gian nhắc trước phải là số phút nguyên dương.'); return } if (response.kind === 'Từ chối nhận email' && followChannel === 'Email') { go('followup-optout'); return } if (followups.some(item => item.code === response.code && item.status === 'Chờ thực hiện')) { go('followup-duplicate'); return } setFollowups(items => [{ customer: response.customer, code: response.code, time: formatFollowTime(followTime), channel: followChannel, attempt: `1 / ${maxAttempts}`, status: 'Chờ thực hiện' }, ...items]); setFollowupIndex(0); go('followup-success') }}><section className="next-card next-summary"><h2>Lịch hẹn · {response.code} · {response.customer}</h2>{scenarioAlert}<div className="next-grid"><Field label="Mốc thời gian" type="datetime-local" value={followTime} onChange={setFollowTime} /><div className="next-field"><label htmlFor="follow-channel">Hình thức chăm sóc *</label><select id="follow-channel" value={followChannel} onChange={event => setFollowChannel(event.target.value)}><option>Email</option><option>Gọi điện</option><option>SMS</option></select></div></div><Field label="Nội dung / Mục tiêu" required value={followGoal} onChange={setFollowGoal} /><Field label="Thời gian nhắc trước (phút)" type="number" value={reminder} onChange={setReminder} placeholder="Nhập thời gian nhắc trước" /><div className="next-grid"><Field label="Thời gian chờ phản hồi (ngày)" type="number" value={waitDays} onChange={setWaitDays} /><Field label="Số lần Follow-up tối đa" type="number" value={maxAttempts} onChange={setMaxAttempts} /><Field label="Khoảng cách giữa các lần (ngày)" type="number" value={intervalDays} onChange={setIntervalDays} /></div><p className="next-hint">Ngày giờ phải ở tương lai. Các thông số phải là số nguyên dương.</p>{error && <p className="next-error" role="alert">{error}</p>}</section>{actions(<Button onClick={() => go('followup-list')}>Hủy</Button>, <Button primary type="submit">Thêm Follow-up</Button>)}</form></Page>
+  if (screen === 'followup-result') return <Page section="Follow-up" title="Kết quả Follow-up" description={`${followup.customer} · ${followup.code}`} go={go}><section className="next-card next-summary"><h2>{followup.customer} · {followup.code}</h2><div className="next-result-grid"><div><span>Trạng thái</span><strong><Badge>{followup.status}</Badge></strong></div><div><span>Lịch hẹn</span><strong>{followup.time}</strong></div><div><span>Hình thức</span><strong>{followup.channel}</strong></div><div><span>Lần Follow-up</span><strong>{followup.attempt}</strong></div><div><span>Cập nhật lúc</span><strong>{followup.code === 'RSP-033' ? '02/11/2026 11:15' : followup.time}</strong></div><div><span>Nguồn cập nhật</span><strong>Hệ thống</strong></div><div className="wide"><span>Nội dung / Mục tiêu</span><strong>Trao đổi nhu cầu và thông tin giải pháp.</strong></div></div></section><section className="next-card next-followup-history"><h2>Lịch sử Follow-up</h2><table className="next-table"><thead><tr><th>Thời điểm</th><th>Trạng thái mới</th><th>Người thực hiện</th></tr></thead><tbody><tr><td>{followup.code === 'RSP-033' ? '01/11/2026 09:00' : followup.time}</td><td>Chờ thực hiện</td><td>NV-01</td></tr>{followup.status !== 'Chờ thực hiện' && <tr><td>{followup.code === 'RSP-033' ? '02/11/2026 11:15' : followup.time}</td><td>{followup.status}</td><td>Hệ thống</td></tr>}</tbody></table></section>{actions(<Button onClick={() => go('followup-list')}>Về danh sách</Button>, <><Button primary onClick={() => { setFollowGoal(followNotes[followup.code] ?? ''); go('followup-note') }}>Bổ sung ghi chú</Button>{followup.status === 'Chờ thực hiện' && <Button danger onClick={() => setDialog('followup-delete')}>Xóa lịch Follow-up</Button>}</>)}{dialog === 'followup-delete' && <Dialog title="Xóa lịch Follow-up?" onClose={() => setDialog('')} onConfirm={() => { setFollowups(items => items.map((item, index) => index === followupIndex ? { ...item, status: 'Đã xóa' } : item)); setDialog(''); setNotice('Đã chuyển lịch Follow-up sang trạng thái Đã xóa.'); go('followup-list') }} confirmLabel="Xóa lịch" danger><p>Chỉ lịch “Chờ thực hiện” được phép xóa.</p></Dialog>}</Page>
+  if (screen === 'followup-note') return <Page section="Follow-up" title="Ghi chú kết quả" description={followup.customer} go={go}>{scenarioAlert}<section className="next-card next-summary"><h2>Ghi chú kết quả · {followup.customer}</h2><dl className="next-details"><dt>Kết quả tự động</dt><dd>{followup.status}</dd></dl><Field label="Ghi chú kết quả" value={followGoal} onChange={setFollowGoal} rows={5} /><p className="next-hint">Hủy hoặc lỗi lưu ghi chú không thay đổi kết quả đã được hệ thống cập nhật.</p></section>{actions(<Button onClick={() => go('followup-result')}>Hủy</Button>, <Button primary onClick={() => { if (scenario === 'save-error') { go('followup-note'); return }; setFollowNotes(items => ({ ...items, [followup.code]: followGoal })); setNotice('Đã lưu ghi chú trong bản demo.'); go('followup-result') }}>{scenario === 'save-error' ? 'Thử lưu lại' : 'Lưu ghi chú'}</Button>)}</Page>
+  return <Page section="Chiến dịch" title="Không tìm thấy màn hình" go={go}><Button onClick={() => go('campaign-list')}>Về danh sách chiến dịch</Button></Page>
+}
