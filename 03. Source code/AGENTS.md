@@ -28,6 +28,8 @@
 
 ## Tra cứu và sử dụng ngữ cảnh
 
+- Dùng `ponytail` làm nguyên tắc mặc định khi viết, sửa hoặc rà mã: chọn thay đổi nhỏ nhất đáp ứng đầy đủ yêu cầu, giữ xử lý lỗi, bảo mật, khả năng truy cập và kiểm chứng cần thiết. Quy tắc dự án, yêu cầu của BA và thiết kế Figma vẫn là nguồn quyết định phạm vi và hành vi.
+- Chọn plugin và skill đã cài theo tác vụ thực tế; ưu tiên công cụ chuyên dụng cho nguồn cần làm việc, chỉ đọc phần hướng dẫn liên quan và không chạy nhiều quy trình trùng lặp chỉ vì chúng đã được cài.
 - Với mỗi yêu cầu, tự chọn skill đã cài có liên quan trực tiếp và chỉ đọc phần hướng dẫn cần dùng; không cần người dùng nhắc tên skill. Yêu cầu đơn giản không cần ép dùng skill.
 - Khi cần yêu cầu nghiệp vụ, bắt đầu từ mục liên quan trong `GHI_CHU_YEU_CAU.md`. Nếu cần chi tiết, làm mới cache bằng `tools/build_document_cache.py`, tìm trong `.context-cache/` và chỉ đọc đoạn khớp; xác nhận lại trong tài liệu gốc khi có mâu thuẫn hoặc quyết định quan trọng.
 - Cache Markdown là bản trích xuất để tìm kiếm, không thay thế DOCX/XLSX gốc; hình ảnh, bảng và nội dung chưa trích được phải kiểm tra ở nguồn.
