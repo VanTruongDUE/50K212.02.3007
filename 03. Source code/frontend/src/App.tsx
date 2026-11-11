@@ -97,7 +97,7 @@ function Home({ manager, screen, go, accountEmail }: { manager: boolean; screen:
   return <main className="app-shell">
     <aside className="sidebar">
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
-      <nav aria-label="Menu chính" className={manager ? 'manager-nav' : undefined}>
+      <nav aria-label="Menu chính">
         {manager ? <>
           <NavItem icon="home" active={screen === 'home'} onClick={() => go('home')}>Trang chính</NavItem>
           <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách Contact</NavItem>
