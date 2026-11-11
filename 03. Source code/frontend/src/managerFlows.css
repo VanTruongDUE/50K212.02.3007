@@ -10,8 +10,8 @@
 .mgr-panel h2 { margin: 0 0 32px; font-size: 20px; line-height: 28px; }
 .mgr-panel h2:not(:first-child) { margin-top: 20px; }
 .mgr-table-wrap { width: 100%; overflow-x: auto; }
-.mgr-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
-.mgr-table th { padding: 14px 16px; color: #edf5ff; background: #172f4e; text-align: left; font-weight: 700; }
+.mgr-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 15px; }
+.mgr-table th { padding: 14px 16px; color: #edf5ff; background: #172f4e; text-align: left; font-size: 14px; font-weight: 700; }
 .mgr-table th:first-child { border-radius: 6px 0 0 0; }
 .mgr-table th:last-child { border-radius: 0 6px 0 0; }
 .mgr-table td { padding: 17px 16px; color: #c7d8ee; border-bottom: 1px solid #294567; overflow-wrap: anywhere; }
@@ -43,7 +43,7 @@
 .mgr-details div { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-bottom: 16px; border-bottom: 1px solid #294567; }
 .mgr-details dd { margin: 0; overflow-wrap: anywhere; font-weight: 700; }
 .mgr-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; row-gap: 34px; }
-.mgr-field { position: relative; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 24px; font-weight: 700; }
+.mgr-field { position: relative; display: flex; flex-direction: column; gap: 10px; font-size: 16px; line-height: 24px; font-weight: 700; }
 .mgr-field input, .mgr-field select, .mgr-field textarea { width: 100%; min-height: 44px; padding: 8px 14px; color: #edf5ff; background: #0b1a2e; border: 1px solid #6f8fb9; border-radius: 6px; font: inherit; font-weight: 400; }
 .mgr-field input[aria-invalid="true"] { border-color: #ffa8ae; }
 .mgr-inline-error { position: absolute; top: calc(100% + 4px); left: 0; color: #ffa8ae; font-size: 14px; line-height: 20px; font-weight: 400; }

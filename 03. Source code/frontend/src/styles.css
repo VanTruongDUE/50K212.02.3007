@@ -38,7 +38,7 @@ button, input { font: inherit; }
 .workplace-caption p { margin: 12px 0 0; color: #b4c7e2; font-size: 16px; line-height: 24px; }
 
 .app-shell { min-height: 100vh; display: flex; background: #081426; }
-.sidebar { flex: 0 0 240px; min-height: 100vh; padding: 16px; background: #0d1d33; border-right: 1px solid #294567; }
+.sidebar { flex: 0 0 280px; min-height: 100vh; padding: 16px; background: #0d1d33; border-right: 1px solid #294567; }
 .sidebar .brand { height: 64px; padding-left: 8px; }
 .brand-home { display: block; width: 100%; padding: 0; color: inherit; background: none; border: 0; text-align: left; cursor: pointer; }
 .brand-home:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; border-radius: 8px; }

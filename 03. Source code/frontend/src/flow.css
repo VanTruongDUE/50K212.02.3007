@@ -8,11 +8,11 @@
 .flow-heading h1 { margin: 0; font-size: 24px; line-height: 32px; }
 .flow-heading p { margin: 0; color: #b4c7e2; font-size: 16px; line-height: 24px; }
 .flow-panel { margin-top: 40px; padding: 24px; background: #0d1d33; border: 1px solid #294567; border-radius: 8px; }
-.flow-panel h2 { margin: 0 0 16px; font-size: 16px; line-height: 24px; }
+.flow-panel h2 { margin: 0 0 16px; font-size: 20px; line-height: 28px; }
 .flow-panel p { color: #b4c7e2; font-size: 14px; line-height: 24px; }
-.flow-actions { min-height: 76px; margin-top: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; background: #0d1d33; border-radius: 8px; }
-.flow-actions > div { display: flex; gap: 12px; }
-.flow-button { min-width: 240px; height: 44px; padding: 0 20px; color: #edf5ff; background: transparent; border: 1px solid #6f8fb9; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 700; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease; }
+.flow-actions { min-height: 76px; margin-top: 16px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; background: #0d1d33; border-radius: 8px; }
+.flow-actions > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.flow-button { min-width: 240px; height: 44px; padding: 0 20px; color: #edf5ff; background: transparent; border: 1px solid #6f8fb9; border-radius: 8px; font-size: 16px; line-height: 24px; font-weight: 700; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease; }
 .flow-button:hover { background: #203f64; }
 .flow-button:active:not(:disabled) { transform: translateY(1px); }
 .flow-button:focus-visible, .table-select:focus-visible, .panel-footnote button:focus-visible, .table-overline button:focus-visible, .contact-list-heading button:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; }
@@ -28,7 +28,7 @@
 .criteria-grid { margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .criteria-card { min-height: 248px; padding: 16px; background: #0d1d33; border-radius: 8px; }
 .criteria-card h2 { margin: 0 0 8px; font-size: 16px; line-height: 24px; }
-.criteria-card > input, .template-editor input, .template-editor select { width: 100%; height: 40px; padding: 0 12px; color: #edf5ff; background: #081426; border: 1px solid #6f8fb9; border-radius: 6px; outline: 0; font-size: 14px; }
+.criteria-card > input, .template-editor input, .template-editor select { width: 100%; height: 44px; padding: 0 12px; color: #edf5ff; background: #081426; border: 1px solid #6f8fb9; border-radius: 6px; outline: 0; font-size: 16px; }
 .criteria-card > input::placeholder { color: #b4c7e2; }
 .criteria-card > input:focus-visible, .template-editor input:focus-visible, .template-editor select:focus-visible { border-color: #bedbff; box-shadow: 0 0 0 3px rgba(190, 219, 255, .24); }
 .criteria-card > input[aria-invalid="true"], .template-editor input[aria-invalid="true"] { border-color: #ffa8ae; }
@@ -42,15 +42,15 @@
 .flow-field-error { display: block; margin-top: 8px; color: #ffa8ae; font-size: 14px; line-height: 20px; }
 .source-row { min-height: 48px; margin-top: 16px; padding: 0 16px; display: flex; align-items: center; gap: 56px; background: #0d1d33; border-radius: 8px; font-size: 14px; }
 .source-row label { display: flex; align-items: center; gap: 8px; color: #b4c7e2; }
-.flow-table { width: 100%; border-collapse: collapse; border: 1px solid #294567; border-radius: 8px; overflow: hidden; font-size: 14px; line-height: 20px; }
-.flow-table th { height: 48px; padding: 0 16px; background: #142b47; text-align: left; font-weight: 700; }
+.flow-table { width: 100%; border-collapse: collapse; border: 1px solid #294567; border-radius: 8px; overflow: hidden; font-size: 15px; line-height: 22px; }
+.flow-table th { height: 48px; padding: 0 16px; background: #142b47; text-align: left; font-size: 14px; font-weight: 700; }
 .flow-table td { height: 64px; padding: 0 16px; color: #b4c7e2; }
 .flow-table td:first-child { color: #edf5ff; font-weight: 700; }
 .flow-table tbody tr { transition: background-color 160ms ease; }
 .flow-table .selected-row { background: #203f64; }
 .flow-table:has(small) td { height: 80px; }
 .flow-table tbody tr[role="button"], .flow-table tbody tr:has(.table-select) { cursor: pointer; }
-.flow-table small { display: block; color: #b4c7e2; font-size: 13px; font-weight: 400; }
+.flow-table small { display: block; color: #b4c7e2; font-size: 14px; font-weight: 400; }
 .table-select { padding: 0; color: #edf5ff; background: none; border: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
 .panel-footnote { margin: 16px 0 0; }
 .panel-footnote button, .table-overline button, .contact-list-heading button { padding: 0; color: #b4c7e2; background: none; border: 0; font: inherit; cursor: pointer; }
