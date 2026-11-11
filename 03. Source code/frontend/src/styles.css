@@ -43,6 +43,8 @@ button, input { font: inherit; }
 .brand-home { display: block; width: 100%; padding: 0; color: inherit; background: none; border: 0; text-align: left; cursor: pointer; }
 .brand-home:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; border-radius: 8px; }
 .sidebar nav { margin-top: 24px; color: #b4c7e2; font-size: 16px; line-height: 24px; }
+.sidebar .manager-nav { display: flex; flex-direction: column; gap: 8px; }
+.manager-nav .nav-item { height: auto; min-height: 52px; padding-block: 6px; line-height: 20px; }
 .nav-item { height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 8px; }
 .sidebar button.nav-item { width: 100%; color: inherit; background: none; border: 0; border-radius: 8px; text-align: left; cursor: pointer; transition: background-color 140ms ease, color 140ms ease; }
 .sidebar button.nav-item:hover, .sidebar button.nav-item.active, .subnav button:hover, .subnav button.active { color: #edf5ff; background: #203f64; }
@@ -56,12 +58,27 @@ button, input { font: inherit; }
 .subnav-items { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .subnav span { display: flex; align-items: center; height: 48px; }
 .subnav button { min-height: 48px; padding: 0 12px; color: #b4c7e2; background: none; border: 0; border-radius: 8px; font-size: 14px; text-align: left; cursor: pointer; transition: background-color 140ms ease, color 140ms ease; }
+.manager-nav .subnav button { height: auto; padding-block: 8px; line-height: 20px; }
 @media (prefers-reduced-motion: reduce) {
   .subnav, .nav-heading::after { transition-duration: 0ms; }
 }
 .workspace { flex: 1; min-width: 0; }
 .topbar { height: 64px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; color: #b4c7e2; background: #0d1d33; border-bottom: 1px solid #294567; font-size: 16px; line-height: 24px; }
 .account { display: inline-flex; align-items: center; gap: 12px; color: #c7d8ee; }
+.account-button { padding: 8px 10px; border: 0; border-radius: 6px; background: none; cursor: pointer; }
+.account-button:hover { background: #203f64; }
+.account-button:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; }
+.profile-page { max-width: 980px; margin: 32px auto; padding: 0 32px; }
+.profile-crumb { display: flex; gap: 12px; margin-bottom: 24px; color: #b4c7e2; }
+.profile-crumb button { padding: 0; border: 0; color: #8fbdff; background: none; text-decoration: underline; cursor: pointer; }
+.profile-panel { padding: 28px; border: 1px solid #294567; border-radius: 10px; background: #0d1d33; }
+.profile-panel h1 { margin: 0 0 28px; font-size: 24px; }
+.profile-panel dl { margin: 0 0 28px; }
+.profile-panel dl div { display: grid; grid-template-columns: 180px 1fr; padding: 14px 0; border-bottom: 1px solid #294567; }
+.profile-panel dt { color: #b4c7e2; }
+.profile-panel dd { margin: 0; }
+.profile-panel > button { min-height: 42px; padding: 8px 18px; border: 1px solid #54759d; border-radius: 6px; color: #edf5ff; background: #172f4e; cursor: pointer; }
+.profile-panel button:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; }
 .home-content { margin: 64px 48px; }
 .success-panel { margin-top: 32px; padding: 24px; display: flex; flex-direction: column; gap: 8px; min-height: 104px; border-radius: 8px; background: #0d1d33; font-size: 16px; line-height: 24px; }
 .success-panel strong { color: #bedbff; }

@@ -1,16 +1,23 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import Flow from './Flow'
 import NextFlows from './NextFlows'
+import ManagerFlows from './ManagerFlows'
 import './styles.css'
 
 const preview = new URLSearchParams(location.search).get('preview')
 type Errors = { email?: string; password?: string }
+type Role = 'employee' | 'manager'
+// shortcut: Tài khoản demo chỉ xác định role trên FE; thay bằng role từ API xác thực khi triển khai BE.
+const demoRoles: Record<string, Role> = {
+  'minhanh@example.com': 'employee',
+  'truongphong@example.com': 'manager',
+}
 
 function Brand() {
   return <span className="brand"><svg width="36" height="40" viewBox="0 0 36 40" aria-hidden="true"><path d="M5.34513 0H35.9646V9.9115H28.708C23.3982 9.9115 18.7965 6.19469 15.4336 4.42478C10.6549 1.9469 8.53098 2.65487 9.06195 6.37168C9.76991 9.9115 13.4867 14.5133 17.3805 17.6991H34.1947C35.3746 17.6991 35.9646 18.2891 35.9646 19.469V34.6903C35.9646 38.2301 34.1947 40 30.6549 40H0.0354004V30.0885H5.69912C11.1858 30.0885 14.3717 32.5664 17.9115 34.6903C23.0443 37.6991 26.4071 38.2301 26.9381 36.1062C28 33.2743 23.5752 27.7876 18.7965 22.3009H0.0354004V5.66372C0.0354004 1.88791 1.80531 0 5.34513 0Z" fill="#8FBDFF" /></svg><strong>V5 Marketing</strong></span>
 }
 
-function Login({ onSuccess }: { onSuccess: () => void }) {
+function Login({ onSuccess }: { onSuccess: (email: string, role: Role) => void }) {
   const filled = ['filled', 'credentials', 'role', 'loading', 'missing-password'].includes(preview ?? '')
   const [email, setEmail] = useState(preview === 'invalid-email' ? 'minhanh@' : filled ? 'minhanh@example.com' : '')
   const [password, setPassword] = useState((filled && preview !== 'missing-password') || preview === 'missing-email' ? 'matkhau123456' : '')
@@ -36,9 +43,11 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
       requestAnimationFrame(() => document.getElementById(next.email ? 'email' : 'password')?.focus())
       return
     }
+    const accountRole = demoRoles[email.trim().toLowerCase()]
+    if (!accountRole) { setAuthError('role'); return }
     // Giai đoạn FE: chuyển sang trang chính bằng trạng thái cục bộ.
     setLoading(true)
-    window.setTimeout(onSuccess, 700)
+    window.setTimeout(() => onSuccess(email.trim(), accountRole), 700)
   }
 
   return <main className="login-page">
@@ -66,10 +75,10 @@ type Icon = 'home' | 'search' | 'check' | 'list' | 'campaign' | 'response' | 'fo
 function NavItem({ icon, children, heading = false, active = false, expanded, onClick }: { icon: Icon; children: React.ReactNode; heading?: boolean; active?: boolean; expanded?: boolean; onClick?: () => void }) {
   const content = <><img width="20" height="20" src={'/icons/' + icon + '.svg'} alt="" /><span>{children}</span></>
   const className = 'nav-item' + (heading ? ' nav-heading' : '') + (active ? ' active' : '')
-  return onClick ? <button className={className} type="button" aria-current={active ? 'page' : undefined} aria-expanded={expanded} onClick={onClick}>{content}</button> : <div className={className}>{content}</div>
+  return onClick ? <button className={className} type="button" aria-current={active && !heading ? 'page' : undefined} aria-expanded={expanded} onClick={onClick}>{content}</button> : <div className={className}>{content}</div>
 }
 
-function Home({ manager, screen, go }: { manager: boolean; screen: string; go: (screen: string) => void }) {
+function Home({ manager, screen, go, accountEmail }: { manager: boolean; screen: string; go: (screen: string) => void; accountEmail: string }) {
   const workspaceRef = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const page = workspaceRef.current?.lastElementChild
@@ -83,14 +92,22 @@ function Home({ manager, screen, go }: { manager: boolean; screen: string; go: (
   const criteriaActive = ['criteria', 'criteria-adjust', 'criteria-invalid', 'criteria-checking', 'criteria-check-error', 'review', 'review-recording', 'review-success', 'review-error', 'searching', 'results', 'search-empty', 'search-error', 'apollo-unavailable', 'apollo-empty'].includes(screen)
   const contactActive = ['contact-lists', 'contact-list-detail', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
   const searchExpanded = criteriaActive || screen.startsWith('template') || screen.startsWith('history')
+  const managerAccountExpanded = screen.startsWith('manager-account')
+  const managerAccountCheckActive = screen.startsWith('manager-account-check') || screen.startsWith('manager-account-result')
   return <main className="app-shell">
     <aside className="sidebar">
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
-      <nav aria-label="Menu chính">
+      <nav aria-label="Menu chính" className={manager ? 'manager-nav' : undefined}>
         {manager ? <>
           <NavItem icon="home" active={screen === 'home'} onClick={() => go('home')}>Trang chính</NavItem>
-          <NavItem icon="check">Kiểm tra danh sách</NavItem>
-          <NavItem icon="managerKey">Tài khoản gửi</NavItem>
+          <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách Contact</NavItem>
+          <NavItem icon="managerKey" heading active={managerAccountExpanded} expanded={managerAccountExpanded} onClick={() => go('manager-account-check')}>Tài khoản gửi</NavItem>
+          <div className={'subnav' + (managerAccountExpanded ? '' : ' collapsed')} aria-hidden={!managerAccountExpanded} inert={!managerAccountExpanded}>
+            <div className="subnav-items">
+              <button className={managerAccountCheckActive ? 'active' : ''} type="button" aria-current={managerAccountCheckActive ? 'page' : undefined} onClick={() => go('manager-account-check')}>Kiểm tra tài khoản gửi</button>
+              <button className={managerAccountExpanded && !managerAccountCheckActive ? 'active' : ''} type="button" aria-current={managerAccountExpanded && !managerAccountCheckActive ? 'page' : undefined} onClick={() => go('manager-account-list')}>Danh sách tài khoản gửi</button>
+            </div>
+          </div>
         </> : <>
           <NavItem icon="search" heading expanded={searchExpanded} onClick={() => go('criteria')}>Tìm kiếm Contact</NavItem>
           <div className={'subnav' + (searchExpanded ? '' : ' collapsed')} aria-hidden={!searchExpanded} inert={!searchExpanded}>
@@ -111,33 +128,43 @@ function Home({ manager, screen, go }: { manager: boolean; screen: string; go: (
     <div className="workspace" ref={workspaceRef}>
       <header className="topbar">
         <span>Hệ thống tìm kiếm &amp; tiếp cận khách hàng B2B</span>
-        <span className="account">
+        <button className="account account-button" type="button" onClick={() => go('profile')} aria-label="Xem thông tin tài khoản">
           <img width="20" height="20" src="/icons/user.svg" alt="" />
           {manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}
-        </span>
+        </button>
       </header>
       {screen === 'home' ? <section className="home-content">
         <h1>Trang chính</h1>
         <div className="success-panel"><strong>Đăng nhập thành công</strong><span>Chọn chức năng trong menu để bắt đầu làm việc.</span></div>
-      </section> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
+      </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => go('login')}>Đăng xuất</button></div></section> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
     </div>
   </main>
 }
 
 function App() {
   const [screen, setScreen] = useState(() => new URLSearchParams(location.search).get('screen') ?? (preview === 'employee' || preview === 'manager' ? 'home' : 'login'))
-  const manager = preview === 'manager' || new URLSearchParams(location.search).get('role') === 'manager'
-  const go = useCallback((next: string) => {
-    if (new URLSearchParams(location.search).get('screen') === next) return
+  const [accountEmail, setAccountEmail] = useState('')
+  const [signedOut, setSignedOut] = useState(false)
+  const [role, setRole] = useState<Role>(() => preview === 'manager' || new URLSearchParams(location.search).get('role') === 'manager' ? 'manager' : 'employee')
+  const manager = role === 'manager'
+  const go = useCallback((next: string, nextRole = role) => {
+    if (screen === next && new URLSearchParams(location.search).get('screen') === next) return
+    if (next === 'login') { setAccountEmail(''); setRole('employee'); setSignedOut(true) }
     setScreen(next)
-    const query = next === 'login' ? '' : '?screen=' + encodeURIComponent(next) + (manager ? '&role=manager' : '')
+    const query = next === 'login' ? '' : '?screen=' + encodeURIComponent(next) + (nextRole === 'manager' ? '&role=manager' : '')
     history.pushState(null, '', location.pathname + query)
-  }, [manager])
+  }, [role, screen])
   useEffect(() => {
     const onPop = () => setScreen(new URLSearchParams(location.search).get('screen') ?? 'login')
     addEventListener('popstate', onPop)
     return () => removeEventListener('popstate', onPop)
   }, [])
-  return screen === 'login' ? <Login onSuccess={() => go('home')} /> : <Home manager={manager} screen={screen} go={go} />
+  const routeAllowed = ['login', 'home', 'profile'].includes(screen) || screen.startsWith('manager-') === manager
+  const allowedScreen = signedOut && screen !== 'login' ? 'login' : routeAllowed ? screen : 'home'
+  useEffect(() => {
+    if (screen === allowedScreen) return
+    history.replaceState(null, '', location.pathname + (allowedScreen === 'login' ? '' : '?screen=home' + (manager ? '&role=manager' : '')))
+  }, [screen, allowedScreen, manager])
+  return screen === 'login' || allowedScreen === 'login' ? <Login onSuccess={(email, accountRole) => { setAccountEmail(email); setRole(accountRole); setSignedOut(false); go('home', accountRole) }} /> : <Home manager={manager} screen={allowedScreen} go={go} accountEmail={accountEmail} />
 }
 export default App

@@ -72,9 +72,10 @@ FE mặc định ở `http://localhost:5173`; BE mặc định ở `http://local
 
 ### Luồng giao diện trang Trường
 
-- `http://localhost:5173/`: màn hình đăng nhập. Form kiểm tra trường trống và định dạng email; nhập hợp lệ sẽ chuyển đến trang chính bằng trạng thái FE cục bộ.
+- `http://localhost:5173/`: màn hình đăng nhập demo FE. Dùng `minhanh@example.com` cho Nhân viên hoặc `truongphong@example.com` cho Trưởng phòng; mật khẩu chỉ cần không trống vì chưa có API xác thực. Email khác sẽ không được gán role và không đăng nhập. Đây không phải cơ chế xác thực hoặc phân quyền bảo mật.
 - `?preview=empty-errors`, `missing-email`, `invalid-email`, `missing-password`, `credentials`, `role`, `loading`: các trạng thái đăng nhập tương ứng trong Figma.
-- `?preview=employee` và `?preview=manager`: hai trang chính theo vai trò. Có thể dùng `?role=manager` trên màn đăng nhập để xem luồng vào trang Trưởng phòng.
+- `?preview=employee` và `?preview=manager`: hai trang chính theo vai trò. `?role=manager` chỉ dùng mở trực tiếp các frame demo để đối chiếu Figma, không xác định role cho lần đăng nhập bằng form.
+- Ở chế độ Trưởng phòng, menu **Kiểm tra danh sách Contact** mở luồng duyệt/từ chối danh sách; **Tài khoản gửi** có hai mục **Kiểm tra tài khoản gửi** và **Danh sách tài khoản gửi**. Dữ liệu và kết quả kết nối hiện là mô phỏng FE, chưa lưu qua API. Icon tài khoản góc phải mở thông tin tài khoản và nút đăng xuất.
 - Từ trang chính Nhân viên, dùng menu và các nút để đi qua thiết lập tiêu chí, Filter Template, tìm kiếm, lịch sử, kiểm tra/xác nhận Contact và xuất dữ liệu. URL `?screen=criteria`, `templates`, `history`, `results`, `check`, `all-contacts`, `confirm`, `confirmed`, `export` mở trực tiếp từng màn hình chính.
 
 Giao diện giữ bố cục Figma ở 1440 × 1024 và co lại cho desktop 1366, 1280 và 1024 px; màn hình thấp có thể cuộn dọc. Chưa có thiết kế mobile/tablet.
