@@ -1,6 +1,6 @@
 # Ghi chú yêu cầu trước khi phát triển
 
-Ghi chú này tổng hợp tài liệu trong `01. Thu thập yêu cầu` và `02. Phân tích và thiết kế hệ thống`, rồi đối chiếu với BPMN TOBE V5SI. Đây là bản ghi nguồn, chưa phải quyết định triển khai hoặc thay thế tài liệu gốc. Những điểm khác nhau giữa các nguồn được giữ riêng ở cuối file.
+Ghi chú này tổng hợp tài liệu trong `01. Thu thập yêu cầu` và `02. Phân tích và thiết kế hệ thống`, rồi đối chiếu với BPMN TOBE V5SI. Đây là bản ghi nguồn, chưa thay thế tài liệu gốc. Những điểm khác nhau giữa các nguồn được giữ riêng ở cuối file; quyết định BA bổ sung được ghi ở mục cuối.
 
 ## Nguồn đã đọc
 
@@ -96,4 +96,13 @@ Ghi chú này tổng hợp tài liệu trong `01. Thu thập yêu cầu` và `02
 5. **Các nhánh còn thiếu thông số:** BPMN không định nghĩa quy tắc chặn gửi lại 7 ngày, hạn mức 100 email/3 ngày, thời gian Follow-up 2 ngày làm việc/tối đa 3 lần, định nghĩa loại/trạng thái Response, hoặc điều kiện kết thúc chiến dịch. Không coi việc thiếu trong BPMN là hủy bỏ các yêu cầu đã ghi ở BS/SRS.
 6. **Báo cáo hiệu suất:** `Sub Process 4` có bước lập báo cáo và Trưởng phòng đánh giá, nhưng chưa có nội dung/chỉ số, chu kỳ hay màn hình tương ứng. Cần xác định phạm vi trước khi triển khai.
 
-Chưa tạo source code hoặc chốt quy tắc nghiệp vụ chỉ dựa trên BPMN. Những mục cần BA xác nhận ở phần trên vẫn còn hiệu lực, trừ khi đã được nêu rõ trong phần đối chiếu này.
+Không chốt quy tắc nghiệp vụ chỉ dựa trên BPMN. Những mục cần BA xác nhận ở phần trên vẫn còn hiệu lực, ngoại trừ các quyết định BA bổ sung dưới đây.
+
+## Quyết định BA bổ sung khi chuẩn bị BE (11/11/2026)
+
+- Giai đoạn hiện tại chỉ triển khai hai vai trò: **Nhân viên Marketing** và **Trưởng phòng Marketing**. Trưởng nhóm và Admin để sau.
+- Chỉ chuẩn bị tích hợp tìm Contact qua **Google Search/Web**; Apollo để giai đoạn sau. Khi nhân viên bấm **Tìm kiếm**, hệ thống phải tự tìm các trang web phù hợp trên toàn web theo tiêu chí, không yêu cầu BA nhập trước danh sách website.
+- Hạn mức gửi là **100 email trong 3 ngày cho mỗi tài khoản gửi**, theo phạm vi từng tài khoản tại câu trả lời bổ sung `D2`. Cách xác định cửa sổ 3 ngày, hành vi tại ngưỡng 80% và việc giữ chỗ hạn mức vẫn cần xác định khi triển khai bộ lập lịch; không dùng quy tắc theo ngày/giờ mâu thuẫn trong SRS để thay thế hạn mức vừa chốt.
+- **Trưởng phòng duyệt danh sách Contact gốc**. Theo UC5.1 và UC12, bước tạo chiến dịch vẫn phải lọc trùng, loại email không hợp lệ/đã từ chối, hiển thị kết quả lọc và danh sách người nhận hợp lệ. Chỉ chuyển sang soạn email sau khi Trưởng phòng duyệt và còn ít nhất một người nhận hợp lệ.
+- Với Response, hướng triển khai từ PV2, câu trả lời bổ sung `F2` và UC7–UC8 là lưu **loại phản hồi** riêng với **trạng thái xử lý**; giữ lịch sử tương tác, không xóa Response đã xử lý. Với Follow-up, dùng mốc 2 ngày làm việc và tối đa 3 lần từ `G2` làm giá trị mặc định, mỗi Response chỉ có một lịch `Chờ thực hiện` tại một thời điểm; nhân viên thực hiện, hệ thống nhắc việc và không tự gửi email Follow-up. Các ngoại lệ và cấu hình chi tiết phải đối chiếu UC tương ứng trước khi code.
+- BA chưa có quyền dùng Custom Search JSON API cũ. [Google đã đóng API này cho khách hàng mới](https://developers.google.com/custom-search/v1/overview), nên chưa có thông tin truy cập để chạy tìm kiếm Google thật từ BE. Cần chọn giải pháp Google còn khả dụng hoặc được cấp quyền phù hợp trước khi tích hợp live; tài khoản đăng nhập Google cá nhân không đủ.

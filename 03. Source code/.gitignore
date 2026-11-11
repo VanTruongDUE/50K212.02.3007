@@ -1,4 +1,5 @@
 .context-cache/
+.references/
 node_modules/
 dist/
 coverage/
