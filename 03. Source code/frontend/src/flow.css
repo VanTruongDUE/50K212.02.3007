@@ -79,6 +79,7 @@
 .result-panel .metrics div + div { padding-left: 24px; border-left: 1px solid #294567; }
 .result-panel .metrics div:last-child strong { color: #8fbdff; }
 .result-panel { padding-bottom: 32px; }
+.flow-content:has(.result-caption) .result-panel { padding-bottom: 28px; }
 .result-panel .flow-table { margin-top: 8px; }
 .result-panel:has(.panel-footnote) .flow-table td { height: 56px; }
 .result-panel .criteria-summary { margin: 24px 0; }
@@ -115,6 +116,8 @@
 .flow-notice.error::before { color: #ffa8ae; }
 .flow-notice.warning::before { color: #f3a748; }
 .flow-notice.success::before { content: '✓'; color: #8de1c4; }
+.flow-download { color: #8fbdff; text-decoration: underline; text-underline-offset: 3px; }
+.flow-download:focus-visible { outline: 3px solid #bedbff; outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   .flow-button { transition-duration: 100ms, 100ms, 100ms, 0ms; }

@@ -81,7 +81,7 @@ function Home({ manager, screen, go }: { manager: boolean; screen: string; go: (
     return () => animation.cancel()
   }, [screen])
   const criteriaActive = ['criteria', 'criteria-adjust', 'criteria-invalid', 'criteria-checking', 'criteria-check-error', 'review', 'review-recording', 'review-success', 'review-error', 'searching', 'results', 'search-empty', 'search-error', 'apollo-unavailable', 'apollo-empty'].includes(screen)
-  const contactActive = ['contact-lists', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
+  const contactActive = ['contact-lists', 'contact-list-detail', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
   const searchExpanded = criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   return <main className="app-shell">
     <aside className="sidebar">

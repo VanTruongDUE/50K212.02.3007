@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { demoContacts } from './demoContacts'
+import { createContactExport, type ExportFormat } from './exportContacts'
 import './flow.css'
 
 type Criteria = {
@@ -30,8 +31,7 @@ const historyRows = [
   ['03/11/2026 11:05', 'Nhân viên Marketing', 'Google Search/Web', '0 Contact'],
   ['02/11/2026 14:10', 'Nhân viên Marketing', 'Google Search/Web', '12 Contact'],
 ]
-const formats = ['CSV', 'XLSX', 'JSON', 'XML'] as const
-type Format = typeof formats[number]
+const formats: ExportFormat[] = ['CSV', 'XLSX', 'JSON', 'XML']
 const selectionOptions: { key: 'role' | 'industry' | 'location' | 'size' | 'email'; label: string; options: string[] }[] = [
   { key: 'role', label: 'Chức vụ Contact', options: ['Giám đốc Marketing', 'Founder', 'Quản lý', 'Trưởng phòng'] },
   { key: 'industry', label: 'Ngành nghề / lĩnh vực', options: ['Phần mềm doanh nghiệp', 'Thương mại điện tử', 'Công nghệ', 'Bán lẻ'] },
@@ -74,6 +74,7 @@ const pages: Record<string, [string, string, 'search' | 'contacts']> = {
   'history-load-error': ['Không thể tải lịch sử tìm kiếm', 'Chưa truy xuất được lịch sử. Hãy thử tải lại; bộ tiêu chí hiện tại không thay đổi.', 'search'],
   'history-detail': ['Chi tiết lần tìm kiếm', 'Xem tiêu chí và kết quả của lần tìm kiếm đã lưu.', 'search'],
   'contact-lists': ['Danh sách Contact', 'Các danh sách Contact đã lưu từ những lần tìm kiếm.', 'contacts'],
+  'contact-list-detail': ['Chi tiết danh sách Contact', 'Contact đã lưu từ lần tìm kiếm được chọn.', 'contacts'],
   check: ['Kiểm tra danh sách Contact', 'Rà soát danh sách và lưu kết quả kiểm tra.', 'contacts'],
   'check-save-error': ['Không lưu được kết quả kiểm tra', 'Kết quả và trạng thái trước thao tác được giữ nguyên. Rà soát lựa chọn rồi lưu lại.', 'contacts'],
   'check-rejected': ['Danh sách chưa đạt yêu cầu', 'Rà soát lại danh sách trước khi xác nhận.', 'contacts'],
@@ -111,8 +112,9 @@ function Heading({ screen, selected, go, returnScreen = 'check' }: { screen: str
   const parentLabel = screen === 'all-contacts' ? pages[returnScreen]?.[0] ?? 'Danh sách Contact' : group === 'contacts' ? 'Danh sách Contact' : 'Tìm kiếm Contact'
   return <><nav className="breadcrumb" aria-label="Đường dẫn">{screen === 'contact-lists' ? <span aria-current="page">{title}</span> : <><button type="button" onClick={() => go(parentScreen)}>{parentLabel}</button><span aria-hidden="true">›</span><span aria-current="page">{title}</span></>}</nav>{screen !== 'all-contacts' && <header className="flow-heading"><h1>{title}</h1><p>{selected && screen === 'criteria' ? 'Kiểm tra các điều kiện đang chọn trước khi tìm kiếm.' : description}</p></header>}</>
 }
-function Metrics() {
-  return <div className="metrics"><div><span>Contact nhận được</span><strong>48 Contact</strong></div><div><span>Không hợp lệ</span><strong>7 Contact</strong></div><div><span>Trùng lặp</span><strong>3 Contact</strong></div><div><span>Contact mới hợp lệ</span><strong>38 Contact</strong></div></div>
+function Metrics({ historyCount }: { historyCount?: number }) {
+  const known = historyCount === undefined || historyCount === 38
+  return <div className="metrics"><div><span>Contact nhận được</span><strong>{known ? '48 Contact' : '—'}</strong></div><div><span>Không hợp lệ</span><strong>{known ? '7 Contact' : '—'}</strong></div><div><span>Trùng lặp</span><strong>{known ? '3 Contact' : '—'}</strong></div><div><span>Contact mới hợp lệ</span><strong>{historyCount ?? 38} Contact</strong></div></div>
 }
 function ContactTable({ rows = demoContacts.slice(0, 5) }: { rows?: readonly (typeof demoContacts)[number][] }) {
   return <table className="flow-table"><thead><tr><th>Contact</th><th>Email</th><th>Chức vụ</th><th>Doanh nghiệp</th></tr></thead><tbody>{rows.map(contact => <tr key={contact.email}><td>{contact.name}</td><td>{contact.email}</td><td>{contact.role}</td><td>{contact.company}</td></tr>)}</tbody></table>
@@ -139,7 +141,8 @@ export default function Flow({ screen, go }: Props) {
   const [templates, setTemplates] = useState<Template[]>(startingTemplates)
   const [selectedTemplate, setSelectedTemplate] = useState(0)
   const [templateName, setTemplateName] = useState(screen === 'template-name-missing' ? '' : 'B2B SaaS – Hà Nội')
-  const [format, setFormat] = useState<Format | ''>(screen === 'export-loading' || screen === 'export-success' ? 'CSV' : '')
+  const [format, setFormat] = useState<ExportFormat | ''>(screen === 'export-loading' || screen === 'export-success' ? 'CSV' : '')
+  const [downloadUrl, setDownloadUrl] = useState('')
   const [contactPage, setContactPage] = useState(1)
   const [allContactsReturn, setAllContactsReturn] = useState('check')
   const [historyIndex, setHistoryIndex] = useState(0)
@@ -147,10 +150,21 @@ export default function Flow({ screen, go }: Props) {
   const [sourceError, setSourceError] = useState(false)
 
   useEffect(() => {
-    if (screen !== 'searching' && screen !== 'export-loading') return
-    const timer = window.setTimeout(() => go(screen === 'searching' ? 'results' : 'export-success'), 1100)
+    if (screen !== 'searching') return
+    const timer = window.setTimeout(() => go('results'), 1100)
     return () => window.clearTimeout(timer)
   }, [screen, go])
+  useEffect(() => {
+    if (screen !== 'export-loading' && !(screen === 'export-success' && !downloadUrl)) return
+    let cancelled = false
+    createContactExport(format || 'CSV', demoContacts.slice(0, 38)).then(blob => {
+      if (cancelled) return
+      setDownloadUrl(URL.createObjectURL(blob))
+      if (screen === 'export-loading') go('export-success')
+    }).catch(() => { if (!cancelled) go('export-error') })
+    return () => { cancelled = true }
+  }, [screen, format, downloadUrl, go])
+  useEffect(() => () => { if (downloadUrl) URL.revokeObjectURL(downloadUrl) }, [downloadUrl])
 
   function toggle(key: 'role' | 'industry' | 'location' | 'size' | 'email', option: string) {
     setCriteria(current => ({ ...current, [key]: current[key].includes(option) ? current[key].filter(item => item !== option) : [...current[key], option] }))
@@ -192,13 +206,19 @@ export default function Flow({ screen, go }: Props) {
   const criteriaScreens = ['criteria', 'criteria-adjust', 'criteria-invalid', 'criteria-checking', 'criteria-check-error']
   const templateEditorScreens = ['template-create', 'template-edit', 'template-name-missing', 'template-name-duplicate', 'template-save-error']
   const reviewScreens = ['review', 'review-recording', 'review-success', 'review-error', 'template-created']
-  const resultScreens = ['results', 'check', 'check-save-error', 'confirmed', 'history-detail']
+  const resultScreens = ['results', 'check', 'check-save-error', 'confirmed', 'history-detail', 'contact-list-detail']
   const messageScreens = ['search-empty', 'search-error', 'apollo-unavailable', 'apollo-empty', 'template-empty', 'template-load-error', 'history-empty', 'history-load-error', 'check-rejected', 'export-success', 'export-error', 'data-unavailable', 'load-error', 'save-error']
-  const sourceLine = 'Nguồn: ' + criteria.source + '  ·  04/11/2026 09:30'
+  const selectedHistoryIndex = screen === 'contact-lists' && historyRows[historyIndex]?.[3] === '0 Contact' ? 0 : historyIndex
+  const selectedHistory = historyRows[selectedHistoryIndex] ?? historyRows[0]
+  const historyCount = Number.parseInt(selectedHistory[3], 10)
+  // shortcut: older searches reuse sample Contacts; replace with each search's rows when source data exists.
+  const historyContacts = selectedHistoryIndex === 0 ? demoContacts : demoContacts.slice(selectedHistoryIndex * 5, selectedHistoryIndex * 5 + historyCount)
+  const showingHistory = ['history-detail', 'contact-list-detail'].includes(screen) || screen === 'all-contacts' && ['history-detail', 'contact-list-detail'].includes(allContactsReturn)
+  const currentContacts = showingHistory ? historyContacts : demoContacts
+  const sourceLine = 'Nguồn: ' + (showingHistory ? selectedHistory[2] : criteria.source) + '  ·  ' + (showingHistory ? selectedHistory[0] : '04/11/2026 09:30')
   const criteriaBusy = screen === 'criteria-checking'
   const reviewBusy = screen === 'review-recording'
   const selectedCriteria = criteriaLabels.flatMap(({ key }) => Array.isArray(criteria[key]) ? criteria[key] as string[] : (criteria[key] as string).trim() ? [criteria[key] as string] : [])
-  // shortcut: only the latest search has mock Contact rows; load each saved list's rows when the API is available.
   const visibleHistoryRows = screen === 'contact-lists' ? historyRows.filter(row => row[3] !== '0 Contact') : historyRows
 
   return <div className="flow-content"><Heading screen={screen} selected={selectedCriteria.length > 0} go={go} returnScreen={allContactsReturn} />
@@ -230,21 +250,21 @@ export default function Flow({ screen, go }: Props) {
 
     {screen === 'searching' && <><Notice>Đang gửi và xử lý yêu cầu từ nguồn đã chọn.<br />Chưa có kết quả cuối cùng. Vui lòng chờ, không gửi lại yêu cầu.</Notice><Actions right={<Button primary disabled>Đang tìm kiếm…</Button>} /></>}
 
-    {resultScreens.includes(screen) && <><section className={"flow-panel result-panel" + (screen === "history-detail" ? " history-detail-panel" : "")}><p className="source-line">{sourceLine}</p><Metrics />{screen === 'confirmed' && <p className="result-caption">Kết quả kiểm tra: Đạt yêu cầu<br />Trạng thái danh sách: Đã xác nhận</p>}<p className="table-overline"><button type="button" onClick={showAllContacts}>Xem toàn bộ Contact</button></p><ContactTable />{screen === 'history-detail' && <HistorySummary criteria={sampleCriteria} />}{screen === 'check' || screen === 'check-save-error' ? <p className="panel-footnote">Rà soát chức danh, ngành nghề, quy mô, vị trí và chất lượng email.<br />Email: định dạng · tên miền · khả năng sử dụng từ nguồn · trùng lặp.<br />Lưu kết quả kiểm tra không tự xác nhận danh sách.</p> : null}</section><Actions left={screen === 'results' ? <Button onClick={() => go('history')}>Lịch sử tìm kiếm</Button> : screen === 'history-detail' ? <Button onClick={() => go('history')}>Quay lại lịch sử</Button> : screen === 'check' || screen === 'check-save-error' ? <Button onClick={() => go('check-rejected')}>Lưu: Chưa đạt yêu cầu</Button> : null} right={screen === 'results' ? <Button primary onClick={() => go('check')}>Kiểm tra danh sách</Button> : screen === 'check' || screen === 'check-save-error' ? <Button primary onClick={() => go('confirm')}>{screen === 'check-save-error' ? 'Thử lưu: Đạt yêu cầu' : 'Lưu: Đạt yêu cầu'}</Button> : screen === 'confirmed' ? <Button primary onClick={() => go('export')}>Xuất danh sách</Button> : null} /></>}
+    {resultScreens.includes(screen) && <><section className={"flow-panel result-panel" + (showingHistory ? " history-detail-panel" : "")}><p className="source-line">{sourceLine}</p><Metrics historyCount={showingHistory ? historyCount : undefined} />{screen === 'confirmed' && <p className="result-caption">Kết quả kiểm tra: Đạt yêu cầu<br />Trạng thái danh sách: Đã xác nhận</p>}{(!showingHistory || historyCount > 0) && <p className="table-overline"><button type="button" onClick={showAllContacts}>{screen === 'history-detail' ? 'Hiển thị toàn bộ contact' : 'Xem toàn bộ Contact'}</button></p>}{showingHistory && historyCount === 0 ? <p className="panel-footnote">Lần tìm kiếm này không có Contact mới.</p> : <ContactTable rows={showingHistory ? historyContacts.slice(0, 5) : undefined} />}{showingHistory && (historyIndex === 0 ? <HistorySummary criteria={sampleCriteria} /> : <p className="panel-footnote">Contact hiển thị là dữ liệu mẫu, không phải kết quả thực của lần tìm kiếm này; tiêu chí chi tiết chưa có trong Figma.</p>)}{screen === 'check' || screen === 'check-save-error' ? <p className="panel-footnote">Rà soát chức danh, ngành nghề, quy mô, vị trí và chất lượng email.<br />Email: định dạng · tên miền · khả năng sử dụng từ nguồn · trùng lặp.<br />Lưu kết quả kiểm tra không tự xác nhận danh sách.</p> : null}</section><Actions left={screen === 'results' ? <Button onClick={() => go('history')}>Lịch sử tìm kiếm</Button> : showingHistory ? <Button onClick={() => go(screen === 'contact-list-detail' ? 'contact-lists' : 'history')}>{screen === 'history-detail' ? 'Quay lại lịch sử' : 'Quay lại danh sách'}</Button> : screen === 'check' || screen === 'check-save-error' ? <Button onClick={() => go('check-rejected')}>Lưu: Chưa đạt yêu cầu</Button> : null} right={screen === 'results' ? <Button primary onClick={() => go('check')}>Kiểm tra danh sách</Button> : screen === 'check' || screen === 'check-save-error' ? <Button primary onClick={() => go('confirm')}>{screen === 'check-save-error' ? 'Thử lưu: Đạt yêu cầu' : 'Lưu: Đạt yêu cầu'}</Button> : screen === 'confirmed' ? <Button primary onClick={() => go('export')}>Xuất danh sách</Button> : null} /></>}
 
     {(screen === 'confirm' || screen === 'confirm-error') && <><section className="flow-panel confirm-panel"><h2>SR-2026-1104 · B2B SaaS – Hà Nội</h2><p>Nguồn: {criteria.source}　·　Thời điểm tìm kiếm: 04/11/2026 09:30</p><div className="confirmation-status"><strong>Kết quả kiểm tra: Đạt yêu cầu</strong><strong>Trạng thái xác nhận: Chưa xác nhận</strong></div><Metrics /><h2>Tiêu chí đã sử dụng</h2><CriteriaSummary criteria={criteria} /><p className="contact-list-heading"><span>Contact trong danh sách</span><button type="button" onClick={showAllContacts}>Xem toàn bộ Contact</button></p><ContactTable /></section><Actions left={<Button onClick={() => go('check')}>Quay lại</Button>} right={<Button primary onClick={() => go('confirmed')}>{screen === 'confirm-error' ? 'Thử xác nhận lại' : 'Xác nhận danh sách'}</Button>} /></>}
 
-    {screen === 'all-contacts' && <><section className="flow-panel all-contacts"><p className="source-line">{sourceLine}</p><h2>Toàn bộ Contact</h2><p>Hiển thị {(contactPage - 1) * 10 + 1}–{Math.min(contactPage * 10, 48)} trong 48 Contact · Trang {contactPage}/5</p><ContactTable rows={demoContacts.slice((contactPage - 1) * 10, contactPage * 10)} /></section><Actions left={<><Button onClick={() => go(allContactsReturn)}>Quay lại {pages[allContactsReturn]?.[0] ?? 'danh sách'}</Button>{contactPage > 1 && <Button onClick={() => setContactPage(current => current - 1)}>Trang trước</Button>}</>} right={contactPage < 5 ? <Button primary onClick={() => setContactPage(current => current + 1)}>Trang tiếp</Button> : null} /></>}
+    {screen === 'all-contacts' && <><section className="flow-panel all-contacts"><p className="source-line">{sourceLine}</p><h2>Toàn bộ Contact</h2><p>Hiển thị {(contactPage - 1) * 10 + 1}–{Math.min(contactPage * 10, currentContacts.length)} trong {currentContacts.length} Contact · Trang {contactPage}/{Math.ceil(currentContacts.length / 10)}</p><ContactTable rows={currentContacts.slice((contactPage - 1) * 10, contactPage * 10)} /></section><Actions left={<><Button onClick={() => go(allContactsReturn)}>Quay lại {pages[allContactsReturn]?.[0] ?? 'danh sách'}</Button>{contactPage > 1 && <Button onClick={() => setContactPage(current => current - 1)}>Trang trước</Button>}</>} right={contactPage < Math.ceil(currentContacts.length / 10) ? <Button primary onClick={() => setContactPage(current => current + 1)}>Trang tiếp</Button> : null} /></>}
 
-    {(screen === 'history' || screen === 'contact-lists') && <><section className="flow-panel"><table className="flow-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Nguồn</th><th>Contact mới</th></tr></thead><tbody>{visibleHistoryRows.map((row, index) => <tr key={row[0]} className={historyIndex === index ? 'selected-row' : ''} onClick={() => setHistoryIndex(index)}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cellIndex === 0 ? <button className="table-select" type="button" onClick={() => setHistoryIndex(index)}>{cell}</button> : cell}</td>)}</tr>)}</tbody></table>{screen === 'contact-lists' && <p className="panel-footnote">Bản mẫu chỉ có chi tiết Contact của lần tìm kiếm 04/11/2026 09:30.</p>}</section><Actions right={<Button primary disabled={historyIndex !== 0} onClick={() => go(screen === 'contact-lists' ? 'check' : 'history-detail')}>{screen === 'contact-lists' ? 'Xem danh sách' : 'Xem chi tiết'}</Button>} /></>}
+    {(screen === 'history' || screen === 'contact-lists') && <><section className="flow-panel"><table className="flow-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Nguồn</th><th>Contact mới</th></tr></thead><tbody>{visibleHistoryRows.map(row => <tr key={row[0]} className={selectedHistoryIndex === historyRows.indexOf(row) ? 'selected-row' : ''}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cellIndex === 0 ? <button className="table-select" type="button" onClick={() => setHistoryIndex(historyRows.indexOf(row))}>{cell}</button> : cell}</td>)}</tr>)}</tbody></table>{screen === 'contact-lists' && <p className="panel-footnote">Các dòng ngoài lần tìm kiếm đầu dùng Contact minh họa từ mẫu Figma; dữ liệu thực và tiêu chí chi tiết chưa được cung cấp.</p>}</section><Actions right={<Button primary onClick={() => { setHistoryIndex(selectedHistoryIndex); go(screen === 'contact-lists' ? 'contact-list-detail' : 'history-detail') }}>{screen === 'contact-lists' ? 'Xem danh sách' : 'Xem chi tiết'}</Button>} /></>}
 
     {(screen === 'export' || screen === 'export-loading') && <><section className="flow-panel export-panel"><h2>Danh sách: SR-2026-1104 · 38 Contact · B2B SaaS – Hà Nội</h2><p>Chọn định dạng tệp</p><div className="format-grid">{formats.map(item => <label key={item} className={format === item ? 'selected-format' : ''}><input type="radio" name="format" checked={format === item} onChange={() => setFormat(item)} />{item} (.{item.toLowerCase()})</label>)}</div><p>Giữ nguyên giá trị đang lưu; trường thiếu dữ liệu được giữ trống.</p></section><Actions left={<Button onClick={() => go('confirmed')}>Quay lại danh sách</Button>} right={<Button primary disabled={!format || screen === 'export-loading'} onClick={() => go('export-loading')}>{screen === 'export-loading' ? 'Đang tạo tệp…' : format ? 'Xuất ' + format : 'Xuất tệp'}</Button>} /></>}
 
-    {messageScreens.includes(screen) && <><Notice kind={screen === 'export-success' ? 'success' : ['search-empty', 'apollo-empty'].includes(screen) ? 'warning' : ['template-empty', 'history-empty'].includes(screen) ? 'info' : 'error'}><div>{messageText(screen, criteria.source, format)}</div></Notice><Actions left={<Button onClick={() => go(messageActions[screen][1])}>{messageActions[screen][0]}</Button>} right={screen === 'save-error' ? <Button onClick={() => go('check')}>Quay lại danh sách</Button> : null} /></>}
+    {messageScreens.includes(screen) && <><Notice kind={screen === 'export-success' ? 'success' : ['search-empty', 'apollo-empty'].includes(screen) ? 'warning' : ['template-empty', 'history-empty'].includes(screen) ? 'info' : 'error'}><div>{messageText(screen, criteria.source, format, downloadUrl)}</div></Notice><Actions left={<Button onClick={() => go(messageActions[screen][1])}>{messageActions[screen][0]}</Button>} right={screen === 'save-error' ? <Button onClick={() => go('check')}>Quay lại danh sách</Button> : null} /></>}
   </div>
 }
 
-function messageText(screen: string, source: string, format: string) {
+function messageText(screen: string, source: string, format: string, downloadUrl: string) {
   const messages: Record<string, React.ReactNode> = {
     'search-empty': <>{source} không trả về Contact phù hợp.<br />Đã lưu lịch sử với các số lượng bằng 0; không tạo Contact mới.<br />Điều chỉnh tiêu chí để tìm lại hoặc xem lịch sử.</>,
     'search-error': <>Tìm kiếm không thành công qua {source}.<br />Không có Contact mới được tạo. Bộ tiêu chí đã nhập vẫn được giữ.<br />Bạn có thể thử lại hoặc điều chỉnh tiêu chí.</>,
@@ -255,7 +275,7 @@ function messageText(screen: string, source: string, format: string) {
     'history-empty': 'Các lần tìm kiếm sẽ xuất hiện tại đây.',
     'history-load-error': 'Chưa nhận được dữ liệu lịch sử tìm kiếm. Chọn “Tải lại lịch sử” để thử lại; tiêu chí đang nhập được giữ nguyên.',
     'check-rejected': <>Kết quả kiểm tra: Chưa đạt yêu cầu.<br />Danh sách chưa đủ điều kiện xác nhận và chưa chuyển thành Đã xác nhận.<br />Quay lại kiểm tra mức độ phù hợp và chất lượng Contact.</>,
-    'export-success': <>Tệp đã được tạo và sẵn sàng tải xuống.<br /><br />contacts_b2b_saas_2026-11-04.{(format || 'CSV').toLowerCase()}</>,
+    'export-success': <>Tệp đã được tạo và sẵn sàng tải xuống.<br /><br />{downloadUrl ? <a className="flow-download" href={downloadUrl} download={'contacts_b2b_saas_2026-11-04.' + (format || 'CSV').toLowerCase()}>contacts_b2b_saas_2026-11-04.{(format || 'CSV').toLowerCase()}</a> : 'Đang chuẩn bị tệp…'}</>,
     'export-error': <>Chưa tạo được tệp xuất. Danh sách Contact và định dạng đã chọn được giữ nguyên.<br />Quay lại màn xuất và thử xuất lại; chưa có tệp mới để tải xuống.</>,
     'data-unavailable': <>Không thể truy cập dữ liệu được yêu cầu.<br />Dữ liệu có thể không còn khả dụng hoặc nằm ngoài phạm vi truy cập.<br />Quay lại danh sách để chọn dữ liệu còn khả dụng.</>,
     'load-error': <>Không thể truy cập dữ liệu được yêu cầu.<br />Dữ liệu có thể không còn khả dụng hoặc nằm ngoài phạm vi truy cập.<br />Quay lại danh sách để chọn dữ liệu còn khả dụng.</>,
