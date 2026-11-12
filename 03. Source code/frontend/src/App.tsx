@@ -2,13 +2,30 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEve
 import Flow from './Flow'
 import NextFlows from './NextFlows'
 import ManagerFlows from './ManagerFlows'
+import LiveFlows from './LiveFlows'
+import { api } from './api'
 import './styles.css'
 
 const preview = new URLSearchParams(location.search).get('preview')
 type Errors = { email?: string; password?: string }
 type Role = 'employee' | 'manager'
 type Account = { id: string; email: string; role: Role }
-const demoRoute = import.meta.env.DEV && (preview !== null || new URLSearchParams(location.search).has('screen'))
+const demoRoute = import.meta.env.DEV && preview !== null
+const legacyLiveRoutes: Record<string, string> = {
+  'history-detail': 'history', 'history-empty': 'history', 'history-load-error': 'history',
+  results: 'criteria', searching: 'criteria', 'search-empty': 'criteria', 'search-error': 'criteria',
+  'apollo-empty': 'criteria', 'apollo-unavailable': 'criteria', review: 'criteria',
+  'review-error': 'criteria', 'review-recording': 'criteria', 'review-success': 'criteria',
+  'criteria-check-error': 'criteria', 'criteria-checking': 'criteria',
+  'data-unavailable': 'criteria', 'load-error': 'criteria', 'save-error': 'criteria',
+  'check-save-error': 'check', 'confirm-error': 'confirm',
+  'export-loading': 'export', 'export-error': 'export',
+  'template-empty': 'templates', 'template-load-error': 'templates', 'template-created': 'templates',
+  'template-name-missing': 'template-create', 'template-name-duplicate': 'template-create', 'template-save-error': 'template-create',
+  'response-empty': 'response-list', 'response-load-error': 'response-list', 'response-access-denied': 'response-list',
+  'followup-duplicate': 'followup-create', 'followup-optout': 'followup-create',
+  'followup-chain': 'followup-list',
+}
 
 function Brand() {
   return <span className="brand"><svg width="36" height="40" viewBox="0 0 36 40" aria-hidden="true"><path d="M5.34513 0H35.9646V9.9115H28.708C23.3982 9.9115 18.7965 6.19469 15.4336 4.42478C10.6549 1.9469 8.53098 2.65487 9.06195 6.37168C9.76991 9.9115 13.4867 14.5133 17.3805 17.6991H34.1947C35.3746 17.6991 35.9646 18.2891 35.9646 19.469V34.6903C35.9646 38.2301 34.1947 40 30.6549 40H0.0354004V30.0885H5.69912C11.1858 30.0885 14.3717 32.5664 17.9115 34.6903C23.0443 37.6991 26.4071 38.2301 26.9381 36.1062C28 33.2743 23.5752 27.7876 18.7965 22.3009H0.0354004V5.66372C0.0354004 1.88791 1.80531 0 5.34513 0Z" fill="#8FBDFF" /></svg><strong>V5 Marketing</strong></span>
@@ -84,9 +101,20 @@ function NavItem({ icon, children, heading = false, active = false, expanded, on
   return onClick ? <button className={className} type="button" aria-current={active && !heading ? 'page' : undefined} aria-expanded={expanded} onClick={onClick}>{content}</button> : <div className={className}>{content}</div>
 }
 
-function Home({ manager, screen, go, accountEmail, onLogout }: { manager: boolean; screen: string; go: (screen: string) => void; accountEmail: string; onLogout: () => Promise<void> }) {
+function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: boolean; screen: string; go: (screen: string) => void; accountEmail: string; onLogout: () => Promise<void>; live: boolean }) {
   const workspaceRef = useRef<HTMLDivElement>(null)
   const [logoutError, setLogoutError] = useState(false)
+  const [overview, setOverview] = useState<{ campaigns: number; emails_sent: number; responses: number; open_responses: number; due_followups: number; active_sender_accounts: number } | null>(null)
+  const [notifications, setNotifications] = useState<{ type: string; title: string }[]>([])
+  const [overviewError, setOverviewError] = useState('')
+  useEffect(() => {
+    if (!live || screen !== 'home') return
+    let active = true
+    Promise.all([manager ? api<typeof overview>('dashboard?period=week') : Promise.resolve(null), api<{ type: string; title: string }[]>('notifications')])
+      .then(([summary, items]) => { if (active) { setOverview(summary); setNotifications(items); setOverviewError('') } })
+      .catch(() => { if (active) setOverviewError('Không thể tải dữ liệu trang chính. Vui lòng tải lại trang.') })
+    return () => { active = false }
+  }, [live, screen, manager])
   useLayoutEffect(() => {
     const page = workspaceRef.current?.lastElementChild
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -128,7 +156,7 @@ function Home({ manager, screen, go, accountEmail, onLogout }: { manager: boolea
           <NavItem icon="campaign" active={screen.startsWith('campaign-')} onClick={() => go('campaign-list')}>Chiến dịch</NavItem>
           <NavItem icon="response" active={screen.startsWith('response-')} onClick={() => go('response-list')}>Response</NavItem>
           <NavItem icon="follow" active={screen.startsWith('followup-')} onClick={() => go('followup-list')}>Follow-up</NavItem>
-          <NavItem icon="key">Tài khoản gửi</NavItem>
+          <NavItem icon="key" active={screen === 'sender-list'} onClick={() => go('sender-list')}>Tài khoản gửi</NavItem>
         </>}
       </nav>
     </aside>
@@ -142,8 +170,8 @@ function Home({ manager, screen, go, accountEmail, onLogout }: { manager: boolea
       </header>
       {screen === 'home' ? <section className="home-content">
         <h1>Trang chính</h1>
-        <div className="success-panel"><strong>Đăng nhập thành công</strong><span>Chọn chức năng trong menu để bắt đầu làm việc.</span></div>
-      </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => { setLogoutError(false); void onLogout().catch(() => setLogoutError(true)) }}>Đăng xuất</button>{logoutError && <p role="alert">Không thể đăng xuất. Vui lòng thử lại.</p>}</div></section> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
+        <div className="success-panel"><strong>{live ? manager ? 'Tổng quan 7 ngày gần nhất' : 'Công việc cần theo dõi' : 'Đăng nhập thành công'}</strong>{!live ? <span>Chọn chức năng trong menu để bắt đầu làm việc.</span> : overviewError ? <span role="alert">{overviewError}</span> : <><span>{manager && overview ? `${overview.campaigns} chiến dịch · ${overview.emails_sent} email đã gửi · ${overview.open_responses} Response chưa xử lý · ${overview.due_followups} Follow-up đến hạn · ${overview.active_sender_accounts} tài khoản gửi hoạt động` : !manager ? notifications.length ? `${notifications.length} thông báo cần theo dõi.` : 'Chưa có thông báo cần xử lý.' : 'Đang tải dữ liệu…'}</span>{notifications.map((item, index) => <span key={`${item.type}-${index}`}>{item.title}</span>)}</>}</div>
+      </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => { setLogoutError(false); void onLogout().catch(() => setLogoutError(true)) }}>Đăng xuất</button>{logoutError && <p role="alert">Không thể đăng xuất. Vui lòng thử lại.</p>}</div></section> : live && ['criteria', 'criteria-adjust', 'criteria-invalid'].includes(screen) ? <Flow screen={screen} go={go} searchUnavailable /> : live ? <LiveFlows screen={screen} go={go} manager={manager} /> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
     </div>
   </main>
 }
@@ -179,13 +207,15 @@ function App() {
       .finally(() => { if (active) setAuthReady(true) })
     return () => { active = false }
   }, [])
-  const routeAllowed = ['login', 'home', 'profile'].includes(screen) || screen.startsWith('manager-') === manager
-  const allowedScreen = (signedOut || (!accountEmail && !demoRoute)) && screen !== 'login' ? 'login' : routeAllowed ? screen : 'home'
+  const liveScreen = accountEmail && preview === null ? legacyLiveRoutes[screen] ?? (screen.includes('--') ? legacyLiveRoutes[screen.split('--')[0]] ?? screen.split('--')[0] : screen) : screen
+  const routeAllowed = ['login', 'home', 'profile'].includes(liveScreen) || liveScreen.startsWith('manager-') === manager
+  const allowedScreen = (signedOut || (!accountEmail && !demoRoute)) && liveScreen !== 'login' ? 'login' : routeAllowed ? liveScreen : 'home'
   useEffect(() => {
+    if (!authReady && !demoRoute) return
     if (screen === allowedScreen) return
-    history.replaceState(null, '', location.pathname + (allowedScreen === 'login' ? '' : '?screen=home' + (manager ? '&role=manager' : '')))
-  }, [screen, allowedScreen, manager])
+    history.replaceState(null, '', location.pathname + (allowedScreen === 'login' ? '' : '?screen=' + encodeURIComponent(allowedScreen) + (manager ? '&role=manager' : '')))
+  }, [screen, allowedScreen, manager, authReady])
   if (!authReady && !demoRoute) return <main className="login-page"><p role="status">Đang kiểm tra phiên đăng nhập…</p></main>
-  return screen === 'login' || allowedScreen === 'login' ? <Login onSuccess={(email, accountRole) => { setAccountEmail(email); setRole(accountRole); setSignedOut(false); go('home', accountRole) }} /> : <Home manager={manager} screen={allowedScreen} go={go} accountEmail={accountEmail} onLogout={async () => { const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); if (!response.ok) throw new Error('Logout failed'); go('login') }} />
+  return screen === 'login' || allowedScreen === 'login' ? <Login onSuccess={(email, accountRole) => { setAccountEmail(email); setRole(accountRole); setSignedOut(false); go('home', accountRole) }} /> : <Home manager={manager} screen={allowedScreen} go={go} live={!!accountEmail && preview === null} accountEmail={accountEmail} onLogout={async () => { const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); if (!response.ok) throw new Error('Logout failed'); go('login') }} />
 }
 export default App

@@ -41,9 +41,10 @@ type SenderInput = {
 };
 const publicFields =
   'id, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, (smtp_secret IS NOT NULL) AS configured, created_at';
-const usageField = `(SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
-  AND ((d.state='sent' AND d.sent_at>now()-interval '3 days') OR
-       (d.state='sending' AND d.created_at>now()-interval '3 days'))) AS used_3_days`;
+const usageField = `((SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
+  AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
+  +(SELECT count(*)::int FROM response_email_deliveries r WHERE r.sender_account_id=s.id
+  AND r.state IN ('sent','sending') AND r.created_at>now()-interval '3 days')) AS used_3_days`;
 
 @Controller('api/sender-accounts')
 @UseGuards(SessionGuard)
@@ -214,7 +215,7 @@ export class SendersController {
       !Number.isInteger(quota) ||
       typeof inbound !== 'boolean' ||
       Number(quota) < 1 ||
-      Number(quota) > 100000
+      Number(quota) > 100
     )
       throw new BadRequestException('Dữ liệu tài khoản gửi không hợp lệ.');
     if (

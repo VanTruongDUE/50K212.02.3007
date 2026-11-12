@@ -121,11 +121,11 @@ function Page({ section, title, description, go, children, className = '' }: { s
   </section>
 }
 
-function Stepper({ current }: { current: number }) {
+export function Stepper({ current }: { current: number }) {
   return <ol className="next-stepper">{steps.map((step, index) => <li key={step} className={index + 1 === current ? 'current' : index + 1 < current ? 'done' : ''}><span>{index + 1 < current ? '✓' : index + 1}</span>{step}</li>)}</ol>
 }
 
-function CampaignInfo({ name, count }: { name: string; count: string }) {
+export function CampaignInfo({ name, count }: { name: string; count: string }) {
   return <div className="next-campaign-info"><div><span>Chiến dịch</span><strong>{name}</strong></div><div><span>Số người nhận đã duyệt</span><strong>{count}</strong></div></div>
 }
 
@@ -156,7 +156,7 @@ function Field({ label, value, onChange, placeholder, error, hint, type = 'text'
   return <div className="next-field"><label htmlFor={id}>{label}{required && <span> *</span>}</label>{rows ? <textarea id={id} rows={rows} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} /> : <input id={id} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />}{hint && <small>{hint}</small>}{error && <small id={`${id}-error`} role="alert">{error}</small>}</div>
 }
 
-function Dialog({ title, children, onClose, onConfirm, confirmLabel, danger = false, className = '', cancelLabel = 'Đóng' }: { title: string; children: ReactNode; onClose: () => void; onConfirm?: () => void; confirmLabel?: string; danger?: boolean; className?: string; cancelLabel?: string }) {
+export function Dialog({ title, children, onClose, onConfirm, confirmLabel, danger = false, className = '', cancelLabel = 'Đóng' }: { title: string; children: ReactNode; onClose: () => void; onConfirm?: () => void; confirmLabel?: string; danger?: boolean; className?: string; cancelLabel?: string }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])

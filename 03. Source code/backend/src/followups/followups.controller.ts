@@ -26,6 +26,12 @@ type Followup = QueryResultRow & {
   assignee_id: string;
   status: string;
   attempt: number;
+  max_attempts: number;
+  interval_days: number;
+  channel: string;
+  goal: string;
+  reminder_minutes: number;
+  wait_days: number;
 };
 
 @Controller('api/followups')
@@ -39,7 +45,7 @@ export class FollowupsController {
       `SELECT f.*,r.customer_name,r.email,r.kind,r.status AS response_status,
        (f.status='pending' AND f.due_at<now()) AS overdue
        FROM followups f JOIN responses r ON r.id=f.response_id
-       WHERE $1='manager' OR f.assignee_id=$2 ORDER BY f.due_at DESC LIMIT 100`,
+       WHERE f.status<>'cancelled' AND ($1='manager' OR f.assignee_id=$2) ORDER BY f.due_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
     );
     return result.rows;
@@ -56,7 +62,18 @@ export class FollowupsController {
   @Post()
   @Roles('employee')
   async create(
-    @Body() body: { responseId?: unknown; dueAt?: unknown; note?: unknown },
+    @Body()
+    body: {
+      responseId?: unknown;
+      dueAt?: unknown;
+      note?: unknown;
+      channel?: unknown;
+      goal?: unknown;
+      reminderMinutes?: unknown;
+      waitDays?: unknown;
+      maxAttempts?: unknown;
+      intervalDays?: unknown;
+    },
     @Req() request: AuthenticatedRequest,
   ) {
     if (!Number.isSafeInteger(body?.responseId) || Number(body.responseId) < 1)
@@ -64,6 +81,31 @@ export class FollowupsController {
     const note = body.note === undefined ? null : body.note;
     if (note !== null && (typeof note !== 'string' || note.length > 2000))
       throw new BadRequestException('Ghi chú không hợp lệ.');
+    const channel = body.channel ?? 'email';
+    const goal = typeof body.goal === 'string' ? body.goal.trim() : '';
+    const reminderMinutes = body.reminderMinutes ?? 60;
+    const waitDays = body.waitDays ?? 2;
+    const maxAttempts = body.maxAttempts ?? 3;
+    const intervalDays = body.intervalDays ?? 2;
+    if (
+      typeof channel !== 'string' ||
+      !['email', 'sms', 'phone'].includes(channel) ||
+      !goal ||
+      goal.length > 2000 ||
+      !Number.isSafeInteger(reminderMinutes) ||
+      Number(reminderMinutes) < 0 ||
+      Number(reminderMinutes) > 10080 ||
+      !Number.isSafeInteger(waitDays) ||
+      Number(waitDays) < 1 ||
+      Number(waitDays) > 30 ||
+      !Number.isSafeInteger(maxAttempts) ||
+      Number(maxAttempts) < 1 ||
+      Number(maxAttempts) > 3 ||
+      !Number.isSafeInteger(intervalDays) ||
+      Number(intervalDays) < 1 ||
+      Number(intervalDays) > 30
+    )
+      throw new BadRequestException('Thông số Follow-up không hợp lệ.');
     const due =
       body.dueAt === undefined
         ? afterBusinessDays(new Date(), 2)
@@ -76,9 +118,14 @@ export class FollowupsController {
     try {
       await client.query('BEGIN');
       const response = await client.query<
-        { id: string; kind: string; status: string } & QueryResultRow
+        {
+          id: string;
+          kind: string;
+          status: string;
+          email: string;
+        } & QueryResultRow
       >(
-        'SELECT id,kind,status FROM responses WHERE id=$1 AND assignee_id=$2 AND hidden_at IS NULL FOR UPDATE',
+        'SELECT id,kind,status,email FROM responses WHERE id=$1 AND assignee_id=$2 AND hidden_at IS NULL FOR UPDATE',
         [body.responseId, request.account.id],
       );
       if (!response.rows[0]) throw new NotFoundException();
@@ -87,16 +134,41 @@ export class FollowupsController {
         response.rows[0].status === 'closed'
       )
         throw new ConflictException('Response này không thể Follow-up.');
-      const count = await client.query<{ count: string }>(
-        'SELECT count(*) FROM followups WHERE response_id=$1',
+      if (channel === 'email') {
+        const suppressed = await client.query(
+          'SELECT 1 FROM email_suppressions WHERE email=lower($1)',
+          [response.rows[0].email],
+        );
+        if (suppressed.rowCount)
+          throw new ConflictException(
+            'Khách hàng đã từ chối nhận email. Chọn kênh liên hệ khác.',
+          );
+      }
+      const count = await client.query<{
+        count: string;
+        configured_max: number | null;
+      }>(
+        'SELECT count(*) AS count, min(max_attempts) AS configured_max FROM followups WHERE response_id=$1',
         [body.responseId],
       );
       const attempt = Number(count.rows[0].count) + 1;
-      if (attempt > 3)
-        throw new ConflictException('Response đã đạt 3 lần Follow-up.');
+      if (attempt > Number(count.rows[0].configured_max ?? maxAttempts))
+        throw new ConflictException('Response đã đạt số lần Follow-up tối đa.');
       const result = await client.query<Followup>(
-        'INSERT INTO followups(response_id,assignee_id,due_at,attempt,note) VALUES($1,$2,$3,$4,$5) RETURNING *',
-        [body.responseId, request.account.id, due, attempt, note],
+        'INSERT INTO followups(response_id,assignee_id,due_at,attempt,note,channel,goal,reminder_minutes,wait_days,max_attempts,interval_days) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',
+        [
+          body.responseId,
+          request.account.id,
+          due,
+          attempt,
+          note,
+          channel,
+          goal,
+          reminderMinutes,
+          waitDays,
+          count.rows[0].configured_max ?? maxAttempts,
+          intervalDays,
+        ],
       );
       await client.query('COMMIT');
       return result.rows[0];
@@ -138,32 +210,10 @@ export class FollowupsController {
     try {
       await client.query('BEGIN');
       const done = await client.query<Followup>(
-        "UPDATE followups SET status='done',note=$2,completed_at=now() WHERE id=$1 AND status='pending' RETURNING *",
-        [id, body.note.trim()],
+        "UPDATE followups SET status='done',note=$2,completed_at=now(),outcome='awaiting',needs_next=$3 WHERE id=$1 AND status='pending' RETURNING *",
+        [id, body.note.trim(), Boolean(body.needsNext)],
       );
       if (!done.rows[0]) throw new ConflictException('Lịch đã được xử lý.');
-      if (body.needsNext && item.attempt < 3) {
-        const response = await client.query<
-          { status: string; kind: string } & QueryResultRow
-        >('SELECT status,kind FROM responses WHERE id=$1 FOR UPDATE', [
-          item.response_id,
-        ]);
-        if (
-          response.rows[0] &&
-          !['replied', 'closed'].includes(response.rows[0].status) &&
-          !['unsubscribe', 'spam', 'bounce'].includes(response.rows[0].kind)
-        ) {
-          await client.query(
-            'INSERT INTO followups(response_id,assignee_id,due_at,attempt) VALUES($1,$2,$3,$4)',
-            [
-              item.response_id,
-              request.account.id,
-              afterBusinessDays(new Date(), 2),
-              item.attempt + 1,
-            ],
-          );
-        }
-      }
       await client.query('COMMIT');
       return done.rows[0];
     } catch (error) {
@@ -172,6 +222,26 @@ export class FollowupsController {
     } finally {
       client.release();
     }
+  }
+
+  @Patch(':id/note')
+  @Roles('employee')
+  async updateNote(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { note?: unknown },
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const item = await this.one(id, request);
+    if (item.assignee_id !== request.account.id || item.status === 'cancelled')
+      throw new ConflictException('Không thể ghi chú lịch đã hủy.');
+    if (typeof body?.note !== 'string' || body.note.length > 2000)
+      throw new BadRequestException('Ghi chú tối đa 2000 ký tự.');
+    const result = await this.database.query<Followup>(
+      "UPDATE followups SET note=$2 WHERE id=$1 AND status<>'cancelled' RETURNING *",
+      [id, body.note.trim() || null],
+    );
+    if (!result.rows[0]) throw new ConflictException('Lịch đã được xử lý.');
+    return result.rows[0];
   }
 
   @Delete(':id')
@@ -183,7 +253,7 @@ export class FollowupsController {
     const item = await this.one(id, request);
     if (item.assignee_id !== request.account.id) throw new NotFoundException();
     const result = await this.database.query(
-      "DELETE FROM followups WHERE id=$1 AND status='pending' RETURNING id",
+      "UPDATE followups SET status='cancelled' WHERE id=$1 AND status='pending' RETURNING id",
       [id],
     );
     if (!result.rowCount)

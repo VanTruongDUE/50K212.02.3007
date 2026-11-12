@@ -1,6 +1,4 @@
-import type { demoContacts } from './demoContacts'
-
-type Contact = (typeof demoContacts)[number]
+type Contact = { name: string; email: string; role: string; company: string }
 export type ExportFormat = 'CSV' | 'XLSX' | 'JSON' | 'XML'
 
 const headers = ['Contact', 'Email', 'Chức vụ', 'Doanh nghiệp']

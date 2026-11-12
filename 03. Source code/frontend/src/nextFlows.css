@@ -1,4 +1,6 @@
 .next-page { padding: 24px 32px 40px; color: #edf5ff; font: 16px/1.5 Arial, sans-serif; }
+.next-list-page { box-sizing: border-box; display: flex; flex-direction: column; min-height: calc(100vh - 64px); }
+.next-list-page > .next-actions-bar { margin-top: auto; justify-content: flex-end; gap: 12px; }
 .next-page:has(.next-table-card) { box-sizing: border-box; display: flex; flex-direction: column; min-height: calc(100vh - 64px); }
 .next-page:has(.next-table-card) > .next-actions-bar { margin-top: auto; }
 .next-page:has(> form) { box-sizing: border-box; display: flex; flex-direction: column; min-height: calc(100vh - 64px); }
@@ -101,6 +103,7 @@
 .next-badge.waiting { background: #3c321b; color: #ffce75; }
 .next-badge.bad { background: #422232; color: #ffb8c1; }
 .next-stepper { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; list-style: none; margin: 40px 0 0; padding: 21px 16px; border: 1px solid #294567; border-radius: 8px; background: #0d1d33; }
+.next-page:has(.next-filter-stats) .next-stepper { margin-top: 24px; }
 .next-stepper li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; color: #b4c7e2; text-align: center; font-size: 14px; }
 .next-stepper li:not(:last-child)::after { content: ''; position: absolute; top: 14px; left: calc(50% + 14px); width: calc(100% - 20px); height: 1px; background: #6f8fb9; }
 .next-stepper li span { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #6f8fb9; border-radius: 50%; }
@@ -109,6 +112,8 @@
 .next-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .next-grid.next-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .next-grid > .next-card { margin-top: 20px; }
+.next-page:has(.next-filter-stats) .next-grid > .next-card { margin-top: 12px; }
+.next-page:has(.next-filter-stats) > .next-actions-bar { margin-top: 14px; }
 .next-grid .next-grid { gap: 16px; }
 .next-summary { width: 100%; margin-top: 40px; }
 .next-followup-create .next-summary { margin-top: 16px; padding: 16px 24px; }

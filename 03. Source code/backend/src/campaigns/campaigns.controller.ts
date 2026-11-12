@@ -56,7 +56,7 @@ export class CampaignsController {
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
     const result = await this.database.query(
-      `SELECT c.id,c.name,c.description,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.sent_count,c.created_at,
+      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.sent_count,c.created_at,
        (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id) AS recipient_count
        FROM campaigns c WHERE $1='manager' OR c.owner_id=$2 ORDER BY c.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],

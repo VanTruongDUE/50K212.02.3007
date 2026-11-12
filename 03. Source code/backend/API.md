@@ -65,18 +65,19 @@ Logo PNG/JPG được nhúng vào HTML email; SVG được đính kèm dạng t�
 | Method | URL | Vai trò | Nội dung |
 | --- | --- | --- | --- |
 | GET/POST | `/api/responses` | Cả hai / Nhân viên | Liệt kê theo người phụ trách; thêm ngoại tuyến bằng `customerName`, `email`, `kind`, `content`, `campaignId?` |
-| GET/PATCH | `/api/responses/:id` | Phụ trách | Xem lịch sử; sửa `kind`, `status`, `content` khi `new` hoặc `processing` |
-| POST | `/api/responses/:id/interactions` | Phụ trách | `{ "channel": "email|sms|note", "content": "..." }`; ghi lịch sử sau khi nhân viên tự gửi SMS/email qua kênh ngoài; `sms` cập nhật trạng thái Response thành `replied`, API không gửi SMS/email |
+| GET/PATCH | `/api/responses/:id` | Phụ trách | Xem lịch sử tương tác, gửi email và trạng thái; sửa nội dung khi `new` hoặc `processing`; trạng thái theo `new → processing → replied → closed` |
+| POST | `/api/responses/:id/reply` | Phụ trách | `{ "senderAccountId": 1, "subject": "...", "content": "..." }`; gửi email qua SMTP, lưu trạng thái gửi và lịch sử; không gửi tới Response từ chối/rác/bounce |
+| POST | `/api/responses/:id/interactions` | Phụ trách | `{ "channel": "sms|note", "content": "..." }`; ghi SMS đã gửi ngoài hệ thống hoặc ghi chú; SMS cập nhật trạng thái `replied` |
 | POST | `/api/responses/:id/hide` | Phụ trách | Chỉ ẩn spam/unsubscribe chưa phản hồi và chưa có Follow-up |
 | PATCH | `/api/responses/:id/assignee` | Trưởng phòng | `{ "employeeId": "NV001" }` |
-| GET/POST | `/api/followups` | Cả hai / Nhân viên | Danh sách; tạo bằng `responseId`, `dueAt?`, `note?`; mặc định sau 2 ngày làm việc |
+| GET/POST | `/api/followups` | Cả hai / Nhân viên | Danh sách; tạo bằng `responseId`, `goal`, `channel?`, `dueAt?`, `reminderMinutes?`, `waitDays?`, `maxAttempts?`, `intervalDays?`, `note?`; mặc định sau 2 ngày làm việc |
 | GET | `/api/followups/:id` | Phụ trách/Trưởng phòng | Chi tiết |
-| PATCH | `/api/followups/:id/complete` | Phụ trách | `{ "note": "...", "needsNext": false }`; có thể tạo lịch kế tiếp, tối đa 3 lần |
-| DELETE | `/api/followups/:id` | Phụ trách | Chỉ lịch `pending` |
+| PATCH | `/api/followups/:id/complete` | Phụ trách | `{ "note": "...", "needsNext": false }`; chờ phản hồi đủ số ngày cấu hình rồi mới tạo lịch kế tiếp nếu cần, tối đa 3 lần |
+| DELETE | `/api/followups/:id` | Phụ trách | Chỉ lịch `pending`; chuyển `cancelled`, giữ lịch sử |
 | GET | `/api/dashboard?period=week|month` | Trưởng phòng | Số liệu tổng hợp |
 | GET | `/api/notifications` | Cả hai | Cảnh báo hiện tại: Follow-up quá hạn, Response mới, chiến dịch tạm dừng, danh sách chờ duyệt và tài khoản bị khóa |
 | GET | `/api/inbox/unmatched` | Trưởng phòng | Thư đến chưa ghép với chiến dịch |
 | POST | `/api/inbox/:accountId/:validity/:uid/assign` | Trưởng phòng | `{ "employeeId": "NV001", "kind": "other", "campaignId": 1 }`; gắn thư thành Response |
 | POST | `/api/inbox/:accountId/:validity/:uid/ignore` | Trưởng phòng | Ẩn thư không liên quan khỏi hàng chờ |
 
-`GET /api/unsubscribe/:token` mở trang xác nhận, `POST` ngừng nhận email. Google Search, Apollo, gửi SMS, OAuth2 Gmail và kết nối dữ liệu nghiệp vụ của FE hiện chưa được triển khai.
+`GET /api/unsubscribe/:token` mở trang xác nhận, `POST` ngừng nhận email. Các màn nghiệp vụ của Nhân viên và Trưởng phòng đã gọi API khi đăng nhập thật; chế độ `?preview=` chỉ dùng để xem bản thiết kế. Google Search, Apollo, gửi SMS và OAuth2 Gmail chưa được triển khai.

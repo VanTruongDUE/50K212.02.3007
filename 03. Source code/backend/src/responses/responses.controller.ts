@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Req,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
@@ -17,6 +18,7 @@ import { Roles } from '../auth/roles';
 import { SessionGuard } from '../auth/session.guard';
 import type { AuthenticatedRequest } from '../auth/session.guard';
 import { DatabaseService } from '../database/database.service';
+import { SmtpService, type SmtpAccount } from '../senders/smtp.service';
 
 type ResponseRow = QueryResultRow & {
   id: string;
@@ -41,7 +43,10 @@ const statuses = ['new', 'processing', 'replied', 'closed'];
 @Controller('api/responses')
 @UseGuards(SessionGuard)
 export class ResponsesController {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly smtp: SmtpService,
+  ) {}
 
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
@@ -60,13 +65,21 @@ export class ResponsesController {
     @Req() request: AuthenticatedRequest,
   ) {
     const item = await this.one(id, request);
-    const [interactions, followups] = await Promise.all([
+    const [interactions, followups, emails, history] = await Promise.all([
       this.database.query(
         'SELECT i.id,i.actor_id,i.channel,i.content,i.created_at FROM response_interactions i WHERE response_id=$1 ORDER BY created_at',
         [id],
       ),
       this.database.query(
-        'SELECT id,due_at,attempt,status,note,completed_at FROM followups WHERE response_id=$1 ORDER BY attempt',
+        'SELECT id,due_at,attempt,status,note,channel,goal,reminder_minutes,wait_days,max_attempts,interval_days,completed_at FROM followups WHERE response_id=$1 ORDER BY attempt',
+        [id],
+      ),
+      this.database.query(
+        'SELECT id,state,subject,created_at,sent_at,error FROM response_email_deliveries WHERE response_id=$1 ORDER BY id DESC',
+        [id],
+      ),
+      this.database.query(
+        'SELECT actor_id,from_status,to_status,changed_at FROM response_status_history WHERE response_id=$1 ORDER BY changed_at',
         [id],
       ),
     ]);
@@ -74,7 +87,139 @@ export class ResponsesController {
       ...item,
       interactions: interactions.rows,
       followups: followups.rows,
+      email_deliveries: emails.rows,
+      status_history: history.rows,
     };
+  }
+
+  @Post(':id/reply')
+  @Roles('employee')
+  async reply(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    body: { senderAccountId?: unknown; subject?: unknown; content?: unknown },
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const subject =
+      typeof body?.subject === 'string' ? body.subject.trim() : '';
+    const content =
+      typeof body?.content === 'string' ? body.content.trim() : '';
+    if (
+      !Number.isSafeInteger(body?.senderAccountId) ||
+      Number(body.senderAccountId) < 1 ||
+      !subject ||
+      subject.length > 150 ||
+      !content ||
+      content.length > 100000
+    )
+      throw new BadRequestException(
+        'Tài khoản gửi, tiêu đề và nội dung email là bắt buộc.',
+      );
+    const client = await this.database.connect();
+    let account: (SmtpAccount & { id: string }) | undefined;
+    let recipient = '';
+    let deliveryId = '';
+    try {
+      await client.query('BEGIN');
+      const item = await client.query<ResponseRow & { email: string }>(
+        'SELECT * FROM responses WHERE id=$1 AND assignee_id=$2 AND hidden_at IS NULL FOR UPDATE',
+        [id, request.account.id],
+      );
+      if (!item.rows[0]) throw new NotFoundException();
+      if (['unsubscribe', 'spam', 'bounce'].includes(item.rows[0].kind))
+        throw new ConflictException(
+          'Không thể gửi email tới Response từ chối, rác hoặc email bị trả lại.',
+        );
+      recipient = item.rows[0].email;
+      const suppressed = await client.query(
+        'SELECT 1 FROM email_suppressions WHERE email=lower($1)',
+        [recipient],
+      );
+      if (suppressed.rowCount)
+        throw new ConflictException('Địa chỉ email đã bị chặn nhận thư.');
+      const sender = await client.query<
+        SmtpAccount & { id: string; quota_3_days: number } & QueryResultRow
+      >(
+        "SELECT * FROM sender_accounts WHERE id=$1 AND status='active' AND smtp_secret IS NOT NULL FOR UPDATE",
+        [body.senderAccountId],
+      );
+      account = sender.rows[0];
+      if (!account)
+        throw new ConflictException(
+          'Tài khoản gửi chưa hoạt động hoặc chưa cấu hình SMTP.',
+        );
+      const usage = await client.query<{ used: string }>(
+        `SELECT (SELECT count(*) FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND created_at>now()-interval '3 days')
+         +(SELECT count(*) FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND created_at>now()-interval '3 days') AS used`,
+        [account.id],
+      );
+      if (Number(usage.rows[0].used) >= sender.rows[0].quota_3_days)
+        throw new ConflictException('Tài khoản gửi đã đạt hạn mức 3 ngày.');
+      const saved = await client.query<{ id: string }>(
+        "INSERT INTO response_email_deliveries(response_id,sender_account_id,actor_id,subject,content,state) VALUES($1,$2,$3,$4,$5,'sending') RETURNING id",
+        [id, account.id, request.account.id, subject, content],
+      );
+      deliveryId = saved.rows[0].id;
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: unknown }).code === '23505'
+      )
+        throw new ConflictException(
+          'Email trước đang gửi hoặc chưa rõ trạng thái. Kiểm tra hộp thư trước khi thử lại.',
+        );
+      throw error;
+    } finally {
+      client.release();
+    }
+    try {
+      const messageId = await this.smtp.send(
+        account,
+        recipient,
+        subject,
+        content,
+      );
+      const result = await this.database.connect();
+      try {
+        await result.query('BEGIN');
+        await result.query(
+          "UPDATE response_email_deliveries SET state='sent',sent_at=now(),provider_message_id=$2 WHERE id=$1 AND state='sending'",
+          [deliveryId, messageId],
+        );
+        await result.query(
+          "INSERT INTO response_interactions(response_id,actor_id,channel,content) VALUES($1,$2,'email',$3)",
+          [id, request.account.id, content],
+        );
+        const previous = await result.query<
+          { status: string } & QueryResultRow
+        >('SELECT status FROM responses WHERE id=$1 FOR UPDATE', [id]);
+        await result.query(
+          "UPDATE responses SET status='replied',updated_at=now() WHERE id=$1 AND status IN ('new','processing')",
+          [id],
+        );
+        if (['new', 'processing'].includes(previous.rows[0].status))
+          await result.query(
+            'INSERT INTO response_status_history(response_id,actor_id,from_status,to_status) VALUES($1,$2,$3,$4)',
+            [id, request.account.id, previous.rows[0].status, 'replied'],
+          );
+        await result.query('COMMIT');
+      } catch (error) {
+        await result.query('ROLLBACK');
+        throw error;
+      } finally {
+        result.release();
+      }
+      return { sent: true, messageId };
+    } catch {
+      // shortcut: SMTP acceptance can be uncertain; keep 'sending' for manual review instead of risking a duplicate retry.
+      throw new ServiceUnavailableException(
+        'Chưa xác định email đã gửi hay chưa. Kiểm tra hộp thư trước khi thử lại.',
+      );
+    }
   }
 
   @Post()
@@ -148,11 +293,7 @@ export class ResponsesController {
     @Req() request: AuthenticatedRequest,
   ) {
     const item = await this.one(id, request);
-    if (
-      item.assignee_id !== request.account.id ||
-      !['new', 'processing'].includes(item.status)
-    )
-      throw new ConflictException('Response này không thể sửa.');
+    if (item.assignee_id !== request.account.id) throw new NotFoundException();
     const kind = body?.kind === undefined ? item.kind : body.kind;
     const status = body?.status === undefined ? item.status : body.status;
     const content = body?.content === undefined ? item.content : body.content;
@@ -166,14 +307,47 @@ export class ResponsesController {
       content.length > 100000
     )
       throw new BadRequestException('Dữ liệu Response không hợp lệ.');
-    const result = await this.database.query<ResponseRow>(
-      "UPDATE responses SET kind=$2,status=$3,content=$4,updated_at=now() WHERE id=$1 AND assignee_id=$5 AND status IN ('new','processing') RETURNING *",
-      [id, kind, status, content.trim(), request.account.id],
-    );
-    if (!result.rows[0])
-      throw new ConflictException('Response đã đổi trạng thái.');
-    await this.applySuppression(result.rows[0]);
-    return result.rows[0];
+    const nextStatus: Record<string, string> = {
+      new: 'processing',
+      processing: 'replied',
+      replied: 'closed',
+    };
+    if (status !== item.status && nextStatus[item.status] !== status)
+      throw new ConflictException('Chuyển trạng thái không đúng quy trình.');
+    if (
+      !['new', 'processing'].includes(item.status) &&
+      (status === item.status ||
+        kind !== item.kind ||
+        content.trim() !== item.content)
+    )
+      throw new ConflictException(
+        'Response đã phản hồi chỉ được chốt nhu cầu.',
+      );
+    const client = await this.database.connect();
+    let saved: ResponseRow;
+    try {
+      await client.query('BEGIN');
+      const result = await client.query<ResponseRow>(
+        'UPDATE responses SET kind=$2,status=$3,content=$4,updated_at=now() WHERE id=$1 AND assignee_id=$5 AND status=$6 RETURNING *',
+        [id, kind, status, content.trim(), request.account.id, item.status],
+      );
+      if (!result.rows[0])
+        throw new ConflictException('Response đã đổi trạng thái.');
+      saved = result.rows[0];
+      if (status !== item.status)
+        await client.query(
+          'INSERT INTO response_status_history(response_id,actor_id,from_status,to_status) VALUES($1,$2,$3,$4)',
+          [id, request.account.id, item.status, status],
+        );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    await this.applySuppression(saved);
+    return saved;
   }
 
   @Post(':id/interactions')
@@ -186,22 +360,52 @@ export class ResponsesController {
     const item = await this.one(id, request);
     if (item.assignee_id !== request.account.id) throw new NotFoundException();
     if (
-      !['email', 'sms', 'note'].includes(String(body?.channel)) ||
+      !['sms', 'note'].includes(String(body?.channel)) ||
       typeof body?.content !== 'string' ||
       !body.content.trim() ||
       body.content.length > 100000
     )
       throw new BadRequestException('Nội dung tương tác không hợp lệ.');
-    const result = await this.database.query(
-      'INSERT INTO response_interactions(response_id,actor_id,channel,content) VALUES($1,$2,$3,$4) RETURNING *',
-      [id, request.account.id, body.channel, body.content.trim()],
-    );
-    if (body.channel !== 'note')
-      await this.database.query(
-        "UPDATE responses SET status='replied',updated_at=now() WHERE id=$1 AND status IN ('new','processing')",
-        [id],
+    const client = await this.database.connect();
+    try {
+      await client.query('BEGIN');
+      const current = await client.query<{ status: string } & QueryResultRow>(
+        'SELECT status FROM responses WHERE id=$1 AND assignee_id=$2 FOR UPDATE',
+        [id, request.account.id],
       );
-    return result.rows[0];
+      if (!current.rows[0]) throw new NotFoundException();
+      const result = await client.query<
+        {
+          id: string;
+          channel: string;
+          content: string;
+          created_at: Date;
+        } & QueryResultRow
+      >(
+        'INSERT INTO response_interactions(response_id,actor_id,channel,content) VALUES($1,$2,$3,$4) RETURNING *',
+        [id, request.account.id, body.channel, body.content.trim()],
+      );
+      if (
+        body.channel === 'sms' &&
+        ['new', 'processing'].includes(current.rows[0].status)
+      ) {
+        await client.query(
+          "UPDATE responses SET status='replied',updated_at=now() WHERE id=$1",
+          [id],
+        );
+        await client.query(
+          'INSERT INTO response_status_history(response_id,actor_id,from_status,to_status) VALUES($1,$2,$3,$4)',
+          [id, request.account.id, current.rows[0].status, 'replied'],
+        );
+      }
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   @Post(':id/hide')

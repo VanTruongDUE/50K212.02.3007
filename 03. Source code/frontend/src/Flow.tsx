@@ -13,7 +13,7 @@ type Criteria = {
   source: 'Google Search/Web' | 'Apollo' | ''
 }
 type Template = { id: string; name: string; role: string; keyword: string; location: string; size: string; criteria?: Criteria }
-type Props = { screen: string; go: (screen: string) => void }
+type Props = { screen: string; go: (screen: string) => void; searchUnavailable?: boolean }
 
 const emptyCriteria: Criteria = { role: [], industry: [], location: [], keyword: '', size: [], email: [], source: '' }
 const sampleCriteria: Criteria = { role: ['Giám đốc Marketing'], industry: ['Phần mềm doanh nghiệp'], location: ['Hà Nội'], keyword: 'SaaS, B2B', size: ['51–200 nhân viên'], email: ['Đã xác minh'], source: 'Google Search/Web' }
@@ -136,8 +136,25 @@ function Notice({ kind = 'info', children }: { kind?: 'info' | 'warning' | 'erro
   return <div className={'flow-notice ' + kind} role={kind === 'error' ? 'alert' : undefined}>{children}</div>
 }
 
-export default function Flow({ screen, go }: Props) {
-  const [criteria, setCriteria] = useState<Criteria>(() => screen === 'criteria-invalid' ? { ...sampleCriteria, keyword: '   ' } : ['criteria', 'criteria-adjust'].includes(screen) ? emptyCriteria : sampleCriteria)
+export default function Flow({ screen, go, searchUnavailable = false }: Props) {
+  const [criteria, setCriteria] = useState<Criteria>(() => {
+    if (screen === 'criteria') {
+      const applied = sessionStorage.getItem('v5-applied-filter')
+      if (applied) {
+        sessionStorage.removeItem('v5-applied-filter')
+        try {
+          const value = JSON.parse(applied) as Partial<Criteria>
+          const fields = ['role', 'industry', 'location', 'size', 'email'] as const
+          if (typeof value.keyword === 'string' &&
+              fields.every(key => Array.isArray(value[key]) && value[key].every(item => typeof item === 'string')) &&
+              ['Google Search/Web', 'Apollo', ''].includes(value.source ?? '')) {
+            return { ...emptyCriteria, ...value }
+          }
+        } catch { /* Ignore a stale local draft. */ }
+      }
+    }
+    return screen === 'criteria-invalid' ? { ...sampleCriteria, keyword: '   ' } : ['criteria', 'criteria-adjust'].includes(screen) ? emptyCriteria : sampleCriteria
+  })
   const [templates, setTemplates] = useState<Template[]>(startingTemplates)
   const [selectedTemplate, setSelectedTemplate] = useState(0)
   const [templateName, setTemplateName] = useState(screen === 'template-name-missing' ? '' : 'B2B SaaS – Hà Nội')
@@ -231,7 +248,7 @@ export default function Flow({ screen, go }: Props) {
       </div>
        <div className="source-row"><strong>Nguồn tìm kiếm</strong>{(['Google Search/Web', 'Apollo'] as const).map(source => <label key={source}><input type="checkbox" checked={criteria.source === source} disabled={criteriaBusy} aria-invalid={sourceError} aria-describedby={sourceError ? 'source-error' : undefined} onChange={() => { setCriteria(current => ({ ...current, source })); setSourceError(false) }} />{source}</label>)}</div>
        {sourceError && <span className="flow-field-error" id="source-error" role="alert">Chọn Google Search/Web hoặc Apollo trước khi tiếp tục.</span>}
-      <Actions left={<Button disabled={criteriaBusy} onClick={() => go('templates')}>Xem Filter Template</Button>} right={<Button primary disabled={criteriaBusy} onClick={checkCriteria}>{criteriaBusy ? 'Đang kiểm tra…' : screen === 'criteria-invalid' ? 'Kiểm tra lại' : screen === 'criteria-check-error' ? 'Thử kiểm tra lại' : 'Kiểm tra tiêu chí'}</Button>} />
+        <Actions left={<><Button disabled={criteriaBusy} onClick={() => go('templates')}>Xem Filter Template</Button>{searchUnavailable && <small role="status">Google Search chưa được kết nối; hãy cấu hình dịch vụ để tìm kiếm.</small>}</>} right={<Button primary disabled={criteriaBusy || searchUnavailable} onClick={checkCriteria}>{criteriaBusy ? 'Đang kiểm tra…' : screen === 'criteria-invalid' ? 'Kiểm tra lại' : screen === 'criteria-check-error' ? 'Thử kiểm tra lại' : 'Kiểm tra tiêu chí'}</Button>} />
     </>}
 
     {screen === 'templates' && <>

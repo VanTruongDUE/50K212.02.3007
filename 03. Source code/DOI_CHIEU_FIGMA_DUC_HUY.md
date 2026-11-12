@@ -1,5 +1,18 @@
 # Đối chiếu FE với Figma — trang Đức + Huy
 
+## Cập nhật sau khi nối API (12/11/2026)
+
+- Figma UI MCP Bridge đã kết nối lại và đã đọc trực tiếp các frame đại diện ở cả ba trang `Trường`, `Đức + Huy`, `Nhi + Thảo`. Bản FE chạy cùng PostgreSQL và BE thật ở viewport 1440 px; đã chụp 14 màn chính (9 Nhân viên, 5 Trưởng phòng), so trực quan các màn tiêu chí, Filter Template, xuất Contact, Chiến dịch, Response, Follow-up và tài khoản gửi. Không dùng tiêu chí khớp từng pixel.
+- Đã sửa các hồi quy xác nhận: Filter Template tách danh sách và form tạo/sửa, áp dụng Template giữ tiêu chí đã chọn; xuất Contact dùng bốn lựa chọn ngang và bắt buộc chọn định dạng; tiêu đề danh sách Response/Follow-up giữ đúng Figma với breadcrumb một cấp theo BA; form Gmail/SMTP hai cột; kết quả lọc người nhận nằm cùng bố cục bước chọn Contact. Đường dẫn cha `Tìm kiếm Contact` trở về Thiết lập tiêu chí. Danh sách Response và Follow-up có trạng thái rỗng/lỗi tải cùng nút thử lại.
+- Kiểm tra tương tác trên Chromium: đăng nhập cả hai role, chọn Template thứ hai rồi sửa, áp dụng Template, tạo Template qua API rồi dọn bản ghi kiểm thử, xuất CSV và tải tệp, tạo chiến dịch → lọc → chọn lại và dọn bản nháp kiểm thử, mô phỏng lỗi tải Response/Follow-up rồi thử lại; không có lỗi JavaScript hoặc cuộn ngang ở các bước này. FE build/lint đạt; BE smoke với PostgreSQL thật đạt, 6 unit test và 3 HTTP e2e test đạt.
+- Kiểm tra cài đặt BE trên cơ sở dữ liệu mới đã tìm ra ký tự thừa `ko` trước `ALTER` trong migration `012_followup_details.sql`. Đã sửa và chạy lại `test:migrations:local`: toàn bộ migration áp dụng được trên PostgreSQL trống; cơ sở dữ liệu kiểm thử tạm được dọn sau khi kiểm tra.
+- **Chưa thể kết luận toàn bộ FE sau nối BE đã khớp Figma.** Audit trực tiếp 109 URL đại diện cho 196 frame cũ không có lỗi JavaScript/cuộn ngang. URL trạng thái demo cũ hiện được đưa về màn nghiệp vụ đang dùng API thay vì màn `Chức năng`; chúng **không tái tạo thông báo lỗi/rỗng Figma chỉ bằng URL**. Trạng thái lỗi thật hiển thị từ phản hồi API trên màn nghiệp vụ. 25 URL cao hơn viewport 1024 px (bao gồm các biến thể cùng màn và các frame Figma vốn cao hơn 1024); phải đối chiếu với chiều cao frame riêng trước khi coi là lỗi. Lượt này chưa so ảnh từng trạng thái của toàn bộ 196 frame và các frame Trưởng phòng; không dùng số 196/196 của bản FE demo làm kết luận cho bản đã nối API.
+
+- Giao diện thực tế khi đăng nhập dùng `LiveFlows.tsx`; các bảng 121 frame bên dưới là kết quả rà bản FE demo trước khi nối API, không phải trạng thái kiểm chứng mới của bản chạy thật.
+- Đã đưa lại bố cục nhiều bước của Chiến dịch, danh sách/chi tiết/lịch sử Response, danh sách/kết quả/ghi chú Follow-up và các màn kiểm tra của Trưởng phòng, đồng thời giữ dữ liệu API. Màn Soạn phản hồi đã trở lại lưới hai cột; SMS chỉ ghi nhận thao tác gửi ngoài hệ thống theo quyết định BA. Tạo lịch Follow-up đi đến màn thành công riêng sau khi API lưu.
+- Playwright ở 1440 × 1024 mở 43 route Nhân viên và 15 route Trưởng phòng: không gặp màn dự phòng hoặc lỗi JavaScript; đã thao tác trực tiếp các nhánh Response, Follow-up, duyệt danh sách và tài khoản gửi. Backend smoke với PostgreSQL thật đạt. Đây là kiểm tra luồng chính, chưa xác nhận 196/196 ảnh Figma của bản API.
+- Ở lượt kiểm tra đầu ngày 12/11, Figma UI MCP Bridge chưa kết nối; phần trên ghi kết quả sau khi đã kết nối lại. Các màn có nhiều nội dung như Trình soạn thảo email vẫn có thể cuộn dọc ở viewport 1024 px; phải dùng chiều cao frame tương ứng để đánh giá. Bản API chưa được xác nhận khớp toàn bộ 121 frame.
+
 Ngày rà soát: 10/11/2026. Phạm vi: chỉ trang `Đức + Huy`; không tính trang Trưởng phòng. Figma được đọc qua MCP, không chỉnh sửa.
 
 ## Cập nhật FE sau rà soát

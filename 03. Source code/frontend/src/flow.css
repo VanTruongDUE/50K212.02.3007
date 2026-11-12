@@ -12,6 +12,7 @@
 .flow-panel p { color: #b4c7e2; font-size: 14px; line-height: 24px; }
 .flow-actions { min-height: 76px; margin-top: 16px; padding: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; background: #0d1d33; border-radius: 8px; }
 .flow-actions > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.flow-actions small { align-self: center; max-width: 310px; color: #b4c7e2; font-size: 13px; line-height: 18px; }
 .flow-button { min-width: 240px; height: 44px; padding: 0 20px; color: #edf5ff; background: transparent; border: 1px solid #6f8fb9; border-radius: 8px; font-size: 16px; line-height: 24px; font-weight: 700; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease; }
 .flow-button:hover { background: #203f64; }
 .flow-button:active:not(:disabled) { transform: translateY(1px); }

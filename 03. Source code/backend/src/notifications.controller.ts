@@ -21,7 +21,7 @@ export class NotificationsController {
           ORDER BY created_at DESC LIMIT 100`)
         : await this.database.query(
             `
-          SELECT 'due_followup' AS type,f.id::text,r.customer_name AS title,f.due_at AS created_at FROM followups f JOIN responses r ON r.id=f.response_id WHERE f.assignee_id=$1 AND f.status='pending' AND f.due_at<=now()
+          SELECT 'due_followup' AS type,f.id::text,r.customer_name AS title,f.due_at AS created_at FROM followups f JOIN responses r ON r.id=f.response_id WHERE f.assignee_id=$1 AND f.status='pending' AND f.due_at-(f.reminder_minutes * interval '1 minute')<=now()
           UNION ALL SELECT 'new_response',id::text,customer_name,received_at FROM responses WHERE assignee_id=$1 AND status='new' AND hidden_at IS NULL
           UNION ALL SELECT 'paused_campaign',id::text,name,updated_at FROM campaigns WHERE owner_id=$1 AND status='paused'
           ORDER BY created_at DESC LIMIT 100`,
