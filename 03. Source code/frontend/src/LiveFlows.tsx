@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, idNumber } from "./api";
 import { createContactExport, type ExportFormat } from "./exportContacts";
-import { CampaignInfo, Dialog, Stepper } from "./NextFlows";
+import { CampaignInfo, Dialog, PreviewBody, Stepper } from "./NextFlows";
 import "./flow.css";
 import "./nextFlows.css";
 import "./managerFlows.css";
@@ -35,6 +35,7 @@ type Campaign = {
   body?: string | null;
   sender_account_id?: string | null;
   scheduled_at?: string | null;
+  send_mode?: "scheduled" | "now";
   created_at?: string | null;
   lists?: { id: string; name: string }[];
   recipients?: (Contact & { status: string })[];
@@ -56,6 +57,7 @@ type ResponseItem = {
   id: string;
   customer_name: string;
   email: string;
+  phone: string;
   kind: string;
   status: string;
   content: string;
@@ -183,9 +185,9 @@ const pageDescriptions: Record<string, string> = {
   "Xác nhận chiến dịch": "Kiểm tra lại thông tin trước khi xác nhận lịch gửi.",
   Response: "Xem phản hồi thuộc phạm vi phụ trách.",
   "Quản lý Response": "Xem phản hồi thuộc phạm vi phụ trách.",
-  "Thêm Response": "Ghi nhận phản hồi nhận ngoài hệ thống.",
+  "Thêm Response": "Ghi nhận phản hồi qua điện thoại hoặc gặp trực tiếp.",
   "Chi tiết Response": "Xem nội dung và lịch sử xử lý phản hồi.",
-  "Sửa Response": "Cập nhật thông tin phản hồi đang xử lý.",
+  "Cập nhật Response": "Cập nhật thông tin phản hồi đang xử lý.",
   "Soạn phản hồi": "Soạn email hoặc ghi nhận SMS đã gửi ngoài hệ thống.",
   "Follow-up": "Theo dõi lịch và kết quả của khách hàng.",
   "Quản lý lịch Follow-up": "Theo dõi lịch và kết quả của khách hàng.",
@@ -202,14 +204,18 @@ function Page({
   section,
   title,
   go,
+  backTo,
+  description: descriptionOverride,
   children,
 }: {
   section: string;
   title: string;
   go: Props["go"];
+  backTo?: string;
+  description?: string;
   children: ReactNode;
 }) {
-  const target =
+  const target = backTo ?? (
     section === "Tìm kiếm Contact"
       ? "criteria"
       : section === "Danh sách Contact"
@@ -222,9 +228,9 @@ function Page({
             ? "followup-list"
             : section === "Tài khoản gửi"
               ? "manager-account-list"
-              : "manager-review";
+              : "manager-review");
   const description =
-    pageDescriptions[title] ??
+    descriptionOverride ?? pageDescriptions[title] ??
     (section === "Chiến dịch"
       ? pageDescriptions["Chi tiết chiến dịch"]
       : pageDescriptions[section]) ??
@@ -294,6 +300,7 @@ function Field({
   type = "text",
   required = false,
   rows,
+  placeholder,
 }: {
   label: string;
   value: string;
@@ -301,6 +308,7 @@ function Field({
   type?: string;
   required?: boolean;
   rows?: number;
+  placeholder?: string;
 }) {
   const id = label.replace(/\s/g, "-");
   return (
@@ -316,6 +324,7 @@ function Field({
           value={value}
           onChange={(e) => set(e.target.value)}
           required={required}
+          placeholder={placeholder}
         />
       ) : (
         <input
@@ -324,6 +333,7 @@ function Field({
           value={value}
           onChange={(e) => set(e.target.value)}
           required={required}
+          placeholder={placeholder}
         />
       )}
     </div>
@@ -392,8 +402,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [email, setEmail] = useState("");
-  const [kind, setKind] = useState("need_info");
-  const [status, setStatus] = useState("new");
+  const [phone, setPhone] = useState("");
   const [senderId, setSenderId] = useState("");
   const [replyChannel, setReplyChannel] = useState<"email" | "sms">("email");
   const [senderCheckResult, setSenderCheckResult] = useState<{ id: string; connected: boolean; message: string } | null>(null);
@@ -409,8 +418,11 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   >([]);
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [filteredOriginalCount, setFilteredOriginalCount] = useState(0);
-  const [schedule, setSchedule] = useState("");
-  const [scheduleCalculated, setScheduleCalculated] = useState(false);
+  const [schedule, setSchedule] = useState<string | null>(null);
+  const [sendMode, setSendMode] = useState<"scheduled" | "now" | null>(null);
+  const [scheduleCalculated, setScheduleCalculated] = useState<boolean | null>(null);
+  const [editCampaign, setEditCampaign] = useState<{ id: string; name: string; description: string } | null>(null);
+  const [editCampaignError, setEditCampaignError] = useState("");
   const [due, setDue] = useState("");
   const [followChannel, setFollowChannel] = useState("email");
   const [goal, setGoal] = useState("");
@@ -440,7 +452,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     screen.startsWith("contact-") ||
     ["all-contacts", "check", "check-rejected", "confirm", "confirmed", "export", "export-success"].includes(screen)
       ? "lists"
-      : screen.startsWith("manager-account") || screen === "sender-list"
+      : screen.startsWith("manager-account") || screen.startsWith("sender-")
         ? "senders"
         : screen.startsWith("campaign-")
           ? "campaigns"
@@ -602,6 +614,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     action: () => Promise<T>,
     message: string,
     next?: string,
+    onError?: (error: Error) => void,
   ) {
     setBusy(true);
     setError("");
@@ -613,11 +626,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       if (next) go(next);
       return result;
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Không thể hoàn tất thao tác. Vui lòng thử lại.",
-      );
+      const failure = e instanceof Error ? e : new Error("Không thể hoàn tất thao tác. Vui lòng thử lại.");
+      setError(failure.message);
+      onError?.(failure);
       return undefined;
     } finally {
       setBusy(false);
@@ -625,6 +636,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   }
   const choose = (id: string, next: string) => {
     setSelected(id);
+    if (next.startsWith("campaign-")) { setSchedule(null); setSendMode(null); setScheduleCalculated(null); }
     setError("");
     setNotice("");
     go(next);
@@ -642,6 +654,10 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   };
   const ask = (title: string, message: string, action: () => void, danger = true) =>
     setConfirmAction({ title, message, action, danger });
+  const openCampaignEdit = (item: Campaign) => {
+    setEditCampaign({ id: item.id, name: item.name, description: item.description || "" });
+    setEditCampaignError("");
+  };
   async function uploadAsset(file: File, campaignId: string) {
     if (
       !["application/pdf", "image/png", "image/jpeg", "image/svg+xml"].includes(
@@ -654,7 +670,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     const form = new FormData();
     form.append("kind", file.type === "application/pdf" ? "pdf" : "logo");
     form.append("file", file);
-    await run(async () => {
+    const saved = await run(async () => {
       const response = await fetch(`/api/campaigns/${campaignId}/assets`, {
         method: "POST",
         credentials: "same-origin",
@@ -668,6 +684,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       }
       return response.json();
     }, "Đã tải tệp lên chiến dịch.");
+    if (saved) setPreviewResult(null);
   }
   const feedback = (
     <>
@@ -1059,6 +1076,19 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   }
 
   if (group === "campaigns") {
+    const openCampaignEmail = (item: Campaign) => { setSelected(item.id); setSubject(item.subject || ""); setBody(item.body || ""); setPreviewResult(null); go("campaign-editor"); };
+    const campaignEditDialog = editCampaign && <Dialog title="Thông tin chung" onClose={() => setEditCampaign(null)} cancelLabel="Hủy" confirmLabel="Lưu" onConfirm={() => {
+      if (!editCampaign.name.trim() || editCampaign.name.length > 100 || !editCampaign.description.trim()) {
+        setEditCampaignError("Nhập tên và mô tả chiến dịch trước khi lưu."); return;
+      }
+      void run<Campaign>(() => api(`campaigns/${editCampaign.id}`, "PATCH", { name: editCampaign.name, description: editCampaign.description }), "Đã cập nhật thông tin chiến dịch.", undefined, failure => setEditCampaignError(failure.message))
+        .then(saved => { if (saved) { setCampaigns(items => items.map(item => item.id === saved.id ? { ...item, ...saved } : item)); setEditCampaign(null); } });
+    }}>
+      <label className="next-field">Tên chiến dịch (bắt buộc)<input value={editCampaign.name} onChange={event => setEditCampaign({ ...editCampaign, name: event.target.value })} maxLength={100} /></label>
+      <p className="next-hint">Tối đa 100 ký tự.</p>
+      <label className="next-field">Mô tả (bắt buộc)<textarea value={editCampaign.description} onChange={event => setEditCampaign({ ...editCampaign, description: event.target.value })} rows={4} /></label>
+      {editCampaignError && <p role="alert" className="next-error">{editCampaignError}</p>}
+    </Dialog>;
     if (screen === "campaign-list")
       return (
         <Page section="Chiến dịch" title="Chiến dịch" go={go}>
@@ -1084,11 +1114,14 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <td className="next-row-actions"><div className="next-campaign-actions">
               <button onClick={() => choose(item.id, "campaign-detail")}>Xem</button>
               {item.status === "approved" && <button onClick={() => choose(item.id, !item.subject ? "campaign-email" : !item.sender_account_id ? "campaign-sender" : !item.scheduled_at ? "campaign-schedule" : "campaign-confirm")}>Mở</button>}
+              {["approved", "scheduled", "paused"].includes(item.status) && <button onClick={() => openCampaignEdit(item)}>Chỉnh sửa</button>}
+              {item.status === "paused" && <button onClick={() => openCampaignEmail(item)}>Sửa email</button>}
               {item.status === "paused" && <button onClick={() => choose(item.id, "campaign-resume")}>Tiếp tục gửi</button>}
               {["scheduled", "sending"].includes(item.status) && <button onClick={() => { setSelected(item.id); ask("Tạm dừng chiến dịch", `Tạm dừng “${item.name}”?`, () => void run(() => api(`campaigns/${item.id}/pause`, "POST"), "Đã tạm dừng chiến dịch.")); }}>Tạm dừng</button>}
               {item.sent_count === 0 && <button className="danger-link" onClick={() => { setSelected(item.id); ask("Xóa chiến dịch", `Chiến dịch “${item.name}” đã xóa sẽ không thể khôi phục.`, () => void run(() => api(`campaigns/${item.id}`, "DELETE"), "Đã xóa chiến dịch.")); }}>Xóa chiến dịch</button>}
             </div></td>
           </tr>) : <tr><td colSpan={5}>Chưa có chiến dịch. Tạo chiến dịch mới để bắt đầu.</td></tr>}</tbody></table></div>
+          {campaignEditDialog}
         </Page>
       );
     if (screen === "campaign-contacts")
@@ -1106,6 +1139,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               setFilteredOriginalCount(total);
               setCampaigns(previous => [created, ...previous]);
               setSelected(created.id);
+              setSchedule(null); setSendMode(null); setScheduleCalculated(null);
               return created;
             }, "Đã lọc danh sách người nhận.", "campaign-filtered");
           }}>
@@ -1182,10 +1216,18 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               setSelected("");
               return true;
             }, "Đã bỏ bản nháp để chọn lại danh sách.", "campaign-contacts")}>Chọn lại</Button>
-            <Button primary onClick={() => go("campaign-email")}>Xác nhận danh sách người nhận</Button>
+            <Button primary onClick={() => go("campaign-pending")}>Xác nhận danh sách người nhận</Button>
           </div>
         </Page>
       );
+    if (screen === "campaign-pending")
+      return <Page section="Chiến dịch" title={current.name} go={go}>
+        {feedback}
+        <Stepper current={1} />
+        <div className="next-notice" role="status"><div><strong>Danh sách người nhận đã sẵn sàng</strong><span>Danh sách Contact đã được Trưởng phòng duyệt. Tiếp tục chọn hoặc soạn mẫu email.</span></div></div>
+        <section className="next-card next-pending-card"><h2>Chiến dịch</h2><dl className="next-details"><dt>Tên chiến dịch</dt><dd>{current.name}</dd><dt>Trạng thái</dt><dd>Đang chuẩn bị</dd><dt>Số contact hợp lệ</dt><dd>{n(current.recipient_count)}</dd></dl></section>
+        <div className="next-actions-bar"><Button primary onClick={() => go("campaign-email")}>Tiếp tục soạn email</Button></div>
+      </Page>;
     if (screen === "campaign-layouts")
       return (
         <Page section="Chiến dịch" title={current.name} go={go}>
@@ -1258,6 +1300,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             </section>
             <aside className="next-editor-aside">
               <Card title="Khối kéo thả">
+                <Button onClick={() => insertEditorText("\n")}>Văn bản</Button>
                 <Button onClick={() => insertEditorText("[[Hình ảnh]]")}>Hình ảnh</Button>
                 <Button onClick={() => insertEditorText("[[Nút]]")}>Nút</Button>
                 <Button onClick={() => insertEditorText("[[Đường phân cách]]")}>Đường phân cách</Button>
@@ -1270,17 +1313,18 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                   <input type="file" accept="application/pdf" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadAsset(file, current.id); event.target.value = ""; }} /></label>
               </Card>
               <Card title="Tệp đính kèm">
-                {assets.length ? assets.map(item => <div key={item.id} className="next-inline"><span>{item.file_name}</span><Button disabled={busy} onClick={() => void run(() => api(`campaigns/${current.id}/assets/${item.id}`, "DELETE"), "Đã xóa tệp.")}>Xóa</Button></div>) : <p>Chưa có tệp đính kèm</p>}
+                {assets.length ? assets.map(item => <div key={item.id} className="next-inline"><span>{item.file_name}</span><Button disabled={busy} onClick={() => void run(() => api(`campaigns/${current.id}/assets/${item.id}`, "DELETE"), "Đã xóa tệp.").then(deleted => { if (deleted) setPreviewResult(null); })}>Xóa</Button></div>) : <p>Chưa có tệp đính kèm</p>}
               </Card>
             </aside>
           </div>
           <p className="next-hint">Nội dung {previewResult ? "đã được xem trước" : "chưa được xem trước sau lần chỉnh sửa cuối"}.</p>
           <div className="next-actions-bar">
+            <Button onClick={() => go(current.status === "paused" ? "campaign-resume" : "campaign-email")}>Hủy</Button>
             <Button disabled={busy || !subject.trim() || !body.trim()} onClick={() => {
               setPreviewResult(null);
               update("content", "PATCH", { subject, body }, "Đã lưu nội dung email.", "campaign-preview");
             }}>Xem trước</Button>
-            <Button primary disabled={busy || !previewResult} onClick={() => go("campaign-sender")}>Lưu nội dung</Button>
+            <Button primary disabled={busy || !previewResult} onClick={() => go(current.status === "paused" ? "campaign-resume" : "campaign-sender")}>Lưu nội dung</Button>
           </div>
           <Card title="Lưu thành mẫu email">
             <Field label="Tên mẫu" value={templateName} set={setTemplateName} />
@@ -1321,7 +1365,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               {previewResult ? <>
                 <h2>Tiêu đề: {previewResult.subject}</h2>
                 <span className="next-logo-chip">{assets.find(item => item.kind === "logo")?.file_name || "Logo V5"}</span>
-                <div className="next-mail-body" style={{ whiteSpace: "pre-wrap" }}>{previewResult.body}</div>
+                <div className="next-mail-body" style={{ whiteSpace: "pre-wrap" }}><PreviewBody value={previewResult.body} /></div>
                 {assets.filter(item => item.kind === "pdf").map(item => <small key={item.id}>{item.file_name}</small>)}
                 <a href="#unsubscribe" onClick={event => event.preventDefault()}>Từ chối nhận email</a>
               </> : <p>Đang tạo bản xem trước theo dữ liệu Contact đầu tiên...</p>}
@@ -1371,7 +1415,10 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           </div>}
         </Page>
       );
-    if (screen === "campaign-schedule")
+    if (screen === "campaign-schedule") {
+      const selectedMode = sendMode ?? current.send_mode ?? "scheduled";
+      const scheduleValue = schedule ?? (current.scheduled_at ? new Date(new Date(current.scheduled_at).getTime() - new Date(current.scheduled_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
+      const calculated = scheduleCalculated ?? !!current.scheduled_at;
       return (
         <Page section="Chiến dịch" title={current.name} go={go}>
           {feedback}
@@ -1383,32 +1430,33 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           </div>
           <Card title="Lịch gửi">
             <div className="next-field"><label>Kiểu gửi</label><div className="next-inline">
-              <label><input type="radio" name="campaign-send-mode" checked readOnly /> Hẹn giờ</label>
-              <label title="Cần đặt trước ít nhất 15 phút theo quy tắc gửi hiện tại"><input type="radio" name="campaign-send-mode" disabled /> Gửi ngay</label>
+              <label><input type="radio" name="campaign-send-mode" checked={selectedMode === "scheduled"} onChange={() => { setSendMode("scheduled"); setScheduleCalculated(false); }} /> Hẹn giờ</label>
+              <label><input type="radio" name="campaign-send-mode" checked={selectedMode === "now"} onChange={() => { setSendMode("now"); setScheduleCalculated(true); }} /> Gửi ngay</label>
             </div></div>
             <div className="next-grid">
-              <div className="next-field"><label htmlFor="campaign-send-date">Ngày bắt đầu</label><input id="campaign-send-date" type="date" value={schedule.slice(0, 10)} onChange={event => { setSchedule(event.target.value + "T" + (schedule.slice(11, 16) || "09:00")); setScheduleCalculated(false); }} /><small>Múi giờ GMT+7</small></div>
-              <div className="next-field"><label htmlFor="campaign-send-time">Giờ bắt đầu</label><input id="campaign-send-time" type="time" value={schedule.slice(11, 16)} onChange={event => { setSchedule((schedule.slice(0, 10) || new Date().toISOString().slice(0, 10)) + "T" + event.target.value); setScheduleCalculated(false); }} /><small>HH:mm</small></div>
+              <div className="next-field"><label htmlFor="campaign-send-date">Ngày bắt đầu</label>{selectedMode === "now" ? <input id="campaign-send-date" value="Ngay sau khi chiến dịch được xác nhận" readOnly /> : <input id="campaign-send-date" type="date" value={scheduleValue.slice(0, 10)} onChange={event => { setSchedule(event.target.value + "T" + (scheduleValue.slice(11, 16) || "09:00")); setScheduleCalculated(false); }} />}<small>Múi giờ GMT+7</small></div>
+              <div className="next-field"><label htmlFor="campaign-send-time">Giờ bắt đầu</label>{selectedMode === "now" ? <input id="campaign-send-time" value="--:--" readOnly /> : <input id="campaign-send-time" type="time" value={scheduleValue.slice(11, 16)} onChange={event => { setSchedule((scheduleValue.slice(0, 10) || new Date().toISOString().slice(0, 10)) + "T" + event.target.value); setScheduleCalculated(false); }} />}<small>HH:mm</small></div>
             </div>
             <div className="next-grid next-three">
               <div className="next-field"><label htmlFor="campaign-speed">Tốc độ gửi (email/giờ)</label><input id="campaign-speed" value="50" readOnly /><small>Mặc định 50 email/giờ.</small></div>
               <div className="next-field"><label htmlFor="campaign-from">Khung giờ gửi - từ</label><input id="campaign-from" value="08:00" readOnly /><small>Mặc định 08:00</small></div>
               <div className="next-field"><label htmlFor="campaign-to">Khung giờ gửi - đến</label><input id="campaign-to" value="17:00" readOnly /><small>Mặc định 17:00</small></div>
             </div>
-            {scheduleCalculated && <p className="next-rule"><strong>Lịch dự kiến</strong><span>Bắt đầu {date(schedule)}. Tốc độ tối đa 50 email/giờ.</span></p>}
+            {calculated && <p className="next-rule"><strong>Lịch dự kiến</strong><span>{selectedMode === "now" ? "Bắt đầu ngay sau khi xác nhận, kể cả ngoài khung giờ hẹn." : `Bắt đầu ${date(scheduleValue)}.`} Tốc độ tối đa 50 email/giờ.</span></p>}
           </Card>
           <div className="next-actions-bar">
-            <Button primary disabled={!schedule || busy} onClick={() => {
-              const start = new Date(schedule).getTime();
+            {selectedMode === "scheduled" && <Button primary disabled={!scheduleValue || busy} onClick={() => {
+              const start = new Date(scheduleValue).getTime();
               if (!Number.isFinite(start) || start < Date.now() + 15 * 60_000 || start > Date.now() + 90 * 86_400_000) {
                 setError("Chọn thời điểm bắt đầu từ 15 phút đến 90 ngày sau hiện tại."); return;
               }
               setError(""); setScheduleCalculated(true);
-            }}>Tính lịch dự kiến</Button>
-            {scheduleCalculated && <Button disabled={busy} onClick={() => update("schedule", "PATCH", { scheduledAt: new Date(schedule).toISOString() }, "Đã lưu lịch gửi.", "campaign-confirm")}>Lưu lịch gửi</Button>}
+            }}>Tính lịch dự kiến</Button>}
+            {calculated && <Button primary={selectedMode === "now"} disabled={busy} onClick={() => update("schedule", "PATCH", selectedMode === "now" ? { sendNow: true } : { scheduledAt: new Date(scheduleValue).toISOString() }, "Đã lưu lịch gửi.", "campaign-confirm")}>Lưu lịch gửi</Button>}
           </div>
         </Page>
       );
+    }
     if (screen === "campaign-confirm")
       return (
         <Page section="Chiến dịch" title={current.name} go={go}>
@@ -1432,7 +1480,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               <dt>Hạn mức còn lại</dt><dd>{n(Math.max(0, (senders.find(item => item.id === current.sender_account_id)?.quota_3_days || 0) - (senders.find(item => item.id === current.sender_account_id)?.used_3_days || 0)))}</dd>
             </dl></Card>
             <Card title="Lịch gửi"><dl className="next-details">
-              <dt>Thời điểm bắt đầu</dt><dd>{date(current.scheduled_at)}</dd>
+              <dt>Thời điểm bắt đầu</dt><dd>{current.send_mode === "now" ? "Ngay sau khi xác nhận" : date(current.scheduled_at)}</dd>
               <dt>Tốc độ gửi</dt><dd>50 email/giờ</dd>
               <dt>Khung giờ gửi</dt><dd>08:00–17:00</dd>
             </dl></Card>
@@ -1440,10 +1488,12 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <div className="next-actions-bar">
             <Button onClick={() => go("campaign-list")}>Quay lại</Button>
             <Button onClick={() => setShowConfirmEmail(true)}>Xem nội dung email</Button>
-            <Button onClick={() => go("campaign-editor")}>Chỉnh sửa</Button>
-            <Button primary disabled={busy || !current.subject || !current.sender_account_id || !current.scheduled_at} onClick={() => ask("Xác nhận chiến dịch", `Gửi ${n(current.recipient_count)} email từ ${senders.find(item => item.id === current.sender_account_id)?.email || "tài khoản đã chọn"}, bắt đầu ${date(current.scheduled_at)}?`, () => update("confirm", "POST", undefined, "Đã xác nhận và lên lịch chiến dịch.", "campaign-list"), false)}>Xác nhận gửi</Button>
+            <Button onClick={() => openCampaignEdit(current)}>Sửa thông tin chung</Button>
+            <Button onClick={() => openCampaignEmail(current)}>Sửa email</Button>
+            <Button primary disabled={busy || !current.subject || !current.sender_account_id || !current.scheduled_at} onClick={() => ask("Xác nhận chiến dịch", `Gửi ${n(current.recipient_count)} email từ ${senders.find(item => item.id === current.sender_account_id)?.email || "tài khoản đã chọn"}, bắt đầu ${current.send_mode === "now" ? "ngay sau khi xác nhận" : date(current.scheduled_at)}?`, () => update("confirm", "POST", undefined, current.send_mode === "now" ? "Đã xác nhận. Chiến dịch bắt đầu gửi ngay." : "Đã xác nhận và lên lịch chiến dịch.", "campaign-list"), false)}>{current.send_mode === "now" ? "Xác nhận gửi ngay" : "Xác nhận gửi"}</Button>
           </div>
           {showConfirmEmail && <Dialog title="Nội dung email" className="next-email-dialog" onClose={() => setShowConfirmEmail(false)}><div className="next-email-dialog-body"><strong>{current.subject || subject}</strong><div>{current.body || body}</div></div></Dialog>}
+          {campaignEditDialog}
         </Page>
       );
     if (screen === "campaign-resume")
@@ -1460,7 +1510,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <Card title="Tài khoản gửi"><p>{senders.find(item => item.id === current.sender_account_id)?.email || "—"}</p></Card>
           <Card title="Lịch gửi"><p>Tiếp tục sau ít nhất 15 phút kể từ khi xác nhận.</p></Card>
         </div>
-        <div className="next-actions-bar"><Button onClick={() => go("campaign-list")}>Để sau</Button><Button primary disabled={busy || current.status !== "paused"} onClick={() => ask("Tiếp tục gửi chiến dịch", `Tiếp tục gửi cho ${n(Math.max(0, current.recipient_count - current.sent_count))} contact chưa gửi?`, () => update("resume", "POST", undefined, "Đã tiếp tục chiến dịch.", "campaign-list"), false)}>Tiếp tục gửi</Button></div>
+        <div className="next-actions-bar"><Button onClick={() => go("campaign-list")}>Để sau</Button><Button onClick={() => openCampaignEmail(current)}>Sửa email</Button><Button primary disabled={busy || current.status !== "paused"} onClick={() => ask("Tiếp tục gửi chiến dịch", `Tiếp tục gửi cho ${n(Math.max(0, current.recipient_count - current.sent_count))} contact chưa gửi?`, () => update("resume", "POST", undefined, "Đã tiếp tục chiến dịch.", "campaign-list"), false)}>Tiếp tục gửi</Button></div>
       </Page>;
     return (
       <Page section="Chiến dịch" title={current.name} go={go}>
@@ -1483,17 +1533,14 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             />
           )}
           <div className="next-actions-bar">
-            {current.status === "approved" && (
+            {["approved", "paused"].includes(current.status) && (
               <Button
-                onClick={() => {
-                  setSubject(current.subject || "");
-                  setBody(current.body || "");
-                  go("campaign-editor");
-                }}
+                onClick={() => openCampaignEmail(current)}
               >
-                Tiếp tục soạn
+                {current.status === "paused" ? "Sửa email" : "Tiếp tục soạn"}
               </Button>
             )}
+            {["approved", "scheduled", "paused"].includes(current.status) && <Button onClick={() => openCampaignEdit(current)}>Sửa thông tin chung</Button>}
             {["scheduled", "sending"].includes(current.status) && (
               <Button
                 disabled={busy}
@@ -1547,12 +1594,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             )}
           </div>
         </Card>
+        {campaignEditDialog}
       </Page>
     );
   }
 
   if (group === "responses") {
-    if (screen === "response-list")
+    if (screen === "response-list" || screen === "response-hide")
       return (
         <Page section="Response" title="Quản lý Response" go={go}>
           {feedback}
@@ -1580,16 +1628,18 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             />}
           </Card>
           <div className="next-actions-bar">
-            <Button primary onClick={() => { setName(""); setEmail(""); setBody(""); go("response-add"); }}>Thêm Response</Button>
+            <Button primary onClick={() => { setName(""); setEmail(""); setPhone(""); setBody(""); go("response-add"); }}>Thêm Response</Button>
             <Button disabled={!responses.length} onClick={() => { setHideResponseId(responses[0]?.id || ""); setShowHideResponse(true); }}>Xóa Response</Button>
           </div>
-          {showHideResponse && <Dialog title="Xóa Response" onClose={() => setShowHideResponse(false)} onConfirm={() => {
-            if (!hideResponseId) return;
+          {(showHideResponse || screen === "response-hide") && <Dialog title="Xóa Response" onClose={() => { setShowHideResponse(false); if (screen === "response-hide") go("response-list"); }} onConfirm={() => {
+            const targetId = hideResponseId || responses[0]?.id;
+            if (!targetId) return;
             setShowHideResponse(false);
-            void run(() => api(`responses/${hideResponseId}/hide`, "POST"), "Đã ẩn Response khỏi danh sách.");
+            if (screen === "response-hide") go("response-list");
+            void run(() => api(`responses/${targetId}/hide`, "POST"), "Đã ẩn Response khỏi danh sách.");
           }} confirmLabel="Xóa Response" danger>
             <div className="next-field"><label htmlFor="hide-response">Response cần xóa</label>
-              <select id="hide-response" value={hideResponseId} onChange={event => setHideResponseId(event.target.value)}>
+              <select id="hide-response" value={hideResponseId || responses[0]?.id || ""} onChange={event => setHideResponseId(event.target.value)}>
                 {responses.map(item => <option value={item.id} key={item.id}>RSP-{item.id} · {item.customer_name}</option>)}
               </select></div>
             <p>Chỉ ẩn được Response loại Rác hoặc Từ chối nhận email khi chưa có phản hồi và Follow-up.</p>
@@ -1600,7 +1650,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       return (
         <Page section="Response" title="Thêm Response" go={go}>
           {feedback}
-          <Card title="Phản hồi ngoại tuyến">
+          <Card title="Thông tin Response ngoại tuyến">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1609,7 +1659,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                     api("responses", "POST", {
                       customerName: name,
                       email,
-                      kind,
+                      phone,
                       content: body,
                     }),
                   "Đã lưu Response.",
@@ -1618,36 +1668,31 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               }}
             >
               <Field
-                label="Tên khách hàng"
+                label="Khách hàng"
                 value={name}
                 set={setName}
                 required
+                placeholder="Chọn khách hàng"
               />
               <Field
-                label="Email khách hàng"
+                label="Email"
                 value={email}
                 set={setEmail}
                 type="email"
-                required
+                placeholder="Nhập email"
               />
-              <label className="next-field">
-                Loại phản hồi
-                <select value={kind} onChange={(e) => setKind(e.target.value)}>
-                  {Object.entries(kinds).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Field label="Số điện thoại" value={phone} set={setPhone} type="tel" placeholder="Nhập số điện thoại" />
               <Field
                 label="Nội dung phản hồi"
                 value={body}
                 set={setBody}
                 rows={5}
                 required
+                placeholder="Nhập nội dung khách hàng phản hồi"
               />
+              <p className="next-hint">Mã Response và thời gian nhận được hệ thống tự ghi khi lưu. Trạng thái ban đầu: Mới.</p>
               <div className="next-actions-bar">
+                <Button onClick={() => go("response-list")}>Hủy</Button>
                 <Button type="submit" primary disabled={busy}>
                   Lưu Response
                 </Button>
@@ -1697,40 +1742,14 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     }
     if (screen === "response-edit")
       return (
-        <Page section="Response" title="Sửa Response" go={go}>
+        <Page section="Response" title="Cập nhật Response" description={`RSP-${current.id} · ${current.customer_name} · Nhận ${date(current.received_at)} · Trạng thái ${responseStatuses[current.status]}`} go={go}>
           {feedback}
-          <Card title={`RSP-${current.id} · ${current.customer_name}`}>
-            <p>{current.email}</p>
-            <label className="next-field">
-              Loại phản hồi
-              <select value={kind} onChange={(e) => setKind(e.target.value)}>
-                {Object.entries(kinds).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="next-field">
-              Trạng thái
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                {Object.entries(responseStatuses)
-                  .filter(
-                    ([key]) =>
-                      key === current.status ||
-                      key ===
-                        (current.status === "new" ? "processing" : "replied"),
-                  )
-                  .map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-              </select>
-            </label>
+          <section className="next-card next-response-edit-info"><h2>Thông tin khách hàng</h2>
+            <Field label="Khách hàng" value={name} set={setName} required />
+            <div className="next-grid"><Field label="Email" value={email} set={setEmail} type="email" /><Field label="Số điện thoại" value={phone} set={setPhone} type="tel" /></div>
+            <p className="next-hint">Mã Response, thời điểm nhận và loại phản hồi do hệ thống quản lý; không chỉnh sửa tại đây. Chỉ cập nhật khi trạng thái Mới hoặc Đang xử lý.</p>
+          </section>
+          <Card>
             <Field
               label="Nội dung phản hồi"
               value={body}
@@ -1738,16 +1757,19 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               rows={6}
               required
             />
-            <div className="next-actions-bar">
+          </Card>
+            <div className="next-actions-bar next-response-edit-actions">
+              <Button onClick={() => go("response-detail")}>Hủy</Button>
               <Button
                 primary
-                disabled={busy || !body.trim()}
+                disabled={busy || !name.trim() || !body.trim()}
                 onClick={() =>
                   void run(
                     () =>
                       api(`responses/${current.id}`, "PATCH", {
-                        kind,
-                        status,
+                        customerName: name,
+                        email,
+                        phone,
                         content: body,
                       }),
                     "Đã cập nhật Response.",
@@ -1758,7 +1780,6 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 Lưu thay đổi
               </Button>
             </div>
-          </Card>
         </Page>
       );
     if (screen === "response-reply")
@@ -1770,10 +1791,10 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <div className="next-reply-grid">
               <label className="next-field">Kênh gửi *
                 <select value={replyChannel} onChange={event => setReplyChannel(event.target.value as "email" | "sms")}>
-                  <option value="email">Email</option><option value="sms">SMS</option>
+                  <option value="email" disabled={!current.email}>Email</option><option value="sms">SMS</option>
                 </select>
               </label>
-              <div className="next-field"><span>Người nhận</span><p>{replyChannel === "email" ? current.email : "Gửi SMS ngoài hệ thống trước khi ghi nhận"}</p></div>
+              <div className="next-field"><span>Người nhận</span><p>{replyChannel === "email" ? current.email || "Response chưa có email" : current.phone || "Gửi SMS ngoài hệ thống trước khi ghi nhận"}</p></div>
               {replyChannel === "email" && <>
                 <label className="next-field">Tài khoản gửi *
                   <select value={senderId} onChange={event => setSenderId(event.target.value)}>
@@ -1788,7 +1809,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <p className="next-hint">{replyChannel === "email" ? "Email được gửi qua tài khoản SMTP đã cấu hình." : "SMS cần gửi ngoài hệ thống. Thao tác này chỉ ghi nhận nội dung vào lịch sử."}</p>
             <div className="next-actions-bar">
               <Button
-                disabled={busy || !body.trim() || (replyChannel === "email" && (!subject.trim() || !senderId))}
+                disabled={busy || !body.trim() || (replyChannel === "email" && (!current.email || !subject.trim() || !senderId))}
                 primary
                 onClick={() =>
                   void run(
@@ -1816,6 +1837,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <div><span>Phụ trách</span><strong>Nhân viên Marketing</strong></div>
             <div><span>Thời gian nhận</span><strong>{date(current.received_at)}</strong></div>
             <div><span>Email</span><strong>{current.email || "—"}</strong></div>
+            <div><span>Số điện thoại</span><strong>{current.phone || "—"}</strong></div>
             <div><span>Chiến dịch</span><strong>{current.campaign_name || "—"}</strong></div>
           </div>
           <div className="next-response-body"><span>Nội dung khách hàng</span><strong>{current.content}</strong></div>
@@ -1838,7 +1860,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <div className="next-actions-bar">
             <Button
               onClick={() => {
-                setReplyChannel("email");
+                setReplyChannel(current.email ? "email" : "sms");
                 setBody("");
                 setSubject("");
                 go("response-reply");
@@ -1849,8 +1871,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             {["new", "processing"].includes(current.status) && (
               <Button
                 onClick={() => {
-                  setKind(current.kind);
-                  setStatus(current.status);
+                setName(current.customer_name);
+                setEmail(current.email);
+                setPhone(current.phone || "");
                   setBody(current.content);
                   go("response-edit");
                 }}
@@ -1941,7 +1964,12 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           </div>
         </Page>
       );
-    if (screen === "followup-create")
+    if (screen === "followup-duplicate" || screen === "followup-optout")
+      return <Page section="Follow-up" title="Lập lịch Follow-up" go={go}>
+        <div className="next-state" role="alert"><div><span>{screen === "followup-duplicate" ? "LỊCH FOLLOW-UP ĐANG TỒN TẠI" : "EMAIL ĐÃ BỊ TỪ CHỐI"}</span><h2>{screen === "followup-duplicate" ? "Không thể tạo thêm lịch Follow-up" : "Không thể tạo Follow-up qua Email"}</h2><p>{error || (screen === "followup-duplicate" ? "Response này đã có lịch hẹn chờ thực hiện." : "Khách hàng đã từ chối nhận Email.")}</p><small>Biểu mẫu được giữ nguyên để chọn lại hoặc điều chỉnh kênh liên hệ.</small></div><div className="next-state-actions"><Button primary onClick={() => { setError(""); go("followup-create"); }}>Quay lại biểu mẫu</Button></div></div>
+      </Page>;
+    if (screen === "followup-create") {
+      const selectedFollowChannel = followChannel === "email" && responses.some(item => item.id === selected && !item.email) ? "phone" : followChannel;
       return (
         <Page section="Follow-up" title="Lập lịch Follow-up" go={go}>
           {feedback}
@@ -1976,10 +2004,10 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <label className="next-field">
               Hình thức chăm sóc
               <select
-                value={followChannel}
+                value={selectedFollowChannel}
                 onChange={(e) => setFollowChannel(e.target.value)}
               >
-                <option value="email">Email</option>
+                <option value="email" disabled={!responses.find(item => item.id === selected)?.email}>Email</option>
                 <option value="sms">SMS</option>
                 <option value="phone">Gọi điện</option>
               </select>
@@ -2030,7 +2058,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                       api<Followup>("followups", "POST", {
                         responseId: idNumber(selected),
                         ...(due ? { dueAt: new Date(due).toISOString() } : {}),
-                        channel: followChannel,
+                        channel: selectedFollowChannel,
                         goal,
                         reminderMinutes: Number(reminderMinutes),
                         waitDays: Number(waitDays),
@@ -2038,6 +2066,11 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                         intervalDays: Number(intervalDays),
                       }),
                     "Đã lưu lịch Follow-up.",
+                    undefined,
+                    failure => {
+                      if (failure.message.includes("đã có lịch Follow-up")) go("followup-duplicate");
+                      else if (failure.message.includes("từ chối nhận email")) go("followup-optout");
+                    },
                   ).then(item => { if (item) { setCreatedFollowup(item); go("followup-success"); } })
                 }
               >
@@ -2047,6 +2080,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           </Card>
         </Page>
       );
+    }
     if (screen === "followup-success") return <Page section="Follow-up" title="Lập lịch Follow-up" go={go}>
       {feedback}<div className="next-state success"><div><span>ĐÃ LƯU LỊCH FOLLOW-UP</span><h2>{createdFollowup ? `Đã thêm lịch Follow-up FU-${createdFollowup.id}` : "Lịch Follow-up đã lưu"}</h2>
         <p>{createdFollowup ? `Response RSP-${createdFollowup.response_id} · Kênh ${createdFollowup.channel === "phone" ? "Gọi điện" : createdFollowup.channel.toUpperCase()}.` : "Xem danh sách để kiểm tra lịch đã lưu."}</p>
@@ -2267,7 +2301,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                     : "Ngừng hoạt động",
                 <Button
                   key={item.id}
-                  onClick={() => choose(item.id, "manager-account-detail")}
+                  onClick={() => choose(item.id, manager ? "manager-account-detail" : "sender-detail")}
                 >
                   Xem chi tiết
                 </Button>,
@@ -2447,7 +2481,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         </Page>
       );
     return (
-      <Page section="Tài khoản gửi" title="Chi tiết tài khoản" go={go}>
+      <Page section="Tài khoản gửi" title="Chi tiết tài khoản" go={go} backTo={manager ? "manager-account-list" : "sender-list"}>
         {feedback}
         {sender ? (
           <Card title={sender.name}>

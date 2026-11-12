@@ -128,9 +128,9 @@ export class AssetsController {
       >('SELECT owner_id,status FROM campaigns WHERE id=$1 FOR UPDATE', [id]);
       if (!campaign.rows[0] || campaign.rows[0].owner_id !== request.account.id)
         throw new NotFoundException();
-      if (campaign.rows[0].status !== 'approved')
+      if (!['approved', 'paused'].includes(campaign.rows[0].status))
         throw new ConflictException(
-          'Chỉ sửa tệp khi chiến dịch đang chuẩn bị.',
+          'Chỉ sửa tệp khi chiến dịch đang chuẩn bị hoặc tạm dừng.',
         );
       if (kind === 'pdf') {
         const count = await client.query<{ count: string }>(
@@ -173,7 +173,7 @@ export class AssetsController {
   ) {
     const campaign = await this.campaign(id, request);
     if (campaign.owner_id !== request.account.id) throw new NotFoundException();
-    if (campaign.status !== 'approved')
+    if (!['approved', 'paused'].includes(campaign.status))
       throw new ConflictException('Chiến dịch đã xác nhận không thể sửa tệp.');
     const result = await this.database.query(
       'DELETE FROM campaign_assets WHERE campaign_id=$1 AND id=$2 RETURNING id',

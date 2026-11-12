@@ -135,6 +135,10 @@ export class FollowupsController {
       )
         throw new ConflictException('Response này không thể Follow-up.');
       if (channel === 'email') {
+        if (!response.rows[0].email)
+          throw new ConflictException(
+            'Response chưa có địa chỉ email. Chọn kênh liên hệ khác.',
+          );
         const suppressed = await client.query(
           'SELECT 1 FROM email_suppressions WHERE email=lower($1)',
           [response.rows[0].email],

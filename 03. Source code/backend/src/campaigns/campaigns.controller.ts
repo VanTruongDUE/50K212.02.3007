@@ -19,6 +19,7 @@ import { Roles } from '../auth/roles';
 import { SessionGuard } from '../auth/session.guard';
 import type { AuthenticatedRequest } from '../auth/session.guard';
 import { DatabaseService } from '../database/database.service';
+import { DeliveryWorker } from './delivery.worker';
 
 const variables = ['{{Họ tên}}', '{{Tên doanh nghiệp}}'];
 export function fill(
@@ -41,6 +42,7 @@ type Campaign = QueryResultRow & {
   body: string | null;
   sender_account_id: string | null;
   scheduled_at: Date | null;
+  send_mode: string;
 };
 type CreateInput = { name?: unknown; description?: unknown; listIds?: unknown };
 type ContentInput = { subject?: unknown; body?: unknown };
@@ -51,12 +53,13 @@ export class CampaignsController {
   constructor(
     private readonly database: DatabaseService,
     private readonly config: ConfigService,
+    private readonly delivery: DeliveryWorker,
   ) {}
 
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
     const result = await this.database.query(
-      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.sent_count,c.created_at,
+      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.send_mode,c.sent_count,c.created_at,
        (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id) AS recipient_count
        FROM campaigns c WHERE $1='manager' OR c.owner_id=$2 ORDER BY c.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
@@ -165,6 +168,41 @@ export class CampaignsController {
     }
   }
 
+  @Patch(':id')
+  @Roles('employee')
+  async updateDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { name?: unknown; description?: unknown },
+    @Req() request: AuthenticatedRequest,
+  ) {
+    await this.owned(id, request);
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    const description =
+      typeof body?.description === 'string' ? body.description.trim() : '';
+    if (!name || name.length > 100 || !description || description.length > 2000)
+      throw new BadRequestException('Tên và mô tả chiến dịch là bắt buộc.');
+    try {
+      const result = await this.database.query<Campaign>(
+        "UPDATE campaigns SET name=$2,description=$3,updated_at=now() WHERE id=$1 AND owner_id=$4 AND status IN ('approved','scheduled','paused') RETURNING *",
+        [id, name, description, request.account.id],
+      );
+      if (!result.rows[0])
+        throw new ConflictException(
+          'Chiến dịch không thể chỉnh sửa thông tin chung.',
+        );
+      return result.rows[0];
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: unknown }).code === '23505'
+      )
+        throw new ConflictException('Tên chiến dịch đã được sử dụng.');
+      throw error;
+    }
+  }
+
   @Patch(':id/content')
   @Roles('employee')
   async content(
@@ -173,7 +211,7 @@ export class CampaignsController {
     @Req() request: AuthenticatedRequest,
   ) {
     const campaign = await this.owned(id, request);
-    this.editable(campaign);
+    this.editable(campaign, true);
     const subject =
       typeof body?.subject === 'string' ? body.subject.trim() : '';
     const content = typeof body?.body === 'string' ? body.body.trim() : '';
@@ -187,7 +225,7 @@ export class CampaignsController {
     if (unsupported?.length)
       throw new BadRequestException('Biến cá nhân hóa không được hỗ trợ.');
     const result = await this.database.query(
-      "UPDATE campaigns SET subject=$2,body=$3,previewed_at=NULL,updated_at=now() WHERE id=$1 AND status='approved' RETURNING *",
+      "UPDATE campaigns SET subject=$2,body=$3,previewed_at=NULL,updated_at=now() WHERE id=$1 AND status IN ('approved','paused') RETURNING *",
       [id, subject, content],
     );
     if (!result.rows[0])
@@ -203,7 +241,7 @@ export class CampaignsController {
     @Req() request: AuthenticatedRequest,
   ) {
     const campaign = await this.owned(id, request);
-    this.editable(campaign);
+    this.editable(campaign, true);
     if (!campaign.subject || !campaign.body)
       throw new ConflictException('Chưa có nội dung email.');
     const contact = await this.database.query<
@@ -220,7 +258,7 @@ export class CampaignsController {
     if (!contact.rows[0])
       throw new NotFoundException('Không tìm thấy Contact xem trước.');
     await this.database.query(
-      "UPDATE campaigns SET previewed_at=now() WHERE id=$1 AND status='approved'",
+      "UPDATE campaigns SET previewed_at=now() WHERE id=$1 AND status IN ('approved','paused')",
       [id],
     );
     const assets = await this.database.query(
@@ -278,25 +316,27 @@ export class CampaignsController {
   @Roles('employee')
   async schedule(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { scheduledAt?: unknown },
+    @Body() body: { scheduledAt?: unknown; sendNow?: unknown },
     @Req() request: AuthenticatedRequest,
   ) {
     const campaign = await this.owned(id, request);
     this.editable(campaign);
-    if (typeof body?.scheduledAt !== 'string')
+    const sendNow = body?.sendNow === true;
+    if (!sendNow && typeof body?.scheduledAt !== 'string')
       throw new BadRequestException('Thời điểm gửi không hợp lệ.');
-    const date = new Date(body.scheduledAt);
+    const date = sendNow ? new Date() : new Date(body.scheduledAt as string);
     if (
-      !Number.isFinite(date.getTime()) ||
-      date.getTime() < Date.now() + 15 * 60000 ||
-      date.getTime() > Date.now() + 90 * 86400000
+      !sendNow &&
+      (!Number.isFinite(date.getTime()) ||
+        date.getTime() < Date.now() + 15 * 60000 ||
+        date.getTime() > Date.now() + 90 * 86400000)
     )
       throw new BadRequestException(
         'Lịch gửi phải từ 15 phút đến 90 ngày sau hiện tại.',
       );
     const result = await this.database.query(
-      "UPDATE campaigns SET scheduled_at=$2,updated_at=now() WHERE id=$1 AND status='approved' RETURNING *",
-      [id, date],
+      "UPDATE campaigns SET scheduled_at=$2,send_mode=$3,updated_at=now() WHERE id=$1 AND status='approved' RETURNING *",
+      [id, date, sendNow ? 'now' : 'scheduled'],
     );
     if (!result.rows[0])
       throw new ConflictException('Chiến dịch đã đổi trạng thái.');
@@ -341,6 +381,7 @@ export class CampaignsController {
     );
     if (!result.rowCount)
       throw new ConflictException('Chiến dịch chưa sẵn sàng xác nhận.');
+    if (campaign.send_mode === 'now') void this.delivery.tick();
     return result.rows[0];
   }
 
@@ -368,7 +409,7 @@ export class CampaignsController {
   ) {
     await this.one(id, request);
     const result = await this.database.query(
-      `UPDATE campaigns SET status='scheduled',scheduled_at=now()+interval '15 minutes',updated_at=now() WHERE id=$1 AND status='paused' AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending') AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1 AND state='sending') RETURNING *`,
+      `UPDATE campaigns SET status='scheduled',scheduled_at=now()+interval '15 minutes',updated_at=now() WHERE id=$1 AND status='paused' AND previewed_at IS NOT NULL AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending') AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1 AND state='sending') RETURNING *`,
       [id],
     );
     if (!result.rowCount)
@@ -384,7 +425,7 @@ export class CampaignsController {
   ) {
     await this.owned(id, request);
     const result = await this.database.query(
-      `DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','approved') AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id`,
+      `DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','approved','paused') AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id`,
       [id],
     );
     if (!result.rowCount)
@@ -413,8 +454,11 @@ export class CampaignsController {
     return campaign;
   }
 
-  private editable(campaign: Campaign) {
-    if (campaign.status !== 'approved')
+  private editable(campaign: Campaign, allowPaused = false) {
+    if (
+      campaign.status !== 'approved' &&
+      !(allowPaused && campaign.status === 'paused')
+    )
       throw new ConflictException('Chiến dịch không ở bước chuẩn bị.');
   }
 }

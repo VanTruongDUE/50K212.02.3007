@@ -23,8 +23,13 @@ const legacyLiveRoutes: Record<string, string> = {
   'template-empty': 'templates', 'template-load-error': 'templates', 'template-created': 'templates',
   'template-name-missing': 'template-create', 'template-name-duplicate': 'template-create', 'template-save-error': 'template-create',
   'response-empty': 'response-list', 'response-load-error': 'response-list', 'response-access-denied': 'response-list',
-  'followup-duplicate': 'followup-create', 'followup-optout': 'followup-create',
   'followup-chain': 'followup-list',
+  'manager-account-check-empty': 'manager-account-check', 'manager-account-check-error': 'manager-account-check',
+  'manager-account-list-empty': 'manager-account-list', 'manager-account-fetch-error': 'manager-account-list',
+  'manager-account-invalid': 'manager-account-add', 'manager-account-duplicate': 'manager-account-add',
+  'manager-account-add-save-error': 'manager-account-add',
+  'manager-account-edit-not-found': 'manager-account-list', 'manager-account-edit-save-error': 'manager-account-edit',
+  'manager-account-delete-blocked': 'manager-account-detail', 'manager-account-delete-error': 'manager-account-detail',
 }
 
 function Brand() {

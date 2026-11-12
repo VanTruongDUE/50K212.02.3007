@@ -129,13 +129,13 @@ export function CampaignInfo({ name, count }: { name: string; count: string }) {
   return <div className="next-campaign-info"><div><span>Chiến dịch</span><strong>{name}</strong></div><div><span>Số người nhận đã duyệt</span><strong>{count}</strong></div></div>
 }
 
-function previewBody(value: string) {
-  return value.split(/(\[\[(?:Hình ảnh|Nút|Đường phân cách)\]\])/g).map((block, blockIndex) => {
+export function PreviewBody({ value }: { value: string }) {
+  return <>{value.split(/(\[\[(?:Hình ảnh|Nút|Đường phân cách)\]\])/g).map((block, blockIndex) => {
     if (block === '[[Hình ảnh]]') return <div className="next-mail-image" key={blockIndex}>Hình ảnh</div>
     if (block === '[[Nút]]') return <span className="next-email-cta" key={blockIndex}>Nút</span>
     if (block === '[[Đường phân cách]]') return <hr className="next-mail-divider" key={blockIndex} />
     return <span key={blockIndex}>{block.split(/(\*\*[^*]+\*\*|_[^_]+_|~[^~]+~)/g).map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index}>{part.slice(2, -2)}</strong> : part.startsWith('_') && part.endsWith('_') ? <em key={index}>{part.slice(1, -1)}</em> : part.startsWith('~') && part.endsWith('~') ? <u key={index}>{part.slice(1, -1)}</u> : part)}</span>
-  })
+  })}</>
 }
 
 function invalidEmailVariable(value: string) {
@@ -341,7 +341,7 @@ export default function NextFlows({ screen: requestedScreen, go }: Props) {
     {scenarioAlert}
     <section className="next-preview-stage"><div className={'next-card next-mail ' + (previewDevice === 'phone' ? 'phone' : '')}>
       <h2>Tiêu đề: {personalize(subject)}</h2><span className="next-logo-chip">{logoName}</span>
-      <div className="next-mail-body">{previewBody(personalize(scenario === 'variable-error' ? editableBody.replace('\nChức vụ: {{Chuc vu}}', '') : editableBody))}</div>
+      <div className="next-mail-body"><PreviewBody value={personalize(scenario === 'variable-error' ? editableBody.replace('\nChức vụ: {{Chuc vu}}', '') : editableBody)} /></div>
       {scenario === 'variable-error' && <span className="next-invalid-variable">Chức vụ: {'{{Chuc vu}}'}</span>}
       {hasSignupCta && <span className="next-email-cta">Đăng ký tham dự</span>}
       {attachmentNames.map(name => <small key={name}>📎 {name}</small>)}

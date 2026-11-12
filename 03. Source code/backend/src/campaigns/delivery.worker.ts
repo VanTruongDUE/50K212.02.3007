@@ -34,6 +34,7 @@ export const claimDeliverySql = `SELECT ca.id AS campaign_id, cr.contact_id, sa.
  FROM campaign_recipients cr JOIN campaigns ca ON ca.id=cr.campaign_id
  JOIN contacts ct ON ct.id=cr.contact_id JOIN sender_accounts sa ON sa.id=ca.sender_account_id
  WHERE ca.status IN ('scheduled','sending') AND ca.scheduled_at<=now()
+   AND (ca.send_mode='now' OR extract(hour from now() at time zone 'Asia/Ho_Chi_Minh')::int BETWEEN 8 AND 16)
    AND cr.status='pending' AND sa.status='active'
    AND NOT EXISTS (SELECT 1 FROM email_deliveries d WHERE d.contact_id=ct.id AND d.state='sending')
  ORDER BY ca.scheduled_at,cr.contact_id LIMIT 1 FOR UPDATE OF ca,cr,sa SKIP LOCKED`;
@@ -89,14 +90,6 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
     );
     const baseUrl = this.config.get<string>('PUBLIC_BASE_URL');
     if (!baseUrl || !/^https?:\/\/[^/]+/.test(baseUrl)) return;
-    const hour = Number(
-      (
-        await this.database.query<{ hour: number }>(
-          "SELECT extract(hour from now() at time zone 'Asia/Ho_Chi_Minh')::int AS hour",
-        )
-      ).rows[0].hour,
-    );
-    if (hour < 8 || hour >= 17) return;
     const client = await this.database.connect();
     let job: Job | undefined;
     let deliveryId: string | undefined;

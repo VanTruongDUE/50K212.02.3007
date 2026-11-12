@@ -24,6 +24,10 @@ type ResponseRow = QueryResultRow & {
   id: string;
   assignee_id: string;
   contact_id: string | null;
+  customer_name: string;
+  email: string;
+  phone: string;
+  content: string;
   kind: string;
   status: string;
   hidden_at: Date | null;
@@ -131,6 +135,10 @@ export class ResponsesController {
           'Không thể gửi email tới Response từ chối, rác hoặc email bị trả lại.',
         );
       recipient = item.rows[0].email;
+      if (!recipient)
+        throw new ConflictException(
+          'Response chưa có địa chỉ email. Bổ sung email trước khi gửi.',
+        );
       const suppressed = await client.query(
         'SELECT 1 FROM email_suppressions WHERE email=lower($1)',
         [recipient],
@@ -229,6 +237,7 @@ export class ResponsesController {
     body: {
       customerName?: unknown;
       email?: unknown;
+      phone?: unknown;
       kind?: unknown;
       content?: unknown;
       campaignId?: unknown;
@@ -239,13 +248,17 @@ export class ResponsesController {
       typeof body?.customerName === 'string' ? body.customerName.trim() : '';
     const email =
       typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const phone = typeof body?.phone === 'string' ? body.phone.trim() : '';
     const content =
       typeof body?.content === 'string' ? body.content.trim() : '';
     if (
       !name ||
       name.length > 200 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-      !kinds.includes(String(body.kind)) ||
+      (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
+      email.length > 320 ||
+      (phone && !/^[0-9+\s().-]{9,20}$/.test(phone)) ||
+      (body.kind !== undefined &&
+        (typeof body.kind !== 'string' || !kinds.includes(body.kind))) ||
       !content ||
       content.length > 100000
     )
@@ -264,19 +277,22 @@ export class ResponsesController {
       if (!campaign.rowCount)
         throw new NotFoundException('Không tìm thấy chiến dịch.');
     }
-    const contact = await this.database.query<{ id: string } & QueryResultRow>(
-      'SELECT id FROM contacts WHERE lower(email)=$1',
-      [email],
-    );
+    const contact = email
+      ? await this.database.query<{ id: string } & QueryResultRow>(
+          'SELECT id FROM contacts WHERE lower(email)=$1',
+          [email],
+        )
+      : { rows: [] };
     const result = await this.database.query<ResponseRow>(
-      `INSERT INTO responses(campaign_id,contact_id,customer_name,email,kind,assignee_id,content)
-       VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      `INSERT INTO responses(campaign_id,contact_id,customer_name,email,phone,kind,assignee_id,content)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [
         campaignId,
         contact.rows[0]?.id ?? null,
         name,
         email,
-        body.kind,
+        phone,
+        body.kind ?? 'other',
         request.account.id,
         content,
       ],
@@ -289,7 +305,15 @@ export class ResponsesController {
   @Roles('employee')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { kind?: unknown; status?: unknown; content?: unknown },
+    @Body()
+    body: {
+      customerName?: unknown;
+      email?: unknown;
+      phone?: unknown;
+      kind?: unknown;
+      status?: unknown;
+      content?: unknown;
+    },
     @Req() request: AuthenticatedRequest,
   ) {
     const item = await this.one(id, request);
@@ -297,7 +321,30 @@ export class ResponsesController {
     const kind = body?.kind === undefined ? item.kind : body.kind;
     const status = body?.status === undefined ? item.status : body.status;
     const content = body?.content === undefined ? item.content : body.content;
+    const customerName =
+      body?.customerName === undefined
+        ? item.customer_name
+        : typeof body.customerName === 'string'
+          ? body.customerName.trim()
+          : '';
+    const email =
+      body?.email === undefined
+        ? item.email
+        : typeof body.email === 'string'
+          ? body.email.trim().toLowerCase()
+          : '';
+    const phone =
+      body?.phone === undefined
+        ? item.phone
+        : typeof body.phone === 'string'
+          ? body.phone.trim()
+          : '';
     if (
+      !customerName ||
+      customerName.length > 200 ||
+      (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) ||
+      email.length > 320 ||
+      (phone && !/^[0-9+\s().-]{9,20}$/.test(phone)) ||
       typeof kind !== 'string' ||
       !kinds.includes(kind) ||
       typeof status !== 'string' ||
@@ -318,7 +365,10 @@ export class ResponsesController {
       !['new', 'processing'].includes(item.status) &&
       (status === item.status ||
         kind !== item.kind ||
-        content.trim() !== item.content)
+        content.trim() !== item.content ||
+        customerName !== item.customer_name ||
+        email !== item.email ||
+        phone !== item.phone)
     )
       throw new ConflictException(
         'Response đã phản hồi chỉ được chốt nhu cầu.',
@@ -327,9 +377,26 @@ export class ResponsesController {
     let saved: ResponseRow;
     try {
       await client.query('BEGIN');
+      const contact = email
+        ? await client.query<{ id: string } & QueryResultRow>(
+            'SELECT id FROM contacts WHERE lower(email)=$1',
+            [email],
+          )
+        : { rows: [] };
       const result = await client.query<ResponseRow>(
-        'UPDATE responses SET kind=$2,status=$3,content=$4,updated_at=now() WHERE id=$1 AND assignee_id=$5 AND status=$6 RETURNING *',
-        [id, kind, status, content.trim(), request.account.id, item.status],
+        'UPDATE responses SET kind=$2,status=$3,content=$4,customer_name=$5,email=$6,phone=$7,contact_id=$8,updated_at=now() WHERE id=$1 AND assignee_id=$9 AND status=$10 RETURNING *',
+        [
+          id,
+          kind,
+          status,
+          content.trim(),
+          customerName,
+          email,
+          phone,
+          contact.rows[0]?.id ?? null,
+          request.account.id,
+          item.status,
+        ],
       );
       if (!result.rows[0])
         throw new ConflictException('Response đã đổi trạng thái.');
