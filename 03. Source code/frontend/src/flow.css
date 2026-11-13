@@ -131,3 +131,35 @@
   .history-detail-panel { height: auto; min-height: 636px; }
   .history-summary { height: auto; grid-template-rows: repeat(3, minmax(24px, auto)); }
 }
+
+@media (max-width: 900px) {
+  .flow-content { padding: 24px 20px 40px; }
+  .flow-panel { margin-top: 24px; }
+  .editor-grid, .criteria-summary, .format-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .result-panel .metrics div + div { padding-left: 0; border-left: 0; }
+  .source-row, .review-source { flex-wrap: wrap; gap: 12px 24px; padding-block: 12px; }
+  .confirm-panel, .history-detail-panel { height: auto; min-height: 0; }
+  .confirm-panel .metrics, .confirm-panel .criteria-summary, .confirm-panel > h2:first-child, .confirm-panel > h2:nth-of-type(2), .confirm-panel > p:nth-child(2), .confirm-panel > p:nth-last-child(2), .confirmation-status { height: auto; }
+  .flow-panel:has(.flow-table) { overflow-x: auto; }
+  .flow-table { min-width: 650px; }
+}
+
+@media (max-width: 600px) {
+  .flow-content { padding: 16px 16px 32px; }
+  .breadcrumb { height: auto; }
+  .flow-heading, .flow-panel { padding: 16px; }
+  .criteria-grid, .editor-grid, .criteria-summary, .format-grid { grid-template-columns: 1fr; }
+  .criteria-card { min-height: 0; }
+  .criteria-status { height: auto; min-height: 48px; flex-wrap: wrap; gap: 8px; padding-block: 8px; }
+  .criteria-chip { max-width: 100%; }
+  .source-row { align-items: flex-start; }
+  .metrics { gap: 12px; margin-bottom: 20px; }
+  .metrics strong { font-size: 20px; line-height: 28px; }
+  .history-summary { display: block; }
+  .history-summary > * { display: block; margin-bottom: 8px; }
+  .confirmation-status { grid-template-columns: 1fr; gap: 8px; }
+  .flow-actions > div, .flow-button { width: 100%; min-width: 0; }
+  .flow-actions small { max-width: none; }
+  .flow-notice { min-height: 180px; padding: 48px 16px 20px; }
+}

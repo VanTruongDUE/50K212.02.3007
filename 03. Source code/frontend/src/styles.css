@@ -92,3 +92,42 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   .login-form { left: 64px; }
   .workplace { width: min(688px, calc(100% - 544px)); }
 }
+
+@media (max-width: 900px) {
+  .login-page { display: flex; flex-direction: column; align-items: center; gap: 24px; min-height: 100svh; height: auto; padding: 24px; }
+  .login-brand, .login-form, .workplace { position: static; }
+  .login-brand { align-self: flex-start; }
+  .login-form { width: min(432px, 100%); margin: 20px 0 0; gap: 16px; }
+  .workplace { width: min(688px, 100%); height: 300px; margin-top: 16px; }
+  .workplace-caption { height: auto; padding: 20px; }
+  .app-shell { flex-direction: column; }
+  .sidebar { flex: none; width: 100%; min-height: 0; padding: 12px 16px; border-right: 0; border-bottom: 1px solid #294567; }
+  .sidebar .brand { height: 48px; }
+  .sidebar nav { flex-direction: row; align-items: center; gap: 8px; margin-top: 8px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  .sidebar button.nav-item { flex: 0 0 auto; width: auto; padding-inline: 12px; white-space: nowrap; }
+  .subnav { flex: 0 0 auto; display: block; margin: 0; padding: 0; border: 0; }
+  .subnav.collapsed { display: none; }
+  .subnav-items { flex-direction: row; overflow: visible; }
+  .subnav button { white-space: nowrap; }
+  .workspace { width: 100%; }
+  .topbar { height: auto; min-height: 64px; gap: 12px; padding: 8px 20px; }
+  .topbar > span { min-width: 0; }
+  .account-button { flex-shrink: 0; }
+  .home-content { margin: 32px 24px; }
+  .profile-page { margin: 24px auto; padding: 0 24px; }
+}
+
+@media (max-width: 600px) {
+  .login-page { padding: 16px; }
+  .login-form { margin-top: 8px; }
+  .workplace { height: 240px; }
+  .workplace-caption h2 { font-size: 20px; line-height: 28px; }
+  .sidebar { padding: 10px 12px; }
+  .topbar { flex-wrap: wrap; padding: 8px 16px; font-size: 14px; line-height: 20px; }
+  .account-button { margin-left: auto; font-size: 14px; }
+  .home-content { margin: 24px 16px; }
+  .profile-page { padding: 0 16px; }
+  .profile-panel { padding: 20px 16px; }
+  .profile-panel dl div { grid-template-columns: 1fr; gap: 4px; }
+  .profile-panel dd { overflow-wrap: anywhere; }
+}
