@@ -20,6 +20,7 @@ import { SessionGuard } from '../auth/session.guard';
 import type { AuthenticatedRequest } from '../auth/session.guard';
 import { DatabaseService } from '../database/database.service';
 import { DeliveryWorker } from './delivery.worker';
+import { parseCampaignBody } from './content-blocks';
 
 const variables = ['{{Họ tên}}', '{{Tên doanh nghiệp}}'];
 export function fill(
@@ -59,7 +60,7 @@ export class CampaignsController {
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
     const result = await this.database.query(
-      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.send_mode,c.sent_count,c.created_at,
+      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.scheduled_at,c.send_mode,c.sent_count,c.paused_at,c.pause_reason,c.created_at,
        (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id) AS recipient_count
        FROM campaigns c WHERE $1='manager' OR c.owner_id=$2 ORDER BY c.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
@@ -215,7 +216,14 @@ export class CampaignsController {
     const subject =
       typeof body?.subject === 'string' ? body.subject.trim() : '';
     const content = typeof body?.body === 'string' ? body.body.trim() : '';
-    if (!subject || subject.length > 150 || !content || content.length > 100000)
+    if (
+      !subject ||
+      subject.length > 150 ||
+      subject.includes('[[') ||
+      subject.includes(']]') ||
+      !content ||
+      content.length > 100000
+    )
       throw new BadRequestException(
         'Tiêu đề hoặc nội dung email không hợp lệ.',
       );
@@ -224,6 +232,23 @@ export class CampaignsController {
       ?.filter((item) => !variables.includes(item));
     if (unsupported?.length)
       throw new BadRequestException('Biến cá nhân hóa không được hỗ trợ.');
+    const imageIds = [
+      ...new Set(
+        parseCampaignBody(content)
+          .filter((block) => block.kind === 'image')
+          .map((block) => block.id),
+      ),
+    ];
+    if (imageIds.length) {
+      const images = await this.database.query(
+        "SELECT id FROM campaign_assets WHERE campaign_id=$1 AND kind='image' AND id=ANY($2::bigint[])",
+        [id, imageIds],
+      );
+      if (images.rowCount !== imageIds.length)
+        throw new BadRequestException(
+          'Ảnh trong nội dung email không còn tồn tại.',
+        );
+    }
     const result = await this.database.query(
       "UPDATE campaigns SET subject=$2,body=$3,previewed_at=NULL,updated_at=now() WHERE id=$1 AND status IN ('approved','paused') RETURNING *",
       [id, subject, content],
@@ -289,7 +314,7 @@ export class CampaignsController {
     @Req() request: AuthenticatedRequest,
   ) {
     const campaign = await this.owned(id, request);
-    this.editable(campaign);
+    this.editable(campaign, true);
     if (
       !Number.isSafeInteger(body?.senderAccountId) ||
       Number(body.senderAccountId) < 1
@@ -303,8 +328,9 @@ export class CampaignsController {
       throw new ConflictException(
         'Tài khoản gửi chưa hoạt động hoặc chưa cấu hình SMTP.',
       );
+    await this.ensureSenderCapacity(Number(body.senderAccountId), id);
     const result = await this.database.query(
-      "UPDATE campaigns SET sender_account_id=$2,updated_at=now() WHERE id=$1 AND status='approved' RETURNING *",
+      "UPDATE campaigns SET sender_account_id=$2,updated_at=now() WHERE id=$1 AND status IN ('approved','paused') RETURNING *",
       [id, body.senderAccountId],
     );
     if (!result.rows[0])
@@ -375,6 +401,7 @@ export class CampaignsController {
     );
     if (!account.rowCount)
       throw new ConflictException('Tài khoản gửi không còn hoạt động.');
+    await this.ensureSenderCapacity(Number(campaign.sender_account_id), id);
     const result = await this.database.query(
       `UPDATE campaigns SET status='scheduled',updated_at=now() WHERE id=$1 AND status='approved' AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1) RETURNING *`,
       [id],
@@ -389,12 +416,21 @@ export class CampaignsController {
   @Roles('employee', 'manager')
   async pause(
     @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: unknown },
     @Req() request: AuthenticatedRequest,
   ) {
     await this.one(id, request);
+    const reason =
+      body?.reason === undefined
+        ? null
+        : typeof body.reason === 'string'
+          ? body.reason.trim()
+          : undefined;
+    if (reason === undefined || (reason && reason.length > 250))
+      throw new BadRequestException('Lý do tạm dừng tối đa 250 ký tự.');
     const result = await this.database.query(
-      `UPDATE campaigns SET status='paused',updated_at=now() WHERE id=$1 AND status IN ('scheduled','sending') RETURNING *`,
-      [id],
+      `UPDATE campaigns SET status='paused',paused_at=now(),pause_reason=$2,updated_at=now() WHERE id=$1 AND status IN ('scheduled','sending') RETURNING *`,
+      [id, reason || null],
     );
     if (!result.rowCount)
       throw new ConflictException('Chiến dịch không thể tạm dừng.');
@@ -407,7 +443,14 @@ export class CampaignsController {
     @Param('id', ParseIntPipe) id: number,
     @Req() request: AuthenticatedRequest,
   ) {
-    await this.one(id, request);
+    const campaign = await this.one(id, request);
+    if (campaign.status === 'paused') {
+      if (!campaign.sender_account_id)
+        throw new ConflictException(
+          'Cần chọn tài khoản gửi trước khi tiếp tục.',
+        );
+      await this.ensureSenderCapacity(Number(campaign.sender_account_id), id);
+    }
     const result = await this.database.query(
       `UPDATE campaigns SET status='scheduled',scheduled_at=now()+interval '15 minutes',updated_at=now() WHERE id=$1 AND status='paused' AND previewed_at IS NOT NULL AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending') AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1 AND state='sending') RETURNING *`,
       [id],
@@ -425,7 +468,7 @@ export class CampaignsController {
   ) {
     await this.owned(id, request);
     const result = await this.database.query(
-      `DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','approved','paused') AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id`,
+      `DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','approved','scheduled','paused') AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id`,
       [id],
     );
     if (!result.rowCount)
@@ -452,6 +495,26 @@ export class CampaignsController {
     const campaign = await this.one(id, request);
     if (campaign.owner_id !== request.account.id) throw new NotFoundException();
     return campaign;
+  }
+
+  private async ensureSenderCapacity(senderId: number, campaignId: number) {
+    const result = await this.database.query<{
+      remaining: string;
+      pending: string;
+    }>(
+      `SELECT s.quota_3_days
+        - (SELECT count(*) FROM email_deliveries d WHERE d.sender_account_id=s.id AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
+        - (SELECT count(*) FROM response_email_deliveries r WHERE r.sender_account_id=s.id AND r.state IN ('sent','sending') AND r.created_at>now()-interval '3 days') AS remaining,
+        (SELECT count(*) FROM campaign_recipients WHERE campaign_id=$2 AND status='pending') AS pending
+       FROM sender_accounts s WHERE s.id=$1 AND s.status='active' AND s.smtp_secret IS NOT NULL`,
+      [senderId, campaignId],
+    );
+    if (!result.rows[0])
+      throw new ConflictException('Tài khoản gửi không còn hoạt động.');
+    if (Number(result.rows[0].remaining) < Number(result.rows[0].pending))
+      throw new ConflictException(
+        'Tài khoản gửi không đủ hạn mức cho số email còn lại.',
+      );
   }
 
   private editable(campaign: Campaign, allowPaused = false) {

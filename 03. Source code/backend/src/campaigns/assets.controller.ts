@@ -63,9 +63,10 @@ export class AssetsController {
     );
     if (!result.rows[0]) throw new NotFoundException();
     response.setHeader('Content-Type', result.rows[0].content_type);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader(
       'Content-Disposition',
-      `attachment; filename="asset-${assetId}"`,
+      `${['image/png', 'image/jpeg'].includes(result.rows[0].content_type) ? 'inline' : 'attachment'}; filename="asset-${assetId}"`,
     );
     response.send(result.rows[0].content);
   }
@@ -85,7 +86,7 @@ export class AssetsController {
       !file?.buffer ||
       !file.size ||
       file.size > 10_000_000 ||
-      (body?.kind !== 'logo' && body?.kind !== 'pdf')
+      !['logo', 'pdf', 'image'].includes(String(body?.kind))
     )
       throw new BadRequestException('Tệp email không hợp lệ.');
     const kind = body.kind;
@@ -94,7 +95,7 @@ export class AssetsController {
     if (kind === 'pdf' && bytes.subarray(0, 5).toString() === '%PDF-')
       contentType = 'application/pdf';
     else if (
-      kind === 'logo' &&
+      (kind === 'logo' || kind === 'image') &&
       file.size <= 2_000_000 &&
       bytes
         .subarray(0, 8)
@@ -102,7 +103,7 @@ export class AssetsController {
     )
       contentType = 'image/png';
     else if (
-      kind === 'logo' &&
+      (kind === 'logo' || kind === 'image') &&
       file.size <= 2_000_000 &&
       bytes[0] === 255 &&
       bytes[1] === 216 &&
@@ -117,7 +118,7 @@ export class AssetsController {
       contentType = 'image/svg+xml';
     else
       throw new BadRequestException(
-        'Logo phải là PNG/JPG/SVG tối đa 2 MB; tệp đính kèm phải là PDF tối đa 10 MB.',
+        'Ảnh phải là PNG/JPG tối đa 2 MB, logo có thể là SVG; PDF tối đa 10 MB.',
       );
     const name = basename(file.originalname).slice(0, 255) || 'attachment';
     const client = await this.database.connect();
@@ -141,7 +142,7 @@ export class AssetsController {
           throw new ConflictException(
             'Mỗi chiến dịch chỉ có tối đa 3 tệp PDF.',
           );
-      } else
+      } else if (kind === 'logo')
         await client.query(
           "DELETE FROM campaign_assets WHERE campaign_id=$1 AND kind='logo'",
           [id],
@@ -175,6 +176,19 @@ export class AssetsController {
     if (campaign.owner_id !== request.account.id) throw new NotFoundException();
     if (!['approved', 'paused'].includes(campaign.status))
       throw new ConflictException('Chiến dịch đã xác nhận không thể sửa tệp.');
+    const asset = await this.database.query<
+      { kind: string; body: string | null } & QueryResultRow
+    >(
+      'SELECT a.kind,c.body FROM campaign_assets a JOIN campaigns c ON c.id=a.campaign_id WHERE a.campaign_id=$1 AND a.id=$2',
+      [id, assetId],
+    );
+    if (
+      asset.rows[0]?.kind === 'image' &&
+      asset.rows[0].body?.includes(`[[Hình ảnh:${assetId}]]`)
+    )
+      throw new ConflictException(
+        'Hãy xóa ảnh khỏi nội dung email rồi lưu trước khi xóa tệp.',
+      );
     const result = await this.database.query(
       'DELETE FROM campaign_assets WHERE campaign_id=$1 AND id=$2 RETURNING id',
       [id, assetId],

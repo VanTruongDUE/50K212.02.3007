@@ -34,8 +34,9 @@ Filter Template: Nhân viên dùng `GET/POST /api/filter-templates`, `GET/PATCH/
 | POST | `/api/sender-accounts/:id/verify-inbox` | Trưởng phòng | Kiểm tra kết nối Gmail IMAP |
 | POST | `/api/sender-accounts/:id/sync-inbox` | Trưởng phòng | Đồng bộ email mới ngay; lần đầu chỉ khởi tạo con trỏ |
 | DELETE | `/api/sender-accounts/:id` | Trưởng phòng | Chỉ khi tài khoản chưa gắn chiến dịch |
-| GET/POST | `/api/email-templates` | Cả hai / Nhân viên | Mẫu email; tạo bằng `name`, `subject`, `body` |
-| PATCH/DELETE | `/api/email-templates/:id` | Chủ mẫu | Sửa hoặc xóa mẫu của mình |
+| GET/POST | `/api/email-templates` | Cả hai / Nhân viên | Mẫu email; tạo bằng `name`, `subject`, `body`, thêm `campaignId` nếu nội dung có ảnh |
+| PATCH/DELETE | `/api/email-templates/:id` | Chủ mẫu | Sửa hoặc xóa mẫu của mình; khi sửa nội dung có ảnh phải gửi `campaignId` chứa ảnh |
+| POST | `/api/email-templates/:id/apply` | Nhân viên | `{ "campaignId": 1 }`; sao chép ảnh của mẫu vào chiến dịch và trả `subject`, `body` với ID ảnh mới |
 
 `smtpPassword` chỉ gửi qua kết nối HTTPS ở môi trường thật. Máy chủ mã hóa bằng `SMTP_ENCRYPTION_KEY`; API không trả khóa hoặc mật khẩu. Gmail có thể cấu hình `smtp.gmail.com:465` nếu tài khoản được phép dùng SMTP và phương thức xác thực phù hợp.
 
@@ -48,18 +49,19 @@ Gmail IMAP dùng cùng tên đăng nhập và mật khẩu ứng dụng đã mã
 | GET | `/api/campaigns`, `/api/campaigns/:id` | Cả hai | Danh sách và chi tiết theo phạm vi |
 | POST | `/api/campaigns` | Nhân viên | `{ "name": "...", "listIds": [1, 2] }`; chỉ nhận danh sách đã được duyệt, lọc trùng/đã từ chối/bounce/đã gửi trong 7 ngày |
 | PATCH | `/api/campaigns/:id` | Chủ chiến dịch | Sửa `name`, `description` khi đang chuẩn bị, đã lên lịch hoặc tạm dừng; cả hai trường bắt buộc |
-| PATCH | `/api/campaigns/:id/content` | Chủ chiến dịch | `{ "subject": "...", "body": "..." }`; hỗ trợ `{{Họ tên}}`, `{{Tên doanh nghiệp}}`; cho phép sửa khi chuẩn bị hoặc tạm dừng |
+| PATCH | `/api/campaigns/:id/content` | Chủ chiến dịch | `{ "subject": "...", "body": "..." }`; hỗ trợ `{{Họ tên}}`, `{{Tên doanh nghiệp}}`, khối ảnh `[[Hình ảnh:ID]]`, nút `[[Nút:Tên|https://...]]` và `[[Đường phân cách]]`; cho phép sửa khi chuẩn bị hoặc tạm dừng |
 | POST | `/api/campaigns/:id/preview` | Chủ chiến dịch | `{ "contactId": 1 }` hoặc `{}` để xem Contact đầu tiên; cần xem lại sau mỗi lần sửa nội dung, kể cả trước khi tiếp tục chiến dịch tạm dừng |
-| GET/POST | `/api/campaigns/:id/assets` | Cả hai / Chủ chiến dịch | Xem danh sách hoặc tải multipart `kind=logo|pdf`, trường tệp `file`; logo PNG/JPG/SVG tối đa 2 MB, tối đa 3 PDF mỗi tệp 10 MB; cho phép sửa khi chuẩn bị hoặc tạm dừng |
+| GET/POST | `/api/campaigns/:id/assets` | Cả hai / Chủ chiến dịch | Xem danh sách hoặc tải multipart `kind=logo|pdf|image`, trường tệp `file`; ảnh nội dung PNG/JPG tối đa 2 MB, logo PNG/JPG/SVG tối đa 2 MB, tối đa 3 PDF mỗi tệp 10 MB; cho phép sửa khi chuẩn bị hoặc tạm dừng |
 | GET/DELETE | `/api/campaigns/:id/assets/:assetId` | Cả hai / Chủ chiến dịch | Tải về hoặc xóa khi chiến dịch đang chuẩn bị hoặc tạm dừng |
 | PATCH | `/api/campaigns/:id/sender` | Chủ chiến dịch | `{ "senderAccountId": 1 }` |
 | PATCH | `/api/campaigns/:id/schedule` | Chủ chiến dịch | `{ "scheduledAt": "2026-11-12T02:00:00.000Z" }` để hẹn trước ít nhất 15 phút, hoặc `{ "sendNow": true }` để bắt đầu ngay sau xác nhận |
 | POST | `/api/campaigns/:id/confirm` | Chủ chiến dịch | Xác nhận lịch gửi sau khi hoàn tất các bước |
-| POST | `/api/campaigns/:id/pause`, `/:id/resume` | Chủ/Trưởng phòng | Tạm dừng hoặc tiếp tục các email chưa gửi; nếu đã sửa nội dung/tệp khi tạm dừng, phải xem trước lại trước khi tiếp tục |
+| POST | `/api/campaigns/:id/pause`, `/:id/resume` | Chủ/Trưởng phòng | Tạm dừng với `{ "reason": "..." }` tùy chọn, tối đa 250 ký tự; lưu thời điểm và lý do. Tiếp tục các email chưa gửi; nếu đã sửa nội dung/tệp khi tạm dừng, phải xem trước lại |
 | DELETE | `/api/campaigns/:id` | Chủ chiến dịch | Chỉ trước khi có lần thử gửi, kể cả chiến dịch đã tạm dừng |
 
-Worker gửi tối đa 50 email/giờ và hạn mức mặc định 100 email/3 ngày trên mỗi tài khoản. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
-Logo PNG/JPG được nhúng vào HTML email; SVG được đính kèm dạng tệp vì nhiều trình đọc email không hiển thị SVG nội tuyến. PDF được gửi như tệp đính kèm. Nếu tổng dung lượng vượt giới hạn nhà cung cấp SMTP, chiến dịch sẽ tạm dừng và ghi lỗi gửi; cần kiểm tra trước khi tiếp tục.
+Worker gửi tối đa 50 email/giờ và hạn mức mặc định 100 email/3 ngày trên mỗi tài khoản. Khi chọn tài khoản, xác nhận hoặc tiếp tục chiến dịch, API kiểm tra hạn mức còn lại đủ cho số email chưa gửi; chiến dịch đang tạm dừng có thể đổi tài khoản gửi. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
+Logo PNG/JPG và ảnh nội dung được nhúng vào HTML email bằng CID; SVG được đính kèm dạng tệp vì nhiều trình đọc email không hiển thị SVG nội tuyến. PDF được gửi như tệp đính kèm. Nếu tổng dung lượng vượt giới hạn nhà cung cấp SMTP, chiến dịch sẽ tạm dừng và ghi lỗi gửi; cần kiểm tra trước khi tiếp tục.
+Các dấu định dạng từ thanh công cụ soạn thảo (`**đậm**`, `_nghiêng_`, `~gạch chân~`) được dựng thành HTML khi gửi. Ảnh nội dung không còn được tham chiếu sẽ không đính kèm vào email.
 
 ## Response, Follow-up và báo cáo
 

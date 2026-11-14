@@ -166,7 +166,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
     let smtpAccepted = false;
     try {
       const assets = await this.database.query<MailAsset & QueryResultRow>(
-        'SELECT kind,file_name,content_type,content FROM campaign_assets WHERE campaign_id=$1 ORDER BY id',
+        'SELECT id,kind,file_name,content_type,content FROM campaign_assets WHERE campaign_id=$1 ORDER BY id',
         [job.campaign_id],
       );
       const link = `${baseUrl.replace(/\/$/, '')}/api/unsubscribe/${job.unsubscribe_token}`;
@@ -174,8 +174,9 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
         job,
         job.recipient_email,
         fill(job.subject, job.full_name, job.company),
-        `${fill(job.body, job.full_name, job.company)}\n\nNgừng nhận email: ${link}`,
+        `${job.body}\n\nNgừng nhận email: ${link}`,
         assets.rows,
+        (value) => fill(value, job.full_name, job.company),
       );
       smtpAccepted = true;
       const result = await this.database.connect();

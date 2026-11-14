@@ -1,5 +1,18 @@
 # Đối chiếu FE với Figma — trang Đức + Huy
 
+## Kiểm tra lại luồng Chiến dịch dùng API — 13/11/2026
+
+- Figma Bridge đang kết nối. Đã so ảnh trực tiếp frame Xác nhận chiến dịch và hộp Xem nội dung email với FE; nội dung, bốn phần tóm tắt và bố cục desktop tương ứng. Không dùng tiêu chí khớp từng pixel.
+- Đã thao tác thật từ tạo chiến dịch → lọc danh sách → chọn bố cục → soạn email → chọn logo từ thư viện → xem trước với hai Contact → chọn tài khoản → gửi ngay → màn xác nhận. Phát hiện và sửa dữ liệu tài khoản gửi mới bị chi tiết cũ ghi đè trong màn lịch gửi; sau sửa hiện đúng email và hạn mức. Đã thử nút Chỉnh sửa, hộp xem email và điều kiện bật nút xác nhận. Chiến dịch QA đã xóa.
+- Đã mở chiến dịch tạm dừng từ danh sách và từ chi tiết: cả hai dẫn đến màn Tiếp tục gửi; nút chỉ bật sau khi xem email. Đã đối chiếu frame lỗi tạo bản xem trước và chạy thử lỗi API thật; FE hiện thông báo, giữ dữ liệu đã soạn và có nút quay lại. Chưa kích hoạt gửi hoặc tiếp tục gửi email thật; chưa so ảnh trực tiếp mọi frame Chiến dịch sau sửa.
+- Trạng thái “Không đủ hạn mức” đã thử trên FE bằng phản hồi tài khoản mô phỏng trong trình duyệt, không đổi dữ liệu PostgreSQL: hiện cảnh báo, vô hiệu hóa nút Tiếp tục gửi và mở được bước đổi tài khoản. BE kiểm tra lại hạn mức 3 ngày khi chọn tài khoản, xác nhận và tiếp tục; smoke trên PostgreSQL thật xác nhận đổi tài khoản ở chiến dịch tạm dừng rồi tiếp tục. Backend unit test xác nhận thiếu hạn mức giữ nguyên trạng thái tạm dừng.
+
+## Rà lại bản FE dùng API — 13/11/2026
+
+- Đã đăng nhập thật bằng hai vai trò, mở 49 route Nhân viên và 19 route Trưởng phòng ở 1440 × 1024: đều có tiêu đề, không có màn dự phòng hoặc cuộn ngang. Đã thao tác qua sidebar, breadcrumb, danh sách Chiến dịch, form sửa email của chiến dịch tạm dừng, hộp tạm dừng và màn tiếp tục gửi. Đã tạo rồi xóa một chiến dịch thử; thời điểm và lý do tạm dừng lưu/đọc lại đúng từ PostgreSQL. Trưởng phòng đi vào route Nhân viên được đưa về Trang chính.
+- Đã so trực tiếp ảnh Figma với màn Cập nhật Response, Sửa email khi tạm dừng và hộp tạm dừng. Các phần chính cùng bố cục desktop. Khối văn bản/hình/nút/đường phân cách kéo vào textarea được, và bản xem trước hiển thị dạng khối. Trình soạn thảo vẫn là textarea chứa mã khối, chưa có thao tác chọn logo từ thư viện như frame Figma vì dự án chưa có kho asset/logo dùng chung.
+- Các trạng thái lỗi/rỗng sau nối API xuất hiện theo dữ liệu và phản hồi API trên màn nghiệp vụ; các URL trạng thái demo cũ có thể đưa về màn chính tương ứng. Lượt này chưa so ảnh từng frame trong cả 75 + 121 frame hoặc kích hoạt tự nhiên mọi lỗi của Figma. Vì vậy kết quả route và smoke test **không chứng minh 196 trạng thái khớp đầy đủ**.
+
 ## Cập nhật sau khi nối API (12/11/2026)
 
 - Figma UI MCP Bridge đã kết nối lại và đã đọc trực tiếp các frame đại diện ở cả ba trang `Trường`, `Đức + Huy`, `Nhi + Thảo`. Bản FE chạy cùng PostgreSQL và BE thật ở viewport 1440 px; đã chụp 14 màn chính (9 Nhân viên, 5 Trưởng phòng), so trực quan các màn tiêu chí, Filter Template, xuất Contact, Chiến dịch, Response, Follow-up và tài khoản gửi. Không dùng tiêu chí khớp từng pixel.

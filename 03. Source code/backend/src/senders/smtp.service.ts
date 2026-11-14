@@ -6,6 +6,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import nodemailer from 'nodemailer';
+import {
+  parseCampaignBody,
+  renderCampaignBody,
+} from '../campaigns/content-blocks';
 
 export type SmtpAccount = {
   email: string;
@@ -15,7 +19,8 @@ export type SmtpAccount = {
   smtp_secret: string | null;
 };
 export type MailAsset = {
-  kind: 'logo' | 'pdf';
+  id: string;
+  kind: 'logo' | 'pdf' | 'image';
   file_name: string;
   content_type: string;
   content: Buffer;
@@ -92,28 +97,46 @@ export class SmtpService {
     subject: string,
     body: string,
     assets: MailAsset[] = [],
+    personalizeCampaign?: (value: string) => string,
   ): Promise<string> {
+    const imageIds = personalizeCampaign
+      ? new Set(
+          parseCampaignBody(body)
+            .filter((block) => block.kind === 'image')
+            .map((block) => String(block.id)),
+        )
+      : new Set<string>();
+    const includedAssets = assets.filter(
+      (asset) => asset.kind !== 'image' || imageIds.has(asset.id),
+    );
     const logo = assets.find(
       (asset) =>
         asset.kind === 'logo' && asset.content_type !== 'image/svg+xml',
     );
-    const attachments = assets.map((asset) => ({
+    const attachments = includedAssets.map((asset) => ({
       filename: asset.file_name,
       content: asset.content,
       contentType: asset.content_type,
-      ...(asset === logo ? { cid: 'v5-logo' } : {}),
+      ...(asset === logo
+        ? { cid: 'v5-logo' }
+        : asset.kind === 'image'
+          ? { cid: `v5-image-${asset.id}` }
+          : {}),
     }));
     const escaped = body
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;');
+    const rendered = personalizeCampaign
+      ? renderCampaignBody(body, includedAssets, personalizeCampaign)
+      : { text: body, html: escaped };
     const result = await this.transport(account).sendMail({
       from: account.email,
       to,
       subject,
-      text: body,
-      html: `${logo ? '<p><img src="cid:v5-logo" alt="Logo V5" style="max-width:240px"></p>' : ''}<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${escaped}</div>`,
+      text: rendered.text,
+      html: `${logo ? '<p><img src="cid:v5-logo" alt="Logo V5" style="max-width:240px"></p>' : ''}<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${rendered.html}</div>`,
       attachments,
     });
     if (!result.accepted.includes(to))
