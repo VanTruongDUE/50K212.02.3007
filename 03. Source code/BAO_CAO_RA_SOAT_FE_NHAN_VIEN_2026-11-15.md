@@ -18,7 +18,7 @@ Trạng thái cập nhật: **BA đã yêu cầu sửa lại FE theo Figma; đã
 - Mức tương đồng thị giác BA yêu cầu là bám bố cục/nội dung/trạng thái ở mức tốt, khoảng 90% theo kỳ vọng sử dụng; đây không phải điểm số ảnh đã đo. Chỉ chỉnh các sai lệch xác nhận được, không viết lại màn đã đúng hoặc thay quy tắc BE để chạy theo dữ liệu mẫu Figma.
 - Đã chạy thao tác ghi thật từ FE rồi đọc lại API/PostgreSQL: tạo/sửa Template (giữ lựa chọn nhiều giá trị), tạo Response → cập nhật trạng thái kèm ghi chú → lịch sử, lập Follow-up → lưu ghi chú, tạo chiến dịch chưa gửi → popup Xem → sửa tên/mô tả. Danh sách Contact riêng cho bài kiểm tra được tạo/xác nhận/duyệt qua API với hai phiên Nhân viên và Trưởng phòng trước khi tạo chiến dịch trên FE. PATCH chiến dịch trả 200 và dữ liệu đọc lại khớp. Không phát hiện lỗi tích hợp trên các đường đi này.
 - Sáu bản ghi thử riêng của hành trình UI đã được dọn theo ID chính xác, kiểm tra lại đều còn 0; không dọn bằng tiền tố chung hoặc xóa dữ liệu cũ. [Báo cáo hành trình UI thật](.context-cache/fe-review-2026-11-15/integration-after/A-integration-report.md).
-- Đã dùng `agent-desktop` mở cửa sổ Brave riêng của dự án, điều hướng màn Kiểm tra danh sách Contact của Trưởng phòng và chụp trạng thái thực trên desktop. Không đăng xuất phiên có sẵn của người dùng và không thao tác gửi tin nhắn trên các tab khác.
+- Đã dùng `agent-desktop` mở cửa sổ Brave riêng của dự án, điều hướng màn Kiểm tra danh sách của Trưởng phòng và chụp trạng thái thực trên desktop. Không đăng xuất phiên có sẵn của người dùng và không thao tác gửi tin nhắn trên các tab khác.
 
 ## Bằng chứng và độ bao phủ
 

@@ -41,7 +41,7 @@ Mỗi lượt dùng tiền tố ngẫu nhiên riêng và địa chỉ `example.i
 
 - Đăng nhập Nhân viên và Trưởng phòng từ form public; header/sidebar chuyển đúng vai trò. Nhân viên đăng xuất bằng popup tài khoản và trở về form đăng nhập.
 - Nhân viên mở Contact, Chiến dịch, tạo chiến dịch, chi tiết chiến dịch đã gửi, Response, chi tiết Response 3 và Follow-up 3. Response hiển thị loại Quan tâm, trạng thái Mới và nội dung reply; Follow-up hiển thị đúng kênh Gọi điện/mục tiêu đã lưu.
-- Trưởng phòng mở Trang chủ, Kiểm tra danh sách Contact, Danh sách tài khoản gửi và Chi tiết tài khoản. Trang chủ ghi nhận một chiến dịch, một email đã gửi và một Response chưa xử lý. Danh sách chờ duyệt rỗng sau khi danh sách thử đã được duyệt là trạng thái phù hợp.
+- Trưởng phòng mở Trang chủ, Kiểm tra danh sách, Danh sách tài khoản gửi và Chi tiết tài khoản. Trang chủ ghi nhận một chiến dịch, một email đã gửi và một Response chưa xử lý. Danh sách chờ duyệt rỗng sau khi danh sách thử đã được duyệt là trạng thái phù hợp.
 - Bấm Kiểm tra SMTP/IMAP trong màn chi tiết tài khoản và quan sát thông báo thành công cho từng thao tác. Reload trang vẫn giữ phiên và dữ liệu Gmail Marketing.
 - Đã chụp và xem ảnh các màn chính được nêu. Không thay đổi source component, CSS hoặc bố cục FE trong triển khai; SHA-256 bundle JavaScript public khớp bundle build cục bộ `/assets/index-CbYDYd7k.js`.
 

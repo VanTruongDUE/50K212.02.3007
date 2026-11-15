@@ -130,7 +130,7 @@ Kiểm tra kỹ thuật sau sửa: npm run build, npm run lint, git diff --check
 | Trường | 10 | `16:322` | Cập nhật Filter Template | `template-edit` | route | 6.35 | 7.4% | cần rà | — |
 | Trường | 11 | `16:373` | Kiểm tra bộ tiêu chí | `review` | route | 3.87 | 5.0% | nhẹ | — |
 | Trường | 12 | `16:403` | Kết quả tìm kiếm | `results` | route | 6.80 | 8.9% | cần rà | — |
-| Trường | 13 | `16:436` | Kiểm tra danh sách Contact | `check` | route | 6.33 | 9.5% | cần rà | — |
+| Trường | 13 | `16:436` | Kiểm tra danh sách | `check` | route | 6.33 | 9.5% | cần rà | — |
 | Trường | 14 | `16:472` | Xác nhận danh sách Contact | `confirm` | route | 4.27 | 6.8% | nhẹ | — |
 | Trường | 15 | `16:496` | Danh sách đã xác nhận | `confirmed` | route | 7.08 | 9.7% | cần rà | — |
 | Trường | 16 | `16:529` | Xuất danh sách Contact | `export` | route | 3.61 | 5.5% | nhẹ | — |
