@@ -61,7 +61,7 @@ Chỉ thêm thư mục `features` ở FE và `modules` ở BE khi triển khai c
 
 ## Triển khai public
 
-FE dùng `https://v5-marketing.vercel.app`; API nghiệp vụ/timer nền dùng Render Free, PostgreSQL Neon Free và SMTP gateway Vercel. Neon đã có 23 migration và hai tài khoản; API Render đang build, rewrite FE và kiểm tra public còn chờ. Gateway health đã đạt nhưng secret relay mới cần deployment nạp lại; chưa xác nhận SMTP/IMAP thật. Chưa chuyển dữ liệu nghiệp vụ local; dự kiến chỉ chuyển Gmail ID 164 và mã hóa lại token bằng khóa cloud, không mặc định yêu cầu cấp quyền lại nếu token còn hợp lệ. Render Free có thể sleep, nên lịch nền không được bảo đảm khi service ngủ. Xem hướng dẫn triển khai ở trên.
+FE dùng `https://v5-marketing.vercel.app`; API nghiệp vụ/timer nền dùng `https://v5-marketing-api.onrender.com` trên Render Free, PostgreSQL Neon Free và SMTP gateway Vercel. Ngày 15/11/2026, health Render/gateway đạt 200, rewrite FE hoạt động; hai lượt API cloud đạt 59/59 assertion mỗi lượt. Gmail được yêu cầu đã chuyển sang tài khoản cloud ID 1, token được mã hóa lại bằng khóa cloud; không chuyển dữ liệu nghiệp vụ local. Đã gửi đúng một email thử đến người nhận được cho phép, thấy thư trong Inbox và nhận reply thật bằng IMAP tự động; Response và Follow-up lưu đúng. Xem [kiểm chứng triển khai](DEPLOY_VERIFICATION.md). Render Free có thể sleep và dừng timer nền; không bảo đảm lịch gửi khi service ngủ hoặc vượt quota miễn phí của Vercel/Neon.
 
 ## Cài đặt và chạy trên máy phát triển
 
@@ -125,7 +125,7 @@ Giao diện giữ bố cục Figma ở 1440 × 1024 và co lại cho desktop 136
 - Các trạng thái minh họa Figma vẫn có thể mở riêng ở môi trường dev bằng `?preview=employee&screen=...` hoặc `?preview=manager&screen=...`. Ở chế độ `preview`, dữ liệu vẫn là demo và thao tác không lưu database. Không dùng URL preview để kiểm chứng dữ liệu thật.
 - Thư IMAP mới ghép với chiến dịch tự phân loại ý định tiếng Việt/Anh: Quan tâm, Cần thêm thông tin, Không quan tâm, Ngừng nhận email hoặc Khác. Bộ phân loại bỏ qua phần trích dẫn phổ biến, giữ nội dung gốc và trạng thái Mới; nhân viên vẫn có thể sửa nhãn. Xem quy tắc và giới hạn trong [backend/API.md](backend/API.md#phân-loại-response-từ-imap).
 
-Đã thử cấu hình App Password của Gmail thật nhưng Google từ chối xác thực. OAuth được kiểm chứng bằng test và luồng giả lập; chưa xác nhận gửi/nhận Gmail thật cho tới khi cấu hình Google Cloud và cấp quyền thành công. Các tài khoản đăng nhập local nằm trong `.env`, không ghi mật khẩu vào mã nguồn hoặc tài liệu.
+App Password từng bị Google từ chối xác thực; cấu hình hiện tại dùng Gmail OAuth. Ngày 15/11/2026 đã kiểm chứng SMTP qua gateway Vercel và IMAP trực tiếp trên Render bằng một email gửi thật cùng reply tự động ghép vào Response. Callback HTTPS public đã lưu trong Google Cloud; việc lưu callback chưa thay thế kiểm tra lại toàn bộ luồng cấp quyền mới. Các tài khoản đăng nhập local nằm trong `.env`, không ghi mật khẩu vào mã nguồn hoặc tài liệu.
 
 ### Kết nối Gmail bằng OAuth 2.0
 
