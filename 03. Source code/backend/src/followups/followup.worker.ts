@@ -113,7 +113,7 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
         return;
       }
       await client.query(
-        'UPDATE followups SET outcome=$2,worker_error=NULL,worker_error_stage=NULL WHERE id=$1',
+        'UPDATE followups SET outcome=$2,resolved_at=now(),worker_error=NULL,worker_error_stage=NULL WHERE id=$1',
         [id, incoming.rowCount ? 'responded' : 'no_response'],
       );
       if (

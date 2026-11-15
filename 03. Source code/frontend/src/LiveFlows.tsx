@@ -146,6 +146,7 @@ type Followup = {
   overdue?: boolean;
   created_at?: string;
   completed_at?: string | null;
+  resolved_at?: string | null;
 };
 type Template = { id: string; name: string; subject: string; body: string; created_at?: string; category?: string };
 type FilterTemplate = { id: string; name: string; criteria: Criteria };
@@ -2543,14 +2544,15 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             <div><span>Lịch hẹn</span><strong>{date(followup.due_at)}</strong></div>
             <div><span>Hình thức</span><strong>{followup.channel === "phone" ? "Gọi điện" : followup.channel.toUpperCase()}</strong></div>
             <div><span>Lần Follow-up</span><strong>{followup.attempt} / {followup.max_attempts}</strong></div>
-            <div><span>Cập nhật lúc</span><strong>{date(followup.completed_at || followup.created_at)}</strong></div>
-            <div><span>Nguồn cập nhật</span><strong>Hệ thống</strong></div>
+            <div><span>Cập nhật lúc</span><strong>{date(["responded", "no_response"].includes(followup.outcome || "") ? followup.resolved_at : followup.completed_at || followup.created_at)}</strong></div>
+            <div><span>Nguồn cập nhật</span><strong>{["responded", "no_response"].includes(followup.outcome || "") ? "Hệ thống" : followup.assignee_id}</strong></div>
             <div className="wide"><span>Nội dung / Mục tiêu</span><strong>{followup.goal}</strong></div>
           </div>
         </section>
         <Card title="Lịch sử Follow-up"><Table heads={["Thời điểm", "Trạng thái mới", "Người thực hiện"]} rows={[
           [date(followup.created_at), "Chờ thực hiện", followup.assignee_id || "—"],
-          ...(followup.completed_at ? [[date(followup.completed_at), followup.outcome === "responded" ? "Có phản hồi" : followup.outcome === "no_response" ? "Không phản hồi" : "Đang chờ phản hồi", "Hệ thống"]] : []),
+          ...(followup.completed_at ? [[date(followup.completed_at), "Đang chờ phản hồi", followup.assignee_id]] : []),
+          ...(["responded", "no_response"].includes(followup.outcome || "") ? [[date(followup.resolved_at), followup.outcome === "responded" ? "Có phản hồi" : "Không phản hồi", "Hệ thống"]] : []),
         ]} /></Card>
         <div className="next-actions-bar">
           {followup.status === "pending" && <Button onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Ẩn lịch Follow-up</Button>}

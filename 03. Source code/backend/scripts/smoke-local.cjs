@@ -291,6 +291,8 @@ async function main() {
     await app.get(FollowupWorker).resolve(waitingFollowup.id);
     const resolvedFollowups = check(await api.get('/api/followups').set('Cookie', employee), 200).filter((item) => item.response_id === waiting.id);
     if (resolvedFollowups.length !== 2 || resolvedFollowups.find((item) => item.id === waitingFollowup.id)?.outcome !== 'no_response' || !resolvedFollowups.some((item) => item.attempt === 2 && item.status === 'pending')) throw new Error('Follow-up wait period or next attempt failed');
+    const resolvedFollowup = resolvedFollowups.find((item) => item.id === waitingFollowup.id);
+    if (!resolvedFollowup.resolved_at || Date.parse(resolvedFollowup.resolved_at) <= Date.parse(resolvedFollowup.completed_at)) throw new Error('Follow-up result must retain its own resolution time');
     const nextFollowup = resolvedFollowups.find((item) => item.attempt === 2);
     check(await api.delete(`/api/followups/${nextFollowup.id}`).set('Cookie', employee), 200);
     if (check(await api.get(`/api/followups/${nextFollowup.id}`).set('Cookie', employee), 200).status !== 'cancelled') throw new Error('Follow-up cancellation removed history');

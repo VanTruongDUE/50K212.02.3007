@@ -54,7 +54,7 @@ describe('Follow-up result and maximum attempts', () => {
       };
       await new FollowupWorker(database as unknown as DatabaseService).tick();
       expect(client.query).toHaveBeenCalledWith(
-        'UPDATE followups SET outcome=$2,worker_error=NULL,worker_error_stage=NULL WHERE id=$1',
+        'UPDATE followups SET outcome=$2,resolved_at=now(),worker_error=NULL,worker_error_stage=NULL WHERE id=$1',
         [item.id, expected],
       );
       const inserts = client.query.mock.calls.filter(([sql]) =>
