@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { senderValidation } from '../src/senderValidation.ts';
+
+const valid = { name: 'Marketing', email: 'marketing@example.com', smtpHost: 'smtp.gmail.com', smtpPort: '465', smtpUser: 'marketing@example.com', quota3Days: '100' };
+test('valid Gmail configuration and boundary ports retain the existing API limits', () => {
+  for (const smtpPort of ['1', '465', '587', '65535']) assert.deepEqual(senderValidation({ ...valid, smtpPort }), {});
+});
+test('invalid fields receive individual Vietnamese messages without changing entered data', () => {
+  const form = { name: '', email: 'wrong@', smtpHost: ' ', smtpPort: '65536', smtpUser: '', quota3Days: '101' };
+  const before = structuredClone(form);
+  assert.equal(Object.keys(senderValidation(form)).length, 6);
+  assert.deepEqual(form, before);
+  for (const value of ['', '0', '-1', '1.5', 'NaN']) {
+    assert.ok(senderValidation({ ...valid, smtpPort: value }).smtpPort);
+    assert.ok(senderValidation({ ...valid, quota3Days: value }).quota3Days);
+  }
+});
+
+test('sender name and code follow the Figma fields without accepting whitespace or markup in identifiers', () => {
+  assert.equal(senderValidation({ ...valid, name: 'x'.repeat(50), code: 'MKT-01' }).name, undefined);
+  assert.ok(senderValidation({ ...valid, name: 'x'.repeat(51) }).name);
+  for (const code of ['', ' ', '<script>', 'x'.repeat(51)]) assert.ok(senderValidation({ ...valid, code }).code);
+});

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import Flow from './Flow'
 import SearchFlows from './SearchFlows'
-const searchScreens = ['criteria','criteria-adjust','criteria-invalid','review','review-success','review-error','review-recording','searching','results','search-empty','search-error','history','history-empty','history-load-error','history-detail','search-all-contacts']
+const searchScreens = ['criteria-checking','criteria-check-error','template-created','criteria','criteria-adjust','criteria-invalid','review','review-success','review-error','review-recording','searching','results','search-empty','search-error','history','history-empty','history-load-error','history-detail','search-all-contacts']
 import NextFlows from './NextFlows'
 import ManagerFlows from './ManagerFlows'
 import LiveFlows from './LiveFlows'
@@ -15,6 +15,7 @@ type Role = 'employee' | 'manager'
 type Account = { id: string; email: string; role: Role }
 const demoRoute = import.meta.env.DEV && preview !== null
 const legacyLiveRoutes: Record<string, string> = {
+  'campaign-create': 'campaign-contacts',
   'history-detail': 'history', 'history-empty': 'history', 'history-load-error': 'history',
   results: 'criteria', searching: 'criteria', 'search-empty': 'criteria', 'search-error': 'criteria',
   'apollo-empty': 'criteria', 'apollo-unavailable': 'criteria', review: 'criteria',
@@ -138,12 +139,12 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const managerAccountExpanded = screen.startsWith('manager-account')
   const managerAccountCheckActive = screen.startsWith('manager-account-check') || screen.startsWith('manager-account-result')
   return <main className="app-shell">
-    <aside className="sidebar">
+    <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
       <nav aria-label="Menu chính">
         {manager ? <>
           <NavItem icon="home" active={screen === 'home'} onClick={() => go('home')}>Trang chính</NavItem>
-          <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách Contact</NavItem>
+          <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách</NavItem>
           <NavItem icon="managerKey" heading active={managerAccountExpanded} expanded={managerAccountExpanded} onClick={() => go('manager-account-check')}>Tài khoản gửi</NavItem>
           <div className={'subnav' + (managerAccountExpanded ? '' : ' collapsed')} aria-hidden={!managerAccountExpanded} inert={!managerAccountExpanded}>
             <div className="subnav-items">
@@ -178,8 +179,8 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
       </header>
       {screen === 'home' ? <section className="home-content">
         <h1>Trang chính</h1>
-        <div className="success-panel"><strong>{live ? manager ? 'Tổng quan 7 ngày gần nhất' : 'Công việc cần theo dõi' : 'Đăng nhập thành công'}</strong>{!live ? <span>Chọn chức năng trong menu để bắt đầu làm việc.</span> : overviewError ? <span role="alert">{overviewError}</span> : <><span>{manager && overview ? `${overview.campaigns} chiến dịch · ${overview.emails_sent} email đã gửi · ${overview.open_responses} Response chưa xử lý · ${overview.due_followups} Follow-up đến hạn · ${overview.active_sender_accounts} tài khoản gửi hoạt động` : !manager ? notifications.length ? `${notifications.length} thông báo cần theo dõi.` : 'Chưa có thông báo cần xử lý.' : 'Đang tải dữ liệu…'}</span>{notifications.map((item, index) => <span key={`${item.type}-${index}`}>{item.title}</span>)}</>}</div>
-      </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => { setLogoutError(false); void onLogout().catch(() => setLogoutError(true)) }}>Đăng xuất</button>{logoutError && <p role="alert">Không thể đăng xuất. Vui lòng thử lại.</p>}</div></section> : live && !manager && searchScreens.includes(screen) ? <SearchFlows screen={screen} go={go} owner={accountEmail || ''} /> : live ? <LiveFlows screen={screen} go={go} manager={manager} /> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
+        <div className="success-panel"><strong>Đăng nhập thành công</strong>{!live ? <span>Chọn chức năng trong menu để bắt đầu làm việc.</span> : overviewError ? <span role="alert">{overviewError}</span> : <><span>{manager && overview ? `${overview.campaigns} chiến dịch · ${overview.emails_sent} email đã gửi · ${overview.open_responses} Response chưa xử lý · ${overview.due_followups} Follow-up đến hạn · ${overview.active_sender_accounts} tài khoản gửi hoạt động` : !manager ? notifications.length ? `${notifications.length} thông báo cần theo dõi.` : 'Chưa có thông báo cần xử lý.' : 'Đang tải dữ liệu…'}</span>{notifications.map((item, index) => <span key={`${item.type}-${index}`}>{item.title}</span>)}</>}</div>
+      </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => { setLogoutError(false); void onLogout().catch(() => setLogoutError(true)) }}>Đăng xuất</button>{logoutError && <p role="alert">Không thể đăng xuất. Vui lòng thử lại.</p>}</div></section> : live && !manager && searchScreens.includes(screen) ? <SearchFlows screen={screen} go={go} owner={accountEmail || ''} /> : live ? <LiveFlows screen={screen} go={go} manager={manager} owner={accountEmail || ""} /> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
     </div>
   </main>
 }
@@ -222,7 +223,7 @@ function App() {
       .finally(() => { if (active) setAuthReady(true) })
     return () => { active = false }
   }, [])
-  const liveScreen = accountEmail && preview === null ? (searchScreens.includes(screen) ? screen : legacyLiveRoutes[screen]) ?? (screen.includes('--') ? legacyLiveRoutes[screen.split('--')[0]] ?? screen.split('--')[0] : screen) : screen
+  const liveScreen = accountEmail && !demoRoute ? (searchScreens.includes(screen) ? screen : legacyLiveRoutes[screen]) ?? (screen.includes('--') ? legacyLiveRoutes[screen.split('--')[0]] ?? screen.split('--')[0] : screen) : screen
   const routeAllowed = ['login', 'home', 'profile'].includes(liveScreen) || liveScreen.startsWith('manager-') === manager
   const allowedScreen = (signedOut || (!accountEmail && !demoRoute)) && liveScreen !== 'login' ? 'login' : routeAllowed ? liveScreen : 'home'
   useEffect(() => {
@@ -231,6 +232,6 @@ function App() {
     history.replaceState(null, '', location.pathname + (allowedScreen === 'login' ? '' : '?screen=' + encodeURIComponent(allowedScreen) + (manager ? '&role=manager' : '')))
   }, [screen, allowedScreen, manager, authReady])
   if (!authReady && !demoRoute) return <main className="login-page"><p role="status">Đang kiểm tra phiên đăng nhập…</p></main>
-  return screen === 'login' || allowedScreen === 'login' ? <Login onSuccess={(email, accountRole) => { setAccountEmail(email); setRole(accountRole); setSignedOut(false); go('home', accountRole) }} /> : <Home manager={manager} screen={allowedScreen} go={go} live={!!accountEmail && preview === null} accountEmail={accountEmail} onLogout={async () => { const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); if (!response.ok) throw new Error('Logout failed'); go('login') }} />
+  return screen === 'login' || allowedScreen === 'login' ? <Login onSuccess={(email, accountRole) => { setAccountEmail(email); setRole(accountRole); setSignedOut(false); go('home', accountRole) }} /> : <Home manager={manager} screen={allowedScreen} go={go} live={!!accountEmail && !demoRoute} accountEmail={accountEmail} onLogout={async () => { const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); if (!response.ok) throw new Error('Logout failed'); go('login') }} />
 }
 export default App

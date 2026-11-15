@@ -11,6 +11,7 @@ import {
 } from '../campaigns/content-blocks';
 
 export type SmtpAccount = {
+  sender_name?: string | null;
   email: string;
   smtp_host: string | null;
   smtp_port: number | null;
@@ -27,6 +28,7 @@ export type MailAsset = {
   content: Buffer;
 };
 export type RelayMail = {
+  senderName?: string | null;
   to: string;
   subject: string;
   text: string;
@@ -128,7 +130,12 @@ export class SmtpService {
     );
     await this.database.query(
       'INSERT INTO smtp_relay_requests(id,account_email,action,mail) VALUES($1,$2,$3,$4)',
-      [requestId, account.email, action, mail ?? null],
+      [
+        requestId,
+        account.email,
+        action,
+        mail ? { ...mail, senderName: account.sender_name } : null,
+      ],
     );
     const body = JSON.stringify({ requestId });
     try {
@@ -179,7 +186,13 @@ export class SmtpService {
     const result = await (
       await this.transport(account)
     ).sendMail({
-      from: account.email,
+      from:
+        mail?.senderName || account.sender_name
+          ? {
+              name: mail?.senderName || account.sender_name || '',
+              address: account.email,
+            }
+          : account.email,
       to: mail!.to,
       subject: mail!.subject,
       text: mail!.text,
@@ -265,7 +278,9 @@ export class SmtpService {
     const result = await (
       await this.transport(account)
     ).sendMail({
-      from: account.email,
+      from: account.sender_name
+        ? { name: account.sender_name, address: account.email }
+        : account.email,
       ...mail,
     });
     if (!result.accepted.includes(to))

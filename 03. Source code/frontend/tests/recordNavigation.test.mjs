@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { navigationParams, recordContext, recordKey, recordRequired, selectedRecord } from '../src/recordNavigation.ts';
 
+test('new campaign recipient form opens without inheriting an existing campaign identity', () => {
+  assert.equal(recordRequired('campaign-contacts'), false);
+  const params = navigationParams('campaign-contacts', new URLSearchParams('screen=campaign-detail&campaignId=9'));
+  assert.equal(params.has('campaignId'), false);
+  assert.equal(recordRequired('campaign-filtered'), true);
+  assert.equal(recordRequired('campaign-editor'), true);
+});
+
 test('each record type has its own URL identity, including Response → create Follow-up', () => {
   for (const [screen, key] of Object.entries({
     'contact-list-detail': 'listId', 'manager-review-detail': 'listId',

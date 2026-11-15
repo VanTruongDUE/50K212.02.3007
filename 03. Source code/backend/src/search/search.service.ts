@@ -158,7 +158,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   async history(owner: string, cursor = Number.MAX_SAFE_INTEGER) {
     return (
       await this.db.query(
-        'SELECT id,criteria,status,received,invalid,duplicate,new_count,list_id,error,created_at,finished_at FROM contact_search_jobs WHERE owner_id=$1 AND id<$2 ORDER BY id DESC LIMIT 25',
+        'SELECT id,owner_id,criteria,status,received,invalid,duplicate,new_count,list_id,error,created_at,finished_at FROM contact_search_jobs WHERE owner_id=$1 AND id<$2 ORDER BY id DESC LIMIT 25',
         [owner, cursor],
       )
     ).rows;

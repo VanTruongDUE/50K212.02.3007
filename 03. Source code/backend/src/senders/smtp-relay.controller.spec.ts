@@ -33,6 +33,7 @@ describe('SMTP relay', () => {
       await service.send(
         {
           email: 'sender@example.invalid',
+          sender_name: 'V5 Marketing',
           smtp_host: null,
           smtp_port: null,
           smtp_user: null,
@@ -56,9 +57,15 @@ describe('SMTP relay', () => {
       String(call[0]).startsWith('INSERT'),
     ) as [
       string,
-      [string, string, string, { attachments: { content: string }[] }],
+      [
+        string,
+        string,
+        string,
+        { senderName?: string; attachments: { content: string }[] },
+      ],
     ];
     expect(insert[1][3].attachments[0].content).toBe('YWJj');
+    expect(insert[1][3].senderName).toBe('V5 Marketing');
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as {
       requestId: string;
     };

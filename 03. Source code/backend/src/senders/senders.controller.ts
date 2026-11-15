@@ -30,6 +30,7 @@ type Sender = QueryResultRow &
     inbound_enabled: boolean;
   };
 type SenderInput = {
+  code?: unknown;
   name?: unknown;
   email?: unknown;
   status?: unknown;
@@ -41,7 +42,7 @@ type SenderInput = {
   inboundEnabled?: unknown;
 };
 const publicFields =
-  "id, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at";
+  "id, code, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at, updated_at";
 const usageField = `((SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
   AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
   +(SELECT count(*)::int FROM response_email_deliveries r WHERE r.sender_account_id=s.id
@@ -92,8 +93,8 @@ export class SendersController {
     const data = this.validate(body);
     try {
       const result = await this.database.query<Sender>(
-        `INSERT INTO sender_accounts (name,email,status,quota_3_days,smtp_host,smtp_port,smtp_user,smtp_secret,inbound_enabled)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        `INSERT INTO sender_accounts (name,email,status,quota_3_days,smtp_host,smtp_port,smtp_user,smtp_secret,inbound_enabled,code)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($10,'TK-' || gen_random_uuid()::text)) RETURNING id`,
         [
           data.name,
           data.email,
@@ -104,6 +105,7 @@ export class SendersController {
           data.user,
           data.secret,
           data.inbound,
+          data.code,
         ],
       );
       return this.publicOne(result.rows[0].id);
@@ -114,7 +116,14 @@ export class SendersController {
         'code' in error &&
         (error as { code?: unknown }).code === '23505'
       )
-        throw new ConflictException('Địa chỉ email người gửi đã tồn tại.');
+        throw new ConflictException(
+          'constraint' in error &&
+            String((error as { constraint?: unknown }).constraint).includes(
+              'code_unique',
+            )
+            ? 'Mã tài khoản gửi đã tồn tại.'
+            : 'Địa chỉ email người gửi đã tồn tại.',
+        );
       throw error;
     }
   }
@@ -129,7 +138,7 @@ export class SendersController {
     const data = this.validate(body, current);
     try {
       await this.database.query(
-        `UPDATE sender_accounts SET name=$2,email=$3,status=$4,quota_3_days=$5,smtp_host=$6,smtp_port=$7,smtp_user=$8,smtp_secret=$9,inbound_enabled=$10 WHERE id=$1`,
+        `UPDATE sender_accounts SET name=$2,email=$3,status=$4,quota_3_days=$5,smtp_host=$6,smtp_port=$7,smtp_user=$8,smtp_secret=$9,inbound_enabled=$10,code=COALESCE($11,code),updated_at=now() WHERE id=$1`,
         [
           id,
           data.name,
@@ -141,6 +150,7 @@ export class SendersController {
           data.user,
           data.secret,
           data.inbound,
+          data.code,
         ],
       );
     } catch (error) {
@@ -150,7 +160,14 @@ export class SendersController {
         'code' in error &&
         (error as { code?: unknown }).code === '23505'
       )
-        throw new ConflictException('Địa chỉ email người gửi đã tồn tại.');
+        throw new ConflictException(
+          'constraint' in error &&
+            String((error as { constraint?: unknown }).constraint).includes(
+              'code_unique',
+            )
+            ? 'Mã tài khoản gửi đã tồn tại.'
+            : 'Địa chỉ email người gửi đã tồn tại.',
+        );
       throw error;
     }
     return this.publicOne(id);
@@ -218,7 +235,7 @@ export class SendersController {
     if (
       typeof name !== 'string' ||
       !name.trim() ||
-      name.length > 100 ||
+      name.length > 50 ||
       typeof email !== 'string' ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
       email.length > 320 ||
@@ -278,8 +295,17 @@ export class SendersController {
       throw new BadRequestException(
         'Cần cấu hình thông tin Gmail trước khi bật IMAP.',
       );
+    if (
+      body.code !== undefined &&
+      (typeof body.code !== 'string' ||
+        !/^[\p{L}\p{N}_-]{1,50}$/u.test(body.code))
+    )
+      throw new BadRequestException(
+        'Mã tài khoản tối đa 50 ký tự, chỉ gồm chữ, số, gạch ngang hoặc gạch dưới.',
+      );
     return {
       name: name.trim(),
+      code: body.code === undefined ? null : body.code,
       email: email.trim().toLowerCase(),
       status,
       quota,

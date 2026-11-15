@@ -57,7 +57,15 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
                  AND incoming.kind NOT IN ('spam','bounce','unsubscribe')))
          ORDER BY f.completed_at LIMIT 100`,
       );
-      for (const row of due.rows) await this.resolve(row.id);
+      for (const row of due.rows) {
+        try {
+          await this.resolve(row.id);
+        } catch {
+          this.logger.warn(
+            `Chưa thể cập nhật Follow-up ${row.id}; sẽ thử lại.`,
+          );
+        }
+      }
     } catch {
       this.logger.warn(
         'Chưa thể cập nhật kết quả Follow-up; sẽ thử lại ở lượt sau.',
@@ -69,6 +77,7 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
 
   private async resolve(id: string) {
     const client = await this.database.connect();
+    let creatingNext = false;
     try {
       await client.query('BEGIN');
       const result = await client.query<Awaiting>(
@@ -103,10 +112,10 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
         await client.query('COMMIT');
         return;
       }
-      await client.query('UPDATE followups SET outcome=$2 WHERE id=$1', [
-        id,
-        incoming.rowCount ? 'responded' : 'no_response',
-      ]);
+      await client.query(
+        'UPDATE followups SET outcome=$2,worker_error=NULL,worker_error_stage=NULL WHERE id=$1',
+        [id, incoming.rowCount ? 'responded' : 'no_response'],
+      );
       if (
         !incoming.rowCount &&
         item.attempt < item.max_attempts &&
@@ -114,6 +123,7 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
         response.rows[0].status !== 'closed' &&
         !['unsubscribe', 'spam', 'bounce'].includes(response.rows[0].kind)
       ) {
+        creatingNext = true;
         await client.query(
           `INSERT INTO followups(response_id,assignee_id,due_at,attempt,channel,goal,reminder_minutes,wait_days,max_attempts,interval_days)
            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING`,
@@ -134,6 +144,20 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
+      try {
+        await this.database.query(
+          'UPDATE followups SET worker_error=$2,worker_error_stage=$3 WHERE id=$1',
+          [
+            id,
+            creatingNext
+              ? 'Không thể tạo lịch Follow-up tiếp theo. Hệ thống sẽ thử lại.'
+              : 'Cập nhật trạng thái chưa thành công. Trạng thái hiện tại được giữ nguyên; hệ thống sẽ thử lại.',
+            creatingNext ? 'chain' : 'result',
+          ],
+        );
+      } catch {
+        this.logger.warn('Không thể ghi nhận lỗi xử lý Follow-up.');
+      }
       throw error;
     } finally {
       client.release();

@@ -70,7 +70,7 @@ const pages: Record<string, [string, string, 'search' | 'contacts']> = {
   'history-detail': ['Chi tiết lần tìm kiếm', 'Xem tiêu chí và kết quả của lần tìm kiếm đã lưu.', 'search'],
   'contact-lists': ['Danh sách Contact', 'Các danh sách Contact đã lưu từ những lần tìm kiếm.', 'contacts'],
   'contact-list-detail': ['Chi tiết danh sách Contact', 'Contact đã lưu từ lần tìm kiếm được chọn.', 'contacts'],
-  check: ['Kiểm tra danh sách Contact', 'Rà soát danh sách và lưu kết quả kiểm tra.', 'contacts'],
+  check: ['Kiểm tra danh sách', 'Rà soát danh sách và lưu kết quả kiểm tra.', 'contacts'],
   'check-save-error': ['Không lưu được kết quả kiểm tra', 'Kết quả và trạng thái trước thao tác được giữ nguyên. Rà soát lựa chọn rồi lưu lại.', 'contacts'],
   'check-rejected': ['Danh sách chưa đạt yêu cầu', 'Rà soát lại danh sách trước khi xác nhận.', 'contacts'],
   confirm: ['Xác nhận danh sách Contact', 'Danh sách đạt yêu cầu và đang chờ xác nhận.', 'contacts'],

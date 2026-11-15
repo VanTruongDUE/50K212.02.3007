@@ -152,7 +152,7 @@ export class AssetsController {
         [id, kind, name, contentType, bytes, file.size],
       );
       await client.query(
-        'UPDATE campaigns SET previewed_at=NULL,updated_at=now() WHERE id=$1',
+        'UPDATE campaigns SET previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1',
         [id],
       );
       await client.query('COMMIT');
@@ -195,7 +195,7 @@ export class AssetsController {
     );
     if (!result.rowCount) throw new NotFoundException();
     await this.database.query(
-      'UPDATE campaigns SET previewed_at=NULL,updated_at=now() WHERE id=$1',
+      'UPDATE campaigns SET previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1',
       [id],
     );
     return { deleted: true };

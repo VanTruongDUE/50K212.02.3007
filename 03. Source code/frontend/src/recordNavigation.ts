@@ -1,6 +1,6 @@
 export type RecordContext = { key: string; id: string };
 export type Navigate = (screen: string, context?: RecordContext) => void;
-const entryScreens = ['contact-lists', 'manager-review', 'campaign-list', 'campaign-create', 'response-list', 'response-add', 'followup-list', 'sender-list', 'manager-account-list', 'manager-account-check', 'manager-account-add', 'templates', 'template-create'];
+const entryScreens = ['contact-lists', 'manager-review', 'campaign-list', 'campaign-create', 'campaign-contacts', 'response-list', 'response-add', 'followup-list', 'sender-list', 'manager-account-list', 'manager-account-check', 'manager-account-add', 'templates', 'template-create'];
 
 export function recordKey(screen: string): string {
   if (/^manager-review|^contact-|^(all-contacts|check|check-rejected|confirm|confirmed|export|export-success)$/.test(screen)) return 'listId';

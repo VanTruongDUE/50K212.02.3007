@@ -14,11 +14,30 @@ import {
 import { Roles } from '../auth/roles';
 import { SessionGuard, type AuthenticatedRequest } from '../auth/session.guard';
 import { SearchService } from './search.service';
+import { validateCriteria } from './search-data';
+import { DatabaseService } from '../database/database.service';
 @Controller('api/contact-searches')
 @UseGuards(SessionGuard)
 @Roles('employee')
 export class SearchController {
-  constructor(private search: SearchService) {}
+  constructor(
+    private search: SearchService,
+    private database: DatabaseService,
+  ) {}
+  @Post('check') check(@Body() body: { criteria?: unknown }) {
+    return { criteria: validateCriteria(body?.criteria) };
+  }
+  @Post('criteria') async saveCriteria(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: { criteria?: unknown },
+  ) {
+    const criteria = validateCriteria(body?.criteria);
+    await this.database.query(
+      'INSERT INTO search_criteria_drafts(owner_id,criteria) VALUES($1,$2) ON CONFLICT(owner_id) DO UPDATE SET criteria=EXCLUDED.criteria,confirmed_at=now()',
+      [request.account.id, criteria],
+    );
+    return { criteria };
+  }
   @Get('capabilities') capabilities() {
     return this.search.capabilities();
   }

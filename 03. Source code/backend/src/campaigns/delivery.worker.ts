@@ -30,11 +30,11 @@ type Job = QueryResultRow &
 
 export const claimDeliverySql = `SELECT ca.id AS campaign_id, cr.contact_id, sa.id AS account_id,
   ct.email AS recipient_email,ct.full_name,ct.company,ct.unsubscribe_token,
-  ca.subject,ca.body,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days
+  ca.subject,ca.body,ca.sender_name,ca.send_rate,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days
  FROM campaign_recipients cr JOIN campaigns ca ON ca.id=cr.campaign_id
  JOIN contacts ct ON ct.id=cr.contact_id JOIN sender_accounts sa ON sa.id=ca.sender_account_id
  WHERE ca.status IN ('scheduled','sending') AND ca.scheduled_at<=now()
-   AND (ca.send_mode='now' OR extract(hour from now() at time zone 'Asia/Ho_Chi_Minh')::int BETWEEN 8 AND 16)
+   AND (ca.send_mode='now' OR (now() at time zone 'Asia/Ho_Chi_Minh')::time >= ca.window_start AND (now() at time zone 'Asia/Ho_Chi_Minh')::time < ca.window_end)
    AND cr.status='pending' AND sa.status='active'
    AND NOT EXISTS (SELECT 1 FROM email_deliveries d WHERE d.contact_id=ct.id AND d.state='sending')
  ORDER BY ca.scheduled_at,cr.contact_id LIMIT 1 FOR UPDATE OF ca,cr,sa SKIP LOCKED`;
@@ -141,7 +141,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
       );
       if (
         Number(quota.rows[0].used) >= job.quota_3_days ||
-        Number(quota.rows[0].hourly) >= 50
+        Number(quota.rows[0].hourly) >= Number(job.send_rate ?? 50)
       ) {
         await client.query('COMMIT');
         return;

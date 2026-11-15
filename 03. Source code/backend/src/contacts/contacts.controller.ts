@@ -44,13 +44,37 @@ export class ContactsController {
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
     const result = await this.database.query(
-      `SELECT l.*, count(i.contact_id)::int AS contact_count FROM contact_lists l
-       LEFT JOIN contact_list_items i ON i.list_id = l.id
+      `SELECT l.*, e.full_name AS owner_name, search.*,
+       (SELECT count(*)::int FROM contact_list_items i WHERE i.list_id=l.id) AS contact_count
+       FROM contact_lists l
+       JOIN employees e ON e.id=l.owner_id
+       LEFT JOIN LATERAL (
+         SELECT j.id AS search_id, j.created_at AS search_started_at,
+          j.finished_at AS search_finished_at, j.received AS search_received,
+          j.invalid AS search_invalid, j.duplicate AS search_duplicate,
+          j.new_count AS search_new_count
+         FROM contact_search_jobs j WHERE j.list_id=l.id AND j.owner_id=l.owner_id
+         ORDER BY j.id DESC LIMIT 1
+       ) search ON true
        WHERE $1 = 'manager' OR l.owner_id = $2
-       GROUP BY l.id ORDER BY l.created_at DESC LIMIT 100`,
+       ORDER BY l.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
     );
     return result.rows;
+  }
+
+  @Get('customers')
+  @Roles('employee')
+  // shortcut: returns 500 recent owned Contacts; add lookup pagination when a workspace needs more.
+  async customers(@Req() request: AuthenticatedRequest) {
+    return (
+      await this.database.query(
+        `SELECT DISTINCT c.id,c.full_name,c.email,c.company,c.job_title
+      FROM contacts c JOIN contact_list_items i ON i.contact_id=c.id JOIN contact_lists l ON l.id=i.list_id
+      WHERE l.owner_id=$1 ORDER BY c.id DESC LIMIT 500`,
+        [request.account.id],
+      )
+    ).rows;
   }
 
   @Get(':id')
@@ -219,7 +243,15 @@ export class ContactsController {
     request: AuthenticatedRequest,
   ): Promise<ListRow> {
     const result = await this.database.query<ListRow>(
-      'SELECT * FROM contact_lists WHERE id = $1',
+      `SELECT l.*, search.* FROM contact_lists l
+       LEFT JOIN LATERAL (
+         SELECT j.id AS search_id, j.created_at AS search_started_at,
+          j.finished_at AS search_finished_at, j.received AS search_received,
+          j.invalid AS search_invalid, j.duplicate AS search_duplicate,
+          j.new_count AS search_new_count
+         FROM contact_search_jobs j WHERE j.list_id=l.id AND j.owner_id=l.owner_id
+         ORDER BY j.id DESC LIMIT 1
+       ) search ON true WHERE l.id = $1`,
       [id],
     );
     const list = result.rows[0];

@@ -2,6 +2,7 @@ import type { Navigate } from "./recordNavigation";
 import { useEffect, useRef, useState } from "react";
 import Flow, { type Criteria } from "./Flow";
 import { api } from "./api";
+import FigmaState from "./FigmaState";
 type Contact = {
   id: string;
   email: string;
@@ -33,6 +34,7 @@ type Job = {
   list_id: string | null;
   error: string | null;
   created_at: string;
+  owner_id?: string;
 };
 const empty: Criteria = {
   role: [],
@@ -113,7 +115,27 @@ export default function SearchFlows({
         setCriteria(empty);
       }
     }
+    if (next === "review" || (screen === "criteria-check-error" && next === "criteria")) {
+      go("criteria-checking");
+      return;
+    }
     go(next);
+  }
+  useEffect(() => {
+    if (screen !== "criteria-checking") return;
+    let active = true;
+    let draft = criteria;
+    try { draft = JSON.parse(sessionStorage.getItem(draftKey) || JSON.stringify(criteria)); } catch { /* Keep the current draft. */ }
+    api<{ criteria: Criteria }>("contact-searches/check", "POST", { criteria: draft })
+      .then(value => { if (active) { setCriteria(value.criteria); go("review"); } })
+      .catch(reason => { if (active) { setError(reason.message); go("criteria-check-error"); } });
+    return () => { active = false; };
+  }, [screen, draftKey, go, criteria]);
+  async function confirmCriteria() {
+    setBusy(true); setError("");
+    try { await api("contact-searches/criteria", "POST", { criteria }); go("review-success"); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Không thể ghi nhận bộ tiêu chí."); }
+    finally { setBusy(false); }
   }
   function selectJob(id: string, next: string) {
     sessionStorage.setItem(key + ":job", id);
@@ -219,7 +241,7 @@ export default function SearchFlows({
     if (!job?.list_id) return;
     go("check", { key: "listId", id: job.list_id });
   }
-  if (["criteria", "criteria-adjust", "criteria-invalid"].includes(screen))
+  if (["criteria", "criteria-adjust", "criteria-invalid", "criteria-checking", "criteria-check-error"].includes(screen))
     return (
       <>
         <Flow screen={screen} draftKey={draftKey} go={navigate} />
@@ -227,7 +249,8 @@ export default function SearchFlows({
       </>
     );
   const titles: Record<string, string> = {
-    review: "Bộ tiêu chí tìm kiếm",
+    review: "Kiểm tra bộ tiêu chí",
+    "template-created": "Đã tạo Filter Template",
     "review-success": "Thiết lập tiêu chí thành công",
     searching: "Đang tìm kiếm Contact",
     results: "Kết quả tìm kiếm",
@@ -237,7 +260,7 @@ export default function SearchFlows({
     "history-detail": "Chi tiết lần tìm kiếm",
     "search-all-contacts": "Toàn bộ Contact",
   };
-  const isReview = screen.startsWith("review");
+  const isReview = screen.startsWith("review") || screen === "template-created";
   const isHistory = ["history", "history-empty", "history-load-error"].includes(
     screen,
   );
@@ -260,9 +283,9 @@ export default function SearchFlows({
         <span>{titles[screen] || "Tìm kiếm Contact"}</span>
       </nav>
       <header className="flow-heading">
-        <h1>{titles[screen] || "Tìm kiếm Contact"}</h1>
+        <h1>{busy && isReview ? "Đang ghi nhận bộ tiêu chí" : titles[screen] || "Tìm kiếm Contact"}</h1>
         <p>
-          {isReview
+          {screen === "review-success" ? "Bộ tiêu chí đã được ghi nhận cho lần tìm kiếm hiện tại." : screen === "template-created" ? "Template đã được lưu. Kiểm tra và xác nhận lại trước khi áp dụng tiêu chí cho lần tìm kiếm." : isReview
             ? "Kiểm tra bộ tiêu chí trước khi xác nhận tìm kiếm."
             : isHistory
               ? "Xem tiêu chí và kết quả thực tế của từng lần tìm kiếm."
@@ -271,7 +294,7 @@ export default function SearchFlows({
       </header>
       {error && (
         <div className="flow-notice error" role="alert">
-          {error}
+          <strong>{isReview ? "Không thể ghi nhận bộ tiêu chí" : isHistory ? "Không thể tải lịch sử tìm kiếm" : "Không thể tải dữ liệu"}</strong><p>{error}</p>
           <button type="button" onClick={() => setReload((v) => v + 1)}>
             Tải lại
           </button>
@@ -312,15 +335,15 @@ export default function SearchFlows({
 
           </section>
           <div className="flow-actions">
-            <Button onClick={() => navigate("criteria")}>
+            <div><Button disabled={busy} onClick={() => navigate("criteria")}>
               Điều chỉnh tiêu chí
-            </Button>
+            </Button><Button disabled={busy} onClick={() => { sessionStorage.setItem("v5-template-draft", JSON.stringify(criteria)); go("template-create"); }}>Lưu thành Template</Button></div>
             <Button
               primary
               disabled={busy}
-              onClick={() => void start()}
+              onClick={() => void (screen === "review-success" ? start() : confirmCriteria())}
             >
-              {busy ? "Đang ghi nhận…" : "Xác nhận và tìm kiếm"}
+              {busy ? "Đang ghi nhận…" : error ? "Thử ghi nhận lại" : screen === "review-success" ? "Tìm kiếm Contact" : "Xác nhận tiêu chí"}
             </Button>
           </div>
         </>
@@ -330,13 +353,14 @@ export default function SearchFlows({
             <h2>Các lần tìm kiếm</h2>
             {busy ? (
               <p role="status">Đang tải lịch sử…</p>
-            ) : !history.length ? (
-              <p>Chưa có lần tìm kiếm nào được ghi nhận.</p>
+            ) : error ? <FigmaState error title="Không thể tải lịch sử tìm kiếm" description={error} actions={<Button onClick={() => setReload(v => v + 1)}>Tải lại lịch sử</Button>} /> : !history.length ? (
+              <FigmaState title="Chưa có lịch sử tìm kiếm" description="Chưa có lần tìm kiếm nào được ghi nhận." actions={<Button primary onClick={() => navigate("criteria")}>Thiết lập tìm kiếm</Button>} />
             ) : (
               <table className="flow-table search-history-table">
                 <thead>
                   <tr>
                     <th>Thời điểm</th>
+                    <th>Người thực hiện</th>
                     <th>Nguồn</th>
                     <th>Kết quả</th>
                     <th>Thao tác</th>
@@ -348,7 +372,7 @@ export default function SearchFlows({
                       <td>
                         {new Date(item.created_at).toLocaleString("vi-VN")}
                       </td>
-                      <td>Google Search/Web</td>
+                      <td>{item.owner_id || owner}</td><td>Google Search/Web</td>
                       <td>
                         {item.status === "succeeded"
                           ? `${item.new_count} Contact mới`
@@ -402,7 +426,7 @@ export default function SearchFlows({
         </section>
       ) : job.status === "queued" || job.status === "running" ? (
         <section className="flow-panel" aria-live="polite">
-          <h2>Đang xử lý yêu cầu</h2>
+          <h2>Đang tìm kiếm Contact</h2><Button disabled onClick={() => {}}>Đang tìm kiếm…</Button>
           <p>
             {{
               queued: "Đang chờ xử lý",
@@ -417,10 +441,10 @@ export default function SearchFlows({
             trong lịch sử.
           </p>
         </section>
-      ) : job.status === "failed" ? (
+      ) : job.status === "succeeded" && !rows.length ? <FigmaState title="Không tìm thấy Contact phù hợp" description="Google Search/Web không trả về Contact mới phù hợp. Lịch sử tìm kiếm đã được lưu." actions={<Button onClick={() => navigate("criteria")}>Quay lại</Button>} /> : job.status === "failed" ? (
         <>
           <div className="flow-notice error" role="alert">
-            {job.error || "Không hoàn tất lần tìm kiếm."}
+            <strong>Tìm kiếm không thành công</strong><p>{job.error || "Không hoàn tất lần tìm kiếm."}</p>
           </div>
           <div className="flow-actions">
             <Button onClick={() => navigate("criteria")}>
@@ -460,12 +484,12 @@ export default function SearchFlows({
                 </div>
               ))}
             </div>
-            <details>
+            <details open={screen === "history-detail"}>
               <summary>Tiêu chí đã sử dụng</summary>
               <div className="criteria-summary">
                 {Object.entries(job.criteria).map(([k, v]) => (
                   <div key={k}>
-                    <span>{k}</span>
+                    <span>{{ role: "Chức vụ Contact", industry: "Ngành nghề / lĩnh vực", location: "Địa điểm / khu vực", keyword: "Từ khóa doanh nghiệp", size: "Quy mô doanh nghiệp", email: "Trạng thái email", source: "Nguồn tìm kiếm" }[k] || k}</span>
                     <strong>
                       {Array.isArray(v) ? v.join(", ") || "—" : v || "—"}
                     </strong>
@@ -514,63 +538,16 @@ export default function SearchFlows({
                   <table className="flow-table">
                     <thead>
                       <tr>
-                        <th>Contact / Email</th>
-                        <th>Chức vụ / Khu vực</th>
-                        <th>Ngành / Quy mô</th>
-                        <th>Nguồn và xác nhận</th>
+                        <th>Contact</th><th>Email</th><th>Chức vụ</th><th>Doanh nghiệp</th>
                       </tr>
                     </thead>
                     <tbody>
                       {visible.map((c) => (
                         <tr key={c.id}>
-                          <td>
-                            <strong>
-                              {c.full_name || "Chưa xác định tên"}
-                            </strong>
-                            <br />
-                            {c.email}
-                          </td>
-                          <td>
-                            {c.job_title || "—"}
-                            <br />
-                            {c.location || "—"}
-                            <small>{label(c)}</small>
-                          </td>
-                          <td>
-                            {c.search_provenance?.industry || "—"}
-                            {c.search_provenance?.companySize && (
-                              <small>
-                                Quy mô tham khảo:{" "}
-                                {c.search_provenance.companySize}
-                              </small>
-                            )}
-                            <small>
-                              {c.search_provenance?.sizeNote ||
-                                "Chưa đủ cơ sở ước đoán quy mô."}
-                            </small>
-                            <small>
-                              {c.search_provenance?.publicEmailCount || 0} email
-                              công khai quan sát trên domain · không phải số
-                              nhân viên
-                            </small>
-                          </td>
-                          <td>
-                            <span title="Tìm thấy trên website nguồn và hợp lệ cú pháp; chưa kiểm tra hộp thư nhận được.">
-                              Đã xác nhận
-                            </span>
-                            <br />
-                            <a
-                              href={c.source_url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Xem website nguồn
-                            </a>
-                            <details>
-                              <summary>Bằng chứng</summary>
-                              {c.search_provenance?.evidence}
-                            </details>
-                          </td>
+                          <td><strong>{c.full_name || "Chưa xác định tên"}</strong></td>
+                          <td>{c.email}<details><summary>Đã xác nhận · Nguồn</summary><a href={c.source_url} target="_blank" rel="noreferrer">Xem website nguồn</a><p>{c.search_provenance?.evidence}</p><small>Xác nhận nguồn công khai và cú pháp; chưa kiểm tra khả năng nhận thư.</small></details></td>
+                          <td>{c.job_title || "—"}<small>{label(c)}</small></td>
+                          <td>{c.company || "—"}<details><summary>Thông tin tham khảo</summary><p>{c.location || "—"} · {c.search_provenance?.industry || "—"}</p><p>{c.search_provenance?.companySize || "Chưa xác định quy mô"}</p><small>{c.search_provenance?.sizeNote || "Thông tin suy đoán: Chưa đảm bảo."}</small></details></td>
                         </tr>
                       ))}
                     </tbody>
@@ -603,7 +580,7 @@ export default function SearchFlows({
               <Button
                 onClick={() =>
                   navigate(
-                    screen === "search-all-contacts" ? "results" : "criteria",
+                    screen === "search-all-contacts" ? "results" : screen === "history-detail" ? "history" : "criteria",
                   )
                 }
               >
@@ -615,7 +592,7 @@ export default function SearchFlows({
             </div>
             {job.list_id && (
               <Button primary onClick={openList}>
-                Kiểm tra danh sách Contact
+                Kiểm tra danh sách
               </Button>
             )}
           </div>

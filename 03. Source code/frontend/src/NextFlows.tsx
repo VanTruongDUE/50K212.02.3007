@@ -1,5 +1,7 @@
+import { invalidEmailVariable, inlineParts, type InlinePart } from "./campaignContent";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import './nextFlows.css'
+import { isFollowupExhausted } from './followupResult'
 
 type Props = { screen: string; go: (screen: string) => void }
 type Campaign = { name: string; status: string; progress: string; date: string; description?: string; subject?: string; body?: string; sender?: string; pauseReason?: string }
@@ -121,12 +123,30 @@ function Page({ section, title, description, go, children, className = '' }: { s
   </section>
 }
 
+export function ExhaustedFollowup({ attempt, maxAttempts, details, onNote, onBack }: { attempt: number; maxAttempts: number; details: string; onNote: () => void; onBack: () => void }) {
+  return <div className="next-state exception-state followup-exhausted">
+    <div role="status"><span>ĐÃ HẾT LƯỢT FOLLOW-UP</span>
+      <h2>Không có phản hồi sau lần {attempt}/{maxAttempts}</h2>
+      <p>{details}</p><small>Không tạo lịch tiếp theo vì đã đạt số lần tối đa.</small>
+    </div>
+    <div className="next-state-actions"><Button primary onClick={onNote}>Bổ sung ghi chú</Button><Button onClick={onBack}>Về danh sách Follow-up</Button></div>
+  </div>
+}
+
 export function Stepper({ current }: { current: number }) {
   return <ol className="next-stepper">{steps.map((step, index) => <li key={step} className={index + 1 === current ? 'current' : index + 1 < current ? 'done' : ''}><span>{index + 1 < current ? '✓' : index + 1}</span>{step}</li>)}</ol>
 }
 
 export function CampaignInfo({ name, count }: { name: string; count: string }) {
   return <div className="next-campaign-info"><div><span>Chiến dịch</span><strong>{name}</strong></div><div><span>Số người nhận đã duyệt</span><strong>{count}</strong></div></div>
+}
+
+function InlineContent({ parts }: { parts: InlinePart[] }) {
+  return <>{parts.map((part, index) => {
+    if (typeof part === 'string') return part;
+    const Tag = part.tag;
+    return <Tag key={index}><InlineContent parts={part.parts} /></Tag>;
+  })}</>;
 }
 
 export function PreviewBody({ value, campaignId }: { value: string; campaignId?: string }) {
@@ -139,16 +159,10 @@ export function PreviewBody({ value, campaignId }: { value: string; campaignId?:
       if (url?.startsWith('https://')) return <a className="next-email-cta" key={blockIndex} href={url} target="_blank" rel="noopener noreferrer">{label}</a>
     }
     if (block === '[[Đường phân cách]]') return <hr className="next-mail-divider" key={blockIndex} />
-    return <span key={blockIndex}>{block.split(/(\*\*[^*]+\*\*|_[^_]+_|~[^~]+~)/g).map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index}>{part.slice(2, -2)}</strong> : part.startsWith('_') && part.endsWith('_') ? <em key={index}>{part.slice(1, -1)}</em> : part.startsWith('~') && part.endsWith('~') ? <u key={index}>{part.slice(1, -1)}</u> : part)}</span>
+    return <span key={blockIndex}><InlineContent parts={inlineParts(block)} /></span>
   })}</>
 }
 
-function invalidEmailVariable(value: string) {
-  const variables = [...value.matchAll(/\{\{([^{}]+)\}\}/g)]
-  const unsupported = variables.find(([, name]) => !['Họ tên', 'Tên doanh nghiệp'].includes(name.trim()))?.[0]
-  if (unsupported) return `Biến ${unsupported} không nằm trong danh sách biến hệ thống hỗ trợ.`
-  return /\{\{|\}\}/.test(value.replace(/\{\{[^{}]+\}\}/g, '')) ? 'Biến cá nhân hóa sai cú pháp.' : ''
-}
 
 function formatFollowTime(value: string) {
   const [date, time] = value.split('T')
@@ -161,26 +175,28 @@ function Field({ label, value, onChange, placeholder, error, hint, type = 'text'
   return <div className="next-field"><label htmlFor={id}>{label}{required && <span> *</span>}</label>{rows ? <textarea id={id} rows={rows} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} /> : <input id={id} type={type} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />}{hint && <small>{hint}</small>}{error && <small id={`${id}-error`} role="alert">{error}</small>}</div>
 }
 
-export function Dialog({ title, children, onClose, onConfirm, confirmLabel, danger = false, className = '', cancelLabel = 'Đóng' }: { title: string; children: ReactNode; onClose: () => void; onConfirm?: () => void; confirmLabel?: string; danger?: boolean; className?: string; cancelLabel?: string }) {
+export function Dialog({ title, children, onClose, onConfirm, confirmLabel, danger = false, className = '', cancelLabel = 'Đóng', pending = false }: { pending?: boolean; title: string; children: ReactNode; onClose: () => void; onConfirm?: () => void; confirmLabel?: string; danger?: boolean; className?: string; cancelLabel?: string }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
+  const pendingRef = useRef(pending)
+  useEffect(() => { pendingRef.current = pending }, [pending])
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
     dialogRef.current?.focus()
     const handle = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current()
+      if (event.key === 'Escape' && !pendingRef.current) onCloseRef.current()
       if (event.key !== 'Tab') return
-      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]') ?? [])]
-      if (!focusable.length) return
+      const focusable = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]') ?? [])].filter(element => !element.matches(':disabled,[hidden]'))
+      if (!focusable.length) { event.preventDefault(); dialogRef.current?.focus(); return }
       if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable.at(-1)?.focus() }
       else if (!event.shiftKey && document.activeElement === focusable.at(-1)) { event.preventDefault(); focusable[0].focus() }
     }
     document.addEventListener('keydown', handle)
     return () => { document.removeEventListener('keydown', handle); previousFocus?.focus() }
   }, [])
-  const deleting = !!confirmLabel?.toLowerCase().includes('Ẩn')
-  return <div className="next-scrim" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} tabIndex={-1} className={'next-dialog ' + className} role="dialog" aria-modal="true" aria-label={title}><h2>{title}</h2><div>{children}</div><div className={'next-actions' + (deleting ? ' next-delete-actions' : '')}>{deleting && onConfirm && <Button danger={danger} primary={!danger} onClick={onConfirm}>{confirmLabel}</Button>}<Button onClick={onClose}>{cancelLabel}</Button>{!deleting && onConfirm && <Button danger={danger} primary={!danger} onClick={onConfirm}>{confirmLabel}</Button>}</div></div></div>
+  const deleting = /ẩn|xóa|ngắt kết nối/i.test(confirmLabel || '')
+  return <div className="next-scrim" onMouseDown={event => { if (event.target === event.currentTarget && !pending) onClose() }}><div ref={dialogRef} tabIndex={-1} className={'next-dialog ' + className} role="dialog" aria-modal="true" aria-busy={pending} aria-label={title}><h2>{title}</h2><div>{children}</div><div className={'next-actions' + (deleting ? ' next-delete-actions' : '')}>{deleting && onConfirm && <Button disabled={pending} danger={danger} primary={!danger} onClick={onConfirm}>{confirmLabel}</Button>}<Button disabled={pending} onClick={onClose}>{cancelLabel}</Button>{!deleting && onConfirm && <Button disabled={pending} danger={danger} primary={!danger} onClick={onConfirm}>{confirmLabel}</Button>}</div></div></div>
 }
 
 export default function NextFlows({ screen: requestedScreen, go }: Props) {
@@ -451,6 +467,12 @@ export default function NextFlows({ screen: requestedScreen, go }: Props) {
 
   if (screen === 'followup-list') return <Page section="Follow-up" title="Quản lý lịch Follow-up" description="Theo dõi lịch và kết quả của khách hàng." go={go}>{message}<section className="next-card next-table-card next-followup-list"><h2>Công việc Follow-up của tôi</h2><table className="next-table"><thead><tr><th>Khách hàng / Response</th><th>Ngày giờ / Hình thức</th><th>Lần / Tối đa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{followups.map((item, index) => <tr key={`${item.code}-${index}`} className={followupIndex === index ? 'selected' : ''} aria-selected={followupIndex === index} onClick={() => setFollowupIndex(index)}><td><button className="next-followup-select" type="button" aria-pressed={followupIndex === index}>{item.customer} · {item.code}</button></td><td>{item.time}<small>{item.channel}</small></td><td>{item.attempt}</td><td>{item.status}</td><td><button onClick={() => { setFollowupIndex(index); go('followup-result') }}>{item.status === 'Chờ thực hiện' ? 'Xem chi tiết' : 'Xem kết quả'}</button></td></tr>)}</tbody></table></section><div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép Ẩn.</span></div>{actions(<Button onClick={() => go('followup-delete')}>Ẩn lịch Follow Up</Button>, <Button primary onClick={() => go('response-list')}>Xem hồ sơ / Lập lịch</Button>)}</Page>
   if (screen === 'followup-create') return <Page section="Follow-up" title="Tạo lịch Follow-up" description={`${response.customer} · Response ${response.code}`} go={go} className="next-followup-create"><form onSubmit={event => { event.preventDefault(); if (!followGoal.trim()) { setError('Nhập nội dung hoặc mục tiêu Follow-up.'); return } if (!Number.isFinite(Date.parse(followTime)) || Date.parse(followTime) <= Date.now()) { setError('Ngày giờ Follow-up phải ở tương lai.'); return } if ([waitDays, maxAttempts, intervalDays].some(value => !Number.isInteger(Number(value)) || Number(value) <= 0)) { setError('Thời gian chờ, số lần tối đa và khoảng cách phải là số nguyên dương.'); return } if (reminder && (!Number.isInteger(Number(reminder)) || Number(reminder) <= 0)) { setError('Thời gian nhắc trước phải là số phút nguyên dương.'); return } if (response.kind === 'Từ chối nhận email' && followChannel === 'Email') { go('followup-optout'); return } if (followups.some(item => item.code === response.code && item.status === 'Chờ thực hiện')) { go('followup-duplicate'); return } setFollowups(items => [{ customer: response.customer, code: response.code, time: formatFollowTime(followTime), channel: followChannel, attempt: `1 / ${maxAttempts}`, status: 'Chờ thực hiện' }, ...items]); setFollowupIndex(0); go('followup-success') }}><section className="next-card next-summary"><h2 className={followupErrorVisible ? 'next-form-error-heading' : ''}>{followupErrorVisible && scenario === 'missing-goal' ? 'Thiếu thông tin bắt buộc' : followupErrorVisible && scenario === 'time-error' ? 'Mốc thời gian chưa hợp lệ' : followupErrorVisible && scenario === 'parameter-error' ? 'Thông số Follow-up chưa hợp lệ' : `Lịch hẹn · ${response.code} · ${response.customer}`}</h2><div className="next-grid"><Field label="Mốc thời gian" type="datetime-local" value={followTime} onChange={setFollowTime} error={followupErrorVisible && scenario === 'time-error' ? 'Mốc thời gian đã qua. Hãy chọn thời điểm trong tương lai.' : undefined} /><div className="next-field"><label htmlFor="follow-channel">Hình thức chăm sóc *</label><select id="follow-channel" value={followChannel} onChange={event => setFollowChannel(event.target.value)}><option>Email</option><option>Gọi điện</option><option>SMS</option></select></div></div><Field label="Nội dung / Mục tiêu" required value={followGoal} onChange={setFollowGoal} error={followupErrorVisible && scenario === 'missing-goal' ? 'Vui lòng nhập Nội dung / Mục tiêu rồi nhấn Thêm Follow-up để kiểm tra lại.' : undefined} /><Field label="Thời gian nhắc trước (phút)" type="number" value={reminder} onChange={setReminder} placeholder="Nhập thời gian nhắc trước" /><div className="next-grid"><Field label="Thời gian chờ phản hồi (ngày)" type="number" value={waitDays} onChange={setWaitDays} error={followupErrorVisible && scenario === 'parameter-error' ? 'Thời gian chờ phải là số nguyên dương lớn hơn 0.' : undefined} /><Field label="Số lần Follow-up tối đa" type="number" value={maxAttempts} onChange={setMaxAttempts} /><Field label="Khoảng cách giữa các lần (ngày)" type="number" value={intervalDays} onChange={setIntervalDays} /></div>{!followupErrorVisible && <p className="next-hint">Ngày giờ phải ở tương lai. Các thông số phải là số nguyên dương.</p>}{error && <p className="next-error" role="alert">{error}</p>}</section>{followupErrorVisible && scenarioAlert}{actions(<Button onClick={() => go('followup-list')}>Hủy</Button>, <Button primary type="submit">Thêm Follow-up</Button>)}</form></Page>
+  if (screen === 'followup-result') {
+    const [attempt, maxAttempts] = followup.attempt.split('/').map(Number)
+    if (isFollowupExhausted({ status: followup.status === 'Chờ thực hiện' ? 'pending' : 'done', outcome: followup.status === 'Không phản hồi' ? 'no_response' : 'responded', attempt, max_attempts: maxAttempts })) {
+      return <Page section="Follow-up" title="Kết quả Follow-up" description="Đã kết thúc thời gian chờ phản hồi" go={go}><ExhaustedFollowup attempt={attempt} maxAttempts={maxAttempts} details={`${followup.customer} · ${followup.code} · ${followup.channel}.`} onNote={() => { setFollowGoal(followNotes[followup.code] ?? ''); go('followup-note') }} onBack={() => go('followup-list')} /></Page>
+    }
+  }
   if (screen === 'followup-result') return <Page section="Follow-up" title="Kết quả Follow-up" description={`${followup.customer} · Response ${followup.code}`} go={go}><section className="next-card next-summary next-followup-summary"><h2>{followup.status} · {followup.customer} · {followup.code}</h2><div className="next-result-grid"><div><span>Trạng thái</span><strong>{followup.status}</strong></div><div><span>Lịch hẹn</span><strong>{followup.time}</strong></div><div><span>Hình thức</span><strong>{followup.channel}</strong></div><div><span>Lần Follow-up</span><strong>{followup.attempt}</strong></div><div><span>Cập nhật lúc</span><strong>{followup.code === 'RSP-033' ? '02/11/2026 11:15' : followup.time}</strong></div><div><span>Nguồn cập nhật</span><strong>Hệ thống</strong></div><div className="wide"><span>Nội dung / Mục tiêu</span><strong>Trao đổi nhu cầu và thông tin giải pháp.</strong></div></div></section><section className="next-card next-followup-history"><h2>Lịch sử Follow-up</h2><table className="next-table"><thead><tr><th>Thời điểm</th><th>Trạng thái mới</th><th>Người thực hiện</th></tr></thead><tbody><tr><td>{followup.code === 'RSP-033' ? '01/11/2026 09:00' : followup.time}</td><td>Chờ thực hiện</td><td>NV-01</td></tr>{followup.status !== 'Chờ thực hiện' && <tr><td>{followup.code === 'RSP-033' ? '02/11/2026 11:15' : followup.time}</td><td>{followup.status}</td><td>Hệ thống</td></tr>}</tbody></table></section>{actions(followup.status === 'Chờ thực hiện' && <Button danger onClick={() => go('followup-delete')}>Ẩn lịch Follow-up</Button>, <><Button primary onClick={() => { setFollowGoal(followNotes[followup.code] ?? ''); go('followup-note') }}>Bổ sung ghi chú</Button><Button onClick={() => go('followup-list')}>Về danh sách</Button></>)}</Page>
   if (screen === 'followup-note') return <Page section="Follow-up" title="Ghi chú kết quả" description={followup.customer} go={go}>{scenarioAlert}<section className="next-card next-summary"><h2>Ghi chú kết quả · {followup.customer}</h2><dl className="next-details"><dt>Kết quả tự động</dt><dd>{followup.status}</dd></dl><Field label="Ghi chú kết quả" value={followGoal} onChange={setFollowGoal} rows={5} /><p className="next-hint">Hủy hoặc lỗi lưu ghi chú không thay đổi kết quả đã được hệ thống cập nhật.</p></section>{actions(<Button onClick={() => go('followup-result')}>Hủy</Button>, <Button primary onClick={() => { if (scenario === 'save-error') { go('followup-note'); return }; setFollowNotes(items => ({ ...items, [followup.code]: followGoal })); setNotice('Đã lưu ghi chú trong bản demo.'); go('followup-result') }}>{scenario === 'save-error' ? 'Thử lưu lại' : 'Lưu ghi chú'}</Button>)}</Page>
   return <Page section="Chiến dịch" title="Không tìm thấy màn hình" go={go}><Button onClick={() => go('campaign-list')}>Về danh sách chiến dịch</Button></Page>

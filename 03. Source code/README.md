@@ -113,7 +113,7 @@ Các API hiện có: `/api/auth`, `/api/filter-templates`, `/api/contact-lists`,
 - `http://localhost:5173/`: đăng nhập bằng `minhanh@example.com` hoặc `truongphong@example.com` với mật khẩu thử đã đặt trong `.env` rồi chạy `db:seed:local`. Vai trò được lấy từ PostgreSQL, không lấy từ URL.
 - `?preview=empty-errors`, `missing-email`, `invalid-email`, `missing-password`, `credentials`, `role`, `loading`: các trạng thái đăng nhập tương ứng trong Figma.
 - `?preview=employee` và `?preview=manager`: hai trang chính theo vai trò. `?role=manager` chỉ dùng mở trực tiếp các frame demo để đối chiếu Figma, không xác định role cho lần đăng nhập bằng form.
-- Ở chế độ Trưởng phòng, menu **Kiểm tra danh sách Contact** duyệt/từ chối danh sách từ database; **Tài khoản gửi** có hai mục **Kiểm tra tài khoản gửi** và **Danh sách tài khoản gửi**, thao tác thêm/sửa/Ẩn/kiểm tra SMTP/IMAP qua API. Icon tài khoản góc phải mở thông tin tài khoản và nút đăng xuất.
+- Ở chế độ Trưởng phòng, menu **Kiểm tra danh sách** duyệt/từ chối danh sách từ database; **Tài khoản gửi** có hai mục **Kiểm tra tài khoản gửi** và **Danh sách tài khoản gửi**, thao tác thêm/sửa/Ẩn/kiểm tra SMTP/IMAP qua API. Icon tài khoản góc phải mở thông tin tài khoản và nút đăng xuất.
 - Từ trang chính Nhân viên, dùng menu để xem danh sách Contact đã lưu, Filter Template, chiến dịch, Response, Follow-up và tài khoản gửi. Nếu thiếu SerpAPI key, màn tiêu chí báo chưa cấu hình và vẫn cho xem lịch sử đã lưu. Danh sách Contact có thể được nạp qua `POST /api/contact-lists` để kiểm thử luồng duyệt/chiến dịch trước khi tích hợp tìm kiếm.
 
 Giao diện giữ bố cục Figma ở 1440 × 1024 và co lại cho desktop 1366, 1280 và 1024 px; màn hình thấp có thể cuộn dọc. Chưa có thiết kế mobile/tablet.
@@ -153,3 +153,19 @@ Một job giới hạn 2 truy vấn × tối đa 2 trang SerpAPI, 20 trang websi
 Bộ tải website kiểm tra IP/DNS/redirect, robots.txt, timeout và giới hạn body; không chạy JavaScript, vượt CAPTCHA, đọc PDF hay website cần đăng nhập. Các thư viện thêm: cheerio để phân tích HTML, ipaddr.js để phân loại địa chỉ IP, robots-parser để kiểm tra robots. Không thêm dịch vụ AI hoặc hàng đợi ngoài PostgreSQL.
 
 Kiểm thử không tiêu credit: `npm --prefix backend run test:search:local` (cần PostgreSQL và tài khoản local), dùng provider/website fixtures và dọn dữ liệu tạo bởi test. Các tiến trình gửi/nhận mail trong bài kiểm thử đều bị vô hiệu. Xem [báo cáo triển khai](BAO_CAO_GOOGLE_SEARCH_2026-11-15.md) để phân biệt đã kiểm thử và chưa thử live.
+
+### Nâng cấp các luồng giao diện theo Figma
+
+Phiên bản có migration `024_figma_workflow_fields.sql`. Trước khi chạy BE mới, áp dụng migration vào đúng database của môi trường cần nâng cấp rồi build/restart BE:
+
+```powershell
+npm --prefix backend run db:migrate
+npm --prefix backend run build
+npm --prefix frontend run build
+```
+
+Migration bổ sung mã/thời điểm cập nhật tài khoản gửi, tiêu chí đã xác nhận, thông tin lọc người nhận, cấu hình lịch gửi và lỗi xử lý Follow-up. Mã của tài khoản hiện có được điền theo `TK-<id>`; không xóa bảng hoặc dữ liệu cũ.
+
+Luồng tìm kiếm tách kiểm tra tiêu chí, ghi nhận tiêu chí và bắt đầu tìm kiếm. Xem trước email dùng dữ liệu nháp; chỉ nút **Lưu nội dung** ghi nội dung vào chiến dịch. BE kiểm tra bản xem trước tương ứng trước khi lưu từ trình soạn. Tài khoản gửi và lịch đã lưu được dùng lại khi mở sửa; thay đổi chiến dịch tạm dừng trở về bước xác nhận tiếp tục gửi.
+
+Kiểm tra FE: `node --test frontend/tests/*.test.mjs`, `npm --prefix frontend run lint`. Kiểm tra BE: `npm --prefix backend test -- --runInBand`. Bài `test:smoke:local` kiểm tra HTTP với PostgreSQL và vô hiệu hóa gửi thư ra ngoài; chỉ chạy bằng database kiểm thử. Báo cáo lượt sửa: [KET_QUA_SUA_FE_FIGMA.md](KET_QUA_SUA_FE_FIGMA.md).

@@ -8,6 +8,7 @@ const { InboxService } = require('../dist/inbox/inbox.service');
 const { SmtpService } = require('../dist/senders/smtp.service');
 const { FollowupWorker } = require('../dist/followups/followup.worker');
 const { DeliveryWorker, claimDeliverySql } = require('../dist/campaigns/delivery.worker');
+const { DatabaseService } = require('../dist/database/database.service');
 const PostalMime = require('postal-mime').default ?? require('postal-mime');
 
 async function main() {
@@ -53,6 +54,10 @@ async function main() {
     check(await api.get('/api/notifications').set('Cookie', manager), 200);
     check(await api.post('/api/contact-lists').set('Cookie', manager).send({}), 403);
     const criteria = { role: ['Founder'], industry: [], location: [], keyword: '', size: [], email: [], source: 'Google Search/Web' };
+    check(await api.post('/api/contact-searches/check').set('Cookie', employee).send({ criteria }), 201);
+    check(await api.post('/api/contact-searches/criteria').set('Cookie', employee).send({ criteria }), 201);
+    check(await api.post('/api/contact-searches/criteria').set('Cookie', manager).send({ criteria }), 403);
+    check(await api.post('/api/contact-searches/check').set('Cookie', employee).send({ criteria: {} }), 400);
     check(await api.post('/api/filter-templates').set('Cookie', manager).send({ name: 'Denied', criteria }), 403);
     const filterTemplate = check(await api.post('/api/filter-templates').set('Cookie', employee).send({ name: `Smoke ${suffix}`, criteria }), 201);
     saved.filterTemplateId = filterTemplate.id;
@@ -67,6 +72,9 @@ async function main() {
     const list = check(await api.post('/api/contact-lists').set('Cookie', employee).send({ name: `Smoke ${suffix}`, contacts: [{ email, fullName: 'Smoke Contact', company: 'Smoke Company' }, { email: suppressedEmail, fullName: 'Suppressed Contact' }] }), 201);
     saved.listId = list.id;
     saved.contactIds = list.contacts.map((contact) => contact.id);
+    const customerChoices = check(await api.get('/api/contact-lists/customers').set('Cookie', employee), 200);
+    if (!customerChoices.some(contact => contact.email === email)) throw new Error('Customer selector is missing an owned Contact');
+    check(await api.get('/api/contact-lists/customers').set('Cookie', manager), 403);
     if (!check(await api.get('/api/contact-lists').set('Cookie', employee), 200).some((item) => item.id === list.id)) throw new Error('Contact List is missing saved item');
     check(await api.get(`/api/contact-lists/${list.id}`).set('Cookie', manager), 200);
     check(await api.patch(`/api/contact-lists/${list.id}/review`).set('Cookie', employee).send({ result: 'passed' }), 200);
@@ -74,6 +82,12 @@ async function main() {
     check(await api.post(`/api/contact-lists/${list.id}/approval`).set('Cookie', manager).send({ decision: 'approved' }), 201);
     const sender = check(await api.post('/api/sender-accounts').set('Cookie', manager).send({ name: `Smoke ${suffix}`, email: `sender-${suffix}@example.invalid`, status: 'active', smtpHost: 'localhost', smtpPort: 2525, smtpUser: 'smoke', smtpPassword: 'test-only' }), 201);
     saved.senderId = sender.id;
+    if (!sender.code || !sender.created_at || !sender.updated_at) throw new Error('Sender metadata required by the interface is missing');
+    check(await api.patch(`/api/sender-accounts/${sender.id}`).set('Cookie', manager).send({ code: `TK-${suffix}`, name: 'x'.repeat(51) }), 400);
+    const codedSender = check(await api.patch(`/api/sender-accounts/${sender.id}`).set('Cookie', manager).send({ code: `TK-${suffix}` }), 200);
+    if (codedSender.code !== `TK-${suffix}`) throw new Error('Sender code was not persisted');
+    const duplicateCode = check(await api.post('/api/sender-accounts').set('Cookie', manager).send({ name: 'Code collision', code: codedSender.code, email: `code-${suffix}@example.invalid` }), 409);
+    if (!duplicateCode.message.includes('Mã tài khoản')) throw new Error('Duplicate code was reported as an email error');
     if ('smtp_secret' in sender) throw new Error('SMTP secret leaked from account response');
     if (!check(await api.get('/api/sender-accounts').set('Cookie', manager), 200).some((item) => item.id === sender.id)) throw new Error('Sender list is missing saved item');
     check(await api.get(`/api/sender-accounts/${sender.id}`).set('Cookie', employee), 200);
@@ -102,8 +116,23 @@ async function main() {
     const campaign = check(await api.post('/api/campaigns').set('Cookie', employee).send({ name: `Smoke campaign ${suffix}`, listIds: [Number(list.id)] }), 201);
     saved.campaignId = campaign.id;
     if (campaign.recipient_count !== 1) throw new Error('Recipient filtering failed');
+    if (campaign.filter_summary.original !== 2 || campaign.filter_summary.valid !== 1 || campaign.filter_summary.excluded !== 1 || campaign.filter_summary.unsubscribe !== 1) throw new Error('Recipient exclusion summary is inconsistent');
+    const filterDatabase = app.get(DatabaseService);
+    const filterContact = list.contacts.find(contact => contact.email === email);
+    try {
+      await filterDatabase.query('UPDATE contacts SET bounced_at=now() WHERE id=$1', [filterContact.id]);
+      const emptyFilter = check(await api.post('/api/campaigns').set('Cookie', employee).send({ name: `Empty filter ${suffix}`, listIds: [Number(list.id)] }), 409);
+      if (emptyFilter.filter.original !== 2 || emptyFilter.filter.valid !== 0 || emptyFilter.filter.bounce !== 1 || emptyFilter.filter.unsubscribe !== 1) throw new Error('Empty recipient filter lost its actual exclusion reasons');
+    } finally { await filterDatabase.query('UPDATE contacts SET bounced_at=NULL WHERE id=$1', [filterContact.id]); }
     const disposableCampaign = check(await api.post('/api/campaigns').set('Cookie', employee).send({ name: `Disposable campaign ${suffix}`, listIds: [Number(list.id)] }), 201);
     saved.disposableCampaignId = disposableCampaign.id;
+    const draftContent = { subject: 'Bản xem trước chưa lưu', body: 'Nội dung nháp chưa lưu' };
+    check(await api.post(`/api/campaigns/${disposableCampaign.id}/preview`).set('Cookie', employee).send(draftContent), 201);
+    const beforeSave = check(await api.get(`/api/campaigns/${disposableCampaign.id}`).set('Cookie', employee), 200);
+    if (beforeSave.subject || beforeSave.body || beforeSave.status !== 'approved') throw new Error('Draft preview committed campaign content');
+    const savedPreview = check(await api.patch(`/api/campaigns/${disposableCampaign.id}/content`).set('Cookie', employee).send({ ...draftContent, requirePreview: true }), 200);
+    if (!savedPreview.previewed_at || savedPreview.body !== draftContent.body) throw new Error('Preview acknowledgement did not follow the saved content');
+    check(await api.patch(`/api/campaigns/${disposableCampaign.id}/content`).set('Cookie', employee).send({ ...draftContent, body: 'Changed after preview', requirePreview: true }), 409);
     const editedCampaign = check(await api.patch(`/api/campaigns/${disposableCampaign.id}`).set('Cookie', employee).send({ name: `Edited campaign ${suffix}`, description: 'Edited description' }), 200);
     if (editedCampaign.name !== `Edited campaign ${suffix}` || editedCampaign.description !== 'Edited description') throw new Error('Campaign details were not updated');
     const sendNow = check(await api.patch(`/api/campaigns/${disposableCampaign.id}/schedule`).set('Cookie', employee).send({ sendNow: true }), 200);
@@ -138,8 +167,13 @@ async function main() {
     check(await api.delete(`/api/campaigns/${campaign.id}/assets/${copiedImageId}`).set('Cookie', employee), 200);
     check(await api.delete(`/api/campaigns/${campaign.id}/assets/${brochure.id}`).set('Cookie', employee), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/preview`).set('Cookie', employee).send({}), 201);
-    check(await api.patch(`/api/campaigns/${campaign.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
-    check(await api.patch(`/api/campaigns/${campaign.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
+    check(await api.post(`/api/campaigns/${campaign.id}/recipients/confirm`).set('Cookie', employee), 201);
+    check(await api.patch(`/api/campaigns/${campaign.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id), senderName: '' }), 400);
+    const selectedSender = check(await api.patch(`/api/campaigns/${campaign.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id), senderName: 'V5 Marketing' }), 200);
+    if (selectedSender.sender_name !== 'V5 Marketing') throw new Error('Campaign sender display name was not saved');
+    check(await api.patch(`/api/campaigns/${campaign.id}/schedule`).set('Cookie', employee).send({ sendNow: true, rate: 150 }), 400);
+    check(await api.patch(`/api/campaigns/${campaign.id}/schedule`).set('Cookie', employee).send({ sendNow: true, windowStart: '17:00', windowEnd: '08:00' }), 400);
+    check(await api.patch(`/api/campaigns/${campaign.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.parse(new Date().toISOString().slice(0,10) + "T02:00:00Z") + 86400000).toISOString() }), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/confirm`).set('Cookie', employee), 201);
     check(await api.patch(`/api/campaigns/${campaign.id}`).set('Cookie', employee).send({ name: `Scheduled campaign ${suffix}`, description: 'Edited before start' }), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/pause`).set('Cookie', employee).send({ reason: 'x'.repeat(251) }), 400);
@@ -155,7 +189,7 @@ async function main() {
     check(await api.patch(`/api/campaigns/${pausedDisposable.id}/content`).set('Cookie', employee).send({ subject: 'Test', body: 'Safe to delete' }), 200);
     check(await api.post(`/api/campaigns/${pausedDisposable.id}/preview`).set('Cookie', employee).send({}), 201);
     check(await api.patch(`/api/campaigns/${pausedDisposable.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
-    check(await api.patch(`/api/campaigns/${pausedDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
+    check(await api.patch(`/api/campaigns/${pausedDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.parse(new Date().toISOString().slice(0,10) + "T02:00:00Z") + 86400000).toISOString() }), 200);
     check(await api.post(`/api/campaigns/${pausedDisposable.id}/confirm`).set('Cookie', employee), 201);
     const pausedWithoutReason = check(await api.post(`/api/campaigns/${pausedDisposable.id}/pause`).set('Cookie', employee).send({ reason: '' }), 201);
     if (pausedWithoutReason.pause_reason !== null) throw new Error('Blank pause reason was not accepted');
@@ -166,7 +200,7 @@ async function main() {
     check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/content`).set('Cookie', employee).send({ subject: 'Test', body: 'Delete before sending' }), 200);
     check(await api.post(`/api/campaigns/${scheduledDisposable.id}/preview`).set('Cookie', employee).send({}), 201);
     check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
-    check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
+    check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.parse(new Date().toISOString().slice(0,10) + "T02:00:00Z") + 86400000).toISOString() }), 200);
     check(await api.post(`/api/campaigns/${scheduledDisposable.id}/confirm`).set('Cookie', employee), 201);
     check(await api.delete(`/api/campaigns/${scheduledDisposable.id}`).set('Cookie', employee), 200);
     saved.disposableCampaignId = null;

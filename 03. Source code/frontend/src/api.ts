@@ -1,3 +1,9 @@
+export class ApiError extends Error {
+  status: number;
+  data: Record<string, unknown>;
+  constructor(message: string, status: number, data: Record<string, unknown> = {}) { super(message); this.status = status; this.data = data; }
+}
+
 export async function api<T>(
   path: string,
   method = "GET",
@@ -19,15 +25,16 @@ export async function api<T>(
     throw new Error("Không thể kết nối máy chủ. Kiểm tra kết nối rồi thử lại.");
   }
   if (!response.ok) {
-    const result = (await response.json().catch(() => ({}))) as {
+    const payload: unknown = await response.json().catch(() => ({}));
+    const result = (payload && typeof payload === "object" ? payload : {}) as {
       message?: string | { message?: string };
     };
     const message =
       typeof result.message === "string"
         ? result.message
         : result.message?.message;
-    throw new Error(
-      message || `Yêu cầu không thành công (${response.status}).`,
+    throw new ApiError(
+      message || `Yêu cầu không thành công (${response.status}).`, response.status, result,
     );
   }
   return response.status === 204
