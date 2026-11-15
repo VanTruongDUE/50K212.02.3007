@@ -54,6 +54,7 @@ type Sender = {
   smtp_user: string | null;
   configured: boolean;
   inbound_enabled: boolean;
+  google_status: 'connected' | 'reconnect_required' | null;
 };
 type ResponseItem = {
   id: string;
@@ -305,6 +306,7 @@ function Field({
   required = false,
   rows,
   placeholder,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -313,6 +315,7 @@ function Field({
   required?: boolean;
   rows?: number;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   const id = label.replace(/\s/g, "-");
   return (
@@ -329,6 +332,7 @@ function Field({
           onChange={(e) => set(e.target.value)}
           required={required}
           placeholder={placeholder}
+          disabled={disabled}
         />
       ) : (
         <input
@@ -338,6 +342,7 @@ function Field({
           onChange={(e) => set(e.target.value)}
           required={required}
           placeholder={placeholder}
+          disabled={disabled}
         />
       )}
     </div>
@@ -384,6 +389,21 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [filters, setFilters] = useState<FilterTemplate[]>([]);
   const [selected, setSelected] = useState("");
+  const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
+  const [senderEditId, setSenderEditId] = useState(() =>
+    new URLSearchParams(location.search).get("senderId") || "",
+  );
+  const loadedSenderEditId = useRef("");
+  const googleResult = new URLSearchParams(location.search).get("google");
+  const googleMessages: Record<string, string> = {
+    connected: "Đã liên kết Google. Bạn có thể kiểm tra SMTP và IMAP; việc liên kết chưa gửi email.",
+    cancelled: "Bạn đã hủy cấp quyền Google. Cấu hình cũ được giữ nguyên.",
+    wrong_account: "Gmail vừa chọn không trùng địa chỉ tài khoản gửi. Chọn đúng Gmail khi kết nối lại.",
+    missing_permission: "Chưa cấp đủ quyền gửi và nhận Gmail. Kết nối lại và kiểm tra quyền trên Google.",
+    account_changed: "Thông tin tài khoản đã thay đổi trong lúc kết nối. Kiểm tra lại địa chỉ Gmail.",
+    expired: "Phiên kết nối đã hết hạn hoặc không hợp lệ. Bấm kết nối Google để bắt đầu lại.",
+    failed: "Không hoàn tất được kết nối Google. Kiểm tra cấu hình OAuth rồi thử lại.",
+  };
   const [detail, setDetail] = useState<
     ContactList | Campaign | ResponseItem | null
   >(null);
@@ -488,6 +508,14 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     followups.find((item) => item.id === selected) ?? followups[0];
   const sender = senders.find((item) => item.id === selected) ?? senders[0];
   useEffect(() => {
+    if (group !== "senders" || !manager) return;
+    let active = true;
+    api<{ configured: boolean }>("sender-accounts/google/status")
+      .then(value => { if (active) setGoogleConfigured(value.configured); })
+      .catch(() => { if (active) setGoogleConfigured(false); });
+    return () => { active = false; };
+  }, [group, manager]);
+  useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(""), 5000);
     return () => clearTimeout(timer);
@@ -540,7 +568,26 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       .then((values) => {
         if (!active) return;
         if (group === "lists") setLists(values[0] as ContactList[]);
-        if (group === "senders") setSenders(values[0] as Sender[]);
+        if (group === "senders") {
+          const loaded = values[0] as Sender[];
+          setSenders(loaded);
+          const params = new URLSearchParams(location.search);
+          const editing = loaded.find(item => item.id === params.get("senderId"));
+          if (params.get("screen") === "manager-account-edit" && editing && loadedSenderEditId.current !== editing.id) {
+            loadedSenderEditId.current = editing.id;
+            setSenderForm({
+              name: editing.name,
+              email: editing.email,
+              smtpHost: editing.smtp_host || "",
+              smtpPort: String(editing.smtp_port || 465),
+              smtpUser: editing.smtp_user || "",
+              smtpPassword: "",
+              status: editing.status,
+              quota3Days: String(editing.quota_3_days),
+              inboundEnabled: editing.inbound_enabled,
+            });
+          }
+        }
         if (group === "campaigns") {
           setCampaigns(values[0] as Campaign[]);
           setLists(values[1] as ContactList[]);
@@ -647,6 +694,25 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       setBusy(false);
     }
   }
+  function googleConnection(account: Sender, dirty = false) {
+    return <Card title="Kết nối Gmail với Google">
+      <p>{account.email} · {account.google_status === "connected" ? "Đã liên kết Google" : account.google_status === "reconnect_required" ? "Cần kết nối lại Google" : "Chưa liên kết Google"}</p>
+      <p>Cho phép gửi SMTP và đồng bộ IMAP bằng tài khoản Google, không cần nhập mật khẩu ứng dụng.</p>
+      {googleResult === "connected" && account.google_status === "connected" && <p role="status" className="mgr-callout">{googleMessages.connected}</p>}
+      {googleConfigured === false && <p role="status" className="mgr-callout">Máy chủ chưa cấu hình kết nối Google. Quản trị viên cần thiết lập OAuth theo README trước khi kết nối.</p>}
+      {dirty && <p role="status">Hãy lưu các thay đổi trong form trước khi chuyển sang Google.</p>}
+      <div className="next-actions-bar">
+        {account.google_status && <Button disabled={busy || dirty} onClick={() => ask("Ngắt kết nối Google", "Tài khoản sẽ ngừng gửi và đồng bộ IMAP trong ứng dụng. Quyền đã cấp trên Google không bị thu hồi bởi thao tác này.", () => void run(async () => {
+          await api(`sender-accounts/${account.id}/google/disconnect`, "POST");
+          loadedSenderEditId.current = "";
+        }, "Đã ngắt kết nối Google trong ứng dụng."))}>Ngắt kết nối Google</Button>}
+        <Button primary disabled={busy || googleConfigured !== true || dirty} onClick={() => void run(async () => {
+          const result = await api<{ url: string }>(`sender-accounts/${account.id}/google/connect`, "POST");
+          location.assign(result.url);
+        }, "Đang chuyển đến Google…")}>{account.google_status ? "Kết nối lại Google" : "Kết nối với Google"}</Button>
+      </div>
+    </Card>;
+  }
   const choose = (id: string, next: string) => {
     setSelected(id);
     if (next.startsWith("campaign-")) { setSchedule(null); setSendMode(null); setScheduleCalculated(null); setPreviewContactId(""); setPreviewResult(null); setResumeEmailViewed(false); setConfirmEmailViewed(false); setShowConfirmEmail(false); setShowCampaignEditChoice(false); }
@@ -722,6 +788,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   }
   const feedback = (
     <>
+      {manager && group === "senders" && googleResult && googleResult !== "connected" && googleMessages[googleResult] && (
+        <p role="alert" className="mgr-callout">{googleMessages[googleResult]}</p>
+      )}
       {loading && (
         <p role="status" className="next-card">
           Đang tải dữ liệu…
@@ -2435,6 +2504,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         </section>
         <div className="mgr-actions"><button className="mgr-primary" type="button" onClick={() => go("manager-account-list")}>Về danh sách</button></div>
       </Page>;
+    if (screen === "manager-account-edit" && !senders.some(item => item.id === senderEditId))
+      return <Page section="Tài khoản gửi" title="Sửa tài khoản gửi" go={go}>
+        <Card title="Chưa xác định tài khoản cần sửa">
+          <p>Vui lòng mở chi tiết tài khoản từ danh sách rồi chọn Sửa để cập nhật đúng tài khoản.</p>
+          <Button onClick={() => go("manager-account-list")}>Về danh sách tài khoản gửi</Button>
+        </Card>
+      </Page>;
     if (screen === "manager-account-add" || screen === "manager-account-edit")
       return (
         <Page
@@ -2447,6 +2523,15 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           go={go}
         >
           {feedback}
+          {screen === "manager-account-edit" && (() => {
+            const editing = senders.find(item => item.id === senderEditId)!;
+            const dirty = senderForm.email !== editing.email || senderForm.name !== editing.name ||
+              senderForm.smtpHost !== (editing.smtp_host || "") || Number(senderForm.smtpPort) !== editing.smtp_port ||
+              senderForm.smtpUser !== (editing.smtp_user || "") || !!senderForm.smtpPassword ||
+              senderForm.status !== editing.status || Number(senderForm.quota3Days) !== editing.quota_3_days ||
+              senderForm.inboundEnabled !== editing.inbound_enabled;
+            return googleConnection(editing, dirty);
+          })()}
           <Card title="Cấu hình Gmail / SMTP">
             <form
               onSubmit={(e) => {
@@ -2454,7 +2539,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 void run(
                   async () => {
                     const saved = await api<Sender>(
-                      `sender-accounts${screen === "manager-account-edit" && sender ? `/${sender.id}` : ""}`,
+                      `sender-accounts${screen === "manager-account-edit" ? `/${senderEditId}` : ""}`,
                       screen === "manager-account-edit" ? "PATCH" : "POST",
                       {
                         name: senderForm.name,
@@ -2479,6 +2564,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 );
               }}
             >
+              {screen === "manager-account-add" && <p className="mgr-callout">Để dùng Google OAuth: lưu tài khoản ở trạng thái Ngừng hoạt động, để trống mật khẩu và chưa bật IMAP; sau đó mở chi tiết để kết nối Google.</p>}
               <div className="next-grid">
               <Field
                 label="Tên tài khoản"
@@ -2488,6 +2574,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               />
               <Field
                 label="Địa chỉ email người gửi"
+                disabled={screen === "manager-account-edit" && !!senders.find(item => item.id === senderEditId)?.google_status}
                 value={senderForm.email}
                 set={(value) => setSenderForm({ ...senderForm, email: value })}
                 type="email"
@@ -2495,6 +2582,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               />
               <Field
                 label="Máy chủ SMTP"
+                disabled={screen === "manager-account-edit" && !!senders.find(item => item.id === senderEditId)?.google_status}
                 value={senderForm.smtpHost}
                 set={(value) =>
                   setSenderForm({ ...senderForm, smtpHost: value })
@@ -2503,6 +2591,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               />
               <Field
                 label="Cổng SMTP"
+                disabled={screen === "manager-account-edit" && !!senders.find(item => item.id === senderEditId)?.google_status}
                 value={senderForm.smtpPort}
                 set={(value) =>
                   setSenderForm({ ...senderForm, smtpPort: value })
@@ -2512,6 +2601,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               />
               <Field
                 label="Tên đăng nhập SMTP"
+                disabled={screen === "manager-account-edit" && !!senders.find(item => item.id === senderEditId)?.google_status}
                 value={senderForm.smtpUser}
                 set={(value) =>
                   setSenderForm({ ...senderForm, smtpUser: value })
@@ -2520,12 +2610,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               />
               <Field
                 label="Mật khẩu ứng dụng Gmail"
+                disabled={screen === "manager-account-edit" && !!senders.find(item => item.id === senderEditId)?.google_status}
                 value={senderForm.smtpPassword}
                 set={(value) =>
                   setSenderForm({ ...senderForm, smtpPassword: value })
                 }
                 type="password"
-                required={screen === "manager-account-add"}
+                placeholder="Để trống khi dùng kết nối Google"
               />
               <Field
                 label="Hạn mức email / 3 ngày"
@@ -2575,6 +2666,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     return (
       <Page section="Tài khoản gửi" title="Chi tiết tài khoản" go={go} backTo={manager ? "manager-account-list" : "sender-list"}>
         {feedback}
+        {manager && sender && googleConnection(sender)}
         {sender ? (
           <Card title={sender.name}>
             <p>
@@ -2596,6 +2688,8 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 <div className="next-delete-other-actions">
                 <Button
                   onClick={() => {
+                    setSenderEditId(sender.id);
+                    loadedSenderEditId.current = sender.id;
                     setSenderForm({
                       name: sender.name,
                       email: sender.email,
@@ -2608,6 +2702,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                       inboundEnabled: sender.inbound_enabled,
                     });
                     go("manager-account-edit");
+                    const editUrl = new URL(location.href);
+                    editUrl.searchParams.set("senderId", sender.id);
+                    history.replaceState(null, "", editUrl);
                   }}
                 >
                   Sửa

@@ -321,7 +321,7 @@ export class CampaignsController {
     )
       throw new BadRequestException('Tài khoản gửi không hợp lệ.');
     const sender = await this.database.query(
-      "SELECT id FROM sender_accounts WHERE id=$1 AND status='active' AND smtp_secret IS NOT NULL",
+      "SELECT id FROM sender_accounts WHERE id=$1 AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL))",
       [body.senderAccountId],
     );
     if (!sender.rowCount)
@@ -396,7 +396,7 @@ export class CampaignsController {
         'Máy chủ chưa có địa chỉ công khai cho liên kết ngừng nhận email.',
       );
     const account = await this.database.query(
-      "SELECT 1 FROM sender_accounts WHERE id=$1 AND status='active' AND smtp_secret IS NOT NULL",
+      "SELECT 1 FROM sender_accounts WHERE id=$1 AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL))",
       [campaign.sender_account_id],
     );
     if (!account.rowCount)
@@ -506,7 +506,7 @@ export class CampaignsController {
         - (SELECT count(*) FROM email_deliveries d WHERE d.sender_account_id=s.id AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
         - (SELECT count(*) FROM response_email_deliveries r WHERE r.sender_account_id=s.id AND r.state IN ('sent','sending') AND r.created_at>now()-interval '3 days') AS remaining,
         (SELECT count(*) FROM campaign_recipients WHERE campaign_id=$2 AND status='pending') AS pending
-       FROM sender_accounts s WHERE s.id=$1 AND s.status='active' AND s.smtp_secret IS NOT NULL`,
+       FROM sender_accounts s WHERE s.id=$1 AND s.status='active' AND ((s.google_refresh_secret IS NOT NULL AND s.google_status='connected') OR (s.google_refresh_secret IS NULL AND s.smtp_secret IS NOT NULL))`,
       [senderId, campaignId],
     );
     if (!result.rows[0])

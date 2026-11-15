@@ -40,7 +40,25 @@ Filter Template: Nhân viên dùng `GET/POST /api/filter-templates`, `GET/PATCH/
 
 `smtpPassword` chỉ gửi qua kết nối HTTPS ở môi trường thật. Máy chủ mã hóa bằng `SMTP_ENCRYPTION_KEY`; API không trả khóa hoặc mật khẩu. Gmail có thể cấu hình `smtp.gmail.com:465` nếu tài khoản được phép dùng SMTP và phương thức xác thực phù hợp.
 
-Gmail IMAP dùng cùng tên đăng nhập và mật khẩu ứng dụng đã mã hóa của tài khoản gửi, kết nối `imap.gmail.com:993`. API hiện chưa hỗ trợ OAuth2; một số tài khoản Google không cho phép mật khẩu ứng dụng. Sau khi bật `inboundEnabled`, lần đồng bộ đầu tiên bắt đầu tại cuối INBOX hiện có, nên thư cũ không được nhập. Mỗi lượt lấy tối đa 50 thư mới, chỉ tải nội dung thư tối đa 2 MB; thư không ghép được với email đã gửi xuất hiện trong hàng chờ của Trưởng phòng.
+Gmail IMAP kết nối `imap.gmail.com:993`, dùng OAuth khi tài khoản đã liên kết Google; nếu chưa liên kết thì dùng tên đăng nhập và mật khẩu ứng dụng đã mã hóa. Sau khi bật `inboundEnabled`, lần đồng bộ đầu tiên bắt đầu tại cuối INBOX hiện có, nên thư cũ không được nhập. Mỗi lượt lấy tối đa 50 thư mới, chỉ tải nội dung thư tối đa 2 MB; thư không ghép được với email đã gửi xuất hiện trong hàng chờ của Trưởng phòng.
+
+### Phân loại Response từ IMAP
+
+Khi thư mới ghép được với chiến dịch, BE tự gán `kind` từ phần trả lời tiếng Việt/Anh. Không cần cấu hình thêm hoặc API AI. Phân loại bỏ qua tiêu đề chiến dịch, phần trích dẫn Gmail/Outlook/chuyển tiếp và các dấu kết thúc/chữ ký phổ biến; nội dung lưu trong Response không bị cắt theo bước này (vẫn áp dụng giới hạn lưu 100.000 ký tự hiện có).
+
+| Ví dụ nội dung mới | `kind` |
+| --- | --- |
+| Tôi cần thêm thông tin / Gửi tôi báo giá | `need_info` |
+| Tôi quan tâm / Muốn đặt lịch tư vấn | `interested` |
+| Tôi chưa có nhu cầu / Tôi không quan tâm | `not_interested` |
+| Đừng gửi email cho tôi nữa / Unsubscribe | `unsubscribe` |
+| Chưa rõ, có điều kiện, phủ định việc ngừng nhận hoặc ý định mâu thuẫn | `other` |
+
+Yêu cầu ngừng nhận rõ ràng được ưu tiên và thêm vào danh sách chặn gửi, cập nhật `unsubscribed_at`. Câu hỏi về cách hủy, ví dụ được trích dẫn hoặc câu vừa yêu cầu ngừng vừa muốn nhận tiếp không tự chặn. `need_info` ưu tiên hơn `interested`; nếu vừa không quan tâm vừa yêu cầu thông tin thì để `other`. Vẫn giữ nhận diện thư tự động (`out_of_office`) và thông báo lỗi gửi (`bounce`) hiện có.
+
+Response mới giữ trạng thái `new` và nhân viên phụ trách chiến dịch; nhãn không đồng nghĩa đã xử lý/đã phản hồi. Nhân viên có thể sửa nhãn theo quyền và trạng thái hiện có. Đồng bộ lại cùng UID không tạo bản sao hoặc ghi đè nhãn đã sửa. Không tự phân loại lại lịch sử. Đây là bộ quy tắc nhận diện cụm từ, không đảm bảo hiểu mọi cách diễn đạt; nhân viên cần kiểm tra `other`, thư trích dẫn/chữ ký không chuẩn và nội dung nhiều ý.
+
+Đợt hiệu chỉnh 15/11/2026 bổ sung cách xin bảng giá/tài liệu, chủ thể “chúng tôi/bên mình/we”, phủ định có trạng từ, phủ định kép, lời thuật lại, câu chưa chắc chắn và dấu trích dẫn/chữ ký tiếng Việt. Câu hỏi về sự quan tâm không tự gán `interested`; câu hỏi xin thông tin rõ ràng vẫn nhận `need_info`. Bộ kiểm thử hồi quy có 102 test phân loại, bao gồm 30 biến thể định dạng/trích dẫn trong 5 test tham số hóa. Đây là dữ liệu kiểm thử tổng hợp do người phát triển đặt nhãn, không phải tập email thực tế độc lập để công bố độ chính xác. Chạy bằng `npm --prefix backend test -- --runInBand inbox.service.spec`. Chưa huấn luyện mô hình học máy hoặc gửi nội dung email tới dịch vụ AI.
 
 ## Chiến dịch
 
@@ -83,4 +101,15 @@ Các dấu định dạng từ thanh công cụ soạn thảo (`**đậm**`, `_n
 | POST | `/api/inbox/:accountId/:validity/:uid/assign` | Trưởng phòng | `{ "employeeId": "NV001", "kind": "other", "campaignId": 1 }`; gắn thư thành Response |
 | POST | `/api/inbox/:accountId/:validity/:uid/ignore` | Trưởng phòng | Ẩn thư không liên quan khỏi hàng chờ |
 
-`GET /api/unsubscribe/:token` mở trang xác nhận, `POST` ngừng nhận email. Các màn nghiệp vụ của Nhân viên và Trưởng phòng đã gọi API khi đăng nhập thật; chế độ `?preview=` chỉ dùng để xem bản thiết kế. Google Search, Apollo, gửi SMS và OAuth2 Gmail chưa được triển khai.
+`GET /api/unsubscribe/:token` mở trang xác nhận, `POST` ngừng nhận email. Các màn nghiệp vụ của Nhân viên và Trưởng phòng đã gọi API khi đăng nhập thật; chế độ `?preview=` chỉ dùng để xem bản thiết kế. Google Search, Apollo và gửi SMS chưa được triển khai.
+
+### Gmail OAuth (Trưởng phòng)
+
+| Method | Endpoint | Hành vi |
+|---|---|---|
+| GET | `/api/sender-accounts/google/status` | `{configured: boolean}`, không trả secrets |
+| POST | `/api/sender-accounts/:id/google/connect` | `{url}` để chuyển đến Google; state ràng buộc phiên, PKCE và tài khoản |
+| GET | `/api/sender-accounts/google/callback` | Google trả code/state hoặc error; kiểm tra phiên, scope và danh tính rồi redirect 303 về FE với mã kết quả, không có token |
+| POST | `/api/sender-accounts/:id/google/disconnect` | Xóa token cục bộ, hủy phiên liên kết đang chờ, ngừng hoạt động và tắt IMAP; không thu hồi grant Google |
+
+Tài khoản gửi trả thêm `google_status`: `null`, `connected`, `reconnect_required`. `configured` hỗ trợ cả App Password và OAuth. Không trả refresh token. Khi đã liên kết Google, không sửa email/SMTP/mật khẩu trước khi ngắt kết nối. Các endpoint kiểm tra SMTP, IMAP, gửi chiến dịch và phản hồi tự dùng OAuth khi có liên kết; không fallback mật khẩu nếu OAuth hết quyền.

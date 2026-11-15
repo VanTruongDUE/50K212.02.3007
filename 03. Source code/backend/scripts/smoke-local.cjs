@@ -179,13 +179,25 @@ async function main() {
       await dbForInbox.query('INSERT INTO imap_cursors(sender_account_id,uid_validity,last_uid) VALUES($1,$2,0)', [sender.id, validity]);
     } finally { await dbForInbox.end(); }
     const inbox = app.get(InboxService);
-    const matchedMail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nMessage-ID: <reply-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\nI am interested`));
+    const replyContent = 'Tôi đã nhận được email và cần thêm thông tin\r\n\r\nOn Fri, sender@example.invalid wrote:\r\nNgừng nhận email';
+    const matchedMail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nContent-Type: text/plain; charset=utf-8\r\nMessage-ID: <reply-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\n${replyContent}`));
     if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 1) throw new Error('IMAP reply was not linked to campaign');
     if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 0) throw new Error('IMAP reply was imported twice');
     const inboxResponses = check(await api.get('/api/responses').set('Cookie', employee), 200);
     const matchedResponse = inboxResponses.find((item) => item.email === email && String(item.campaign_id) === String(campaign.id));
     if (!matchedResponse) throw new Error(`IMAP response correlation failed: ${JSON.stringify(inboxResponses.map(({ email, campaign_id, content }) => ({ email, campaign_id, content })))}`);
     saved.inboundResponseIds.push(matchedResponse.id);
+    if (matchedResponse.kind !== 'need_info' || matchedResponse.status !== 'new' || matchedResponse.content !== matchedMail.text || matchedResponse.assignee_id !== 'NV001') throw new Error('Reply classification must preserve original content, new status and assignee');
+    const correctedResponse = check(await api.patch(`/api/responses/${matchedResponse.id}`).set('Cookie', employee).send({ kind: 'interested' }), 200);
+    if (correctedResponse.kind !== 'interested' || correctedResponse.status !== 'new') throw new Error('Employee cannot correct the automatic label');
+    if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 0) throw new Error('Corrected reply was imported twice');
+    if (check(await api.get(`/api/responses/${matchedResponse.id}`).set('Cookie', employee), 200).kind !== 'interested') throw new Error('IMAP overwrote an employee correction');
+    const classificationDb = new Client({ host: process.env.POSTGRES_HOST || '127.0.0.1', port: Number(process.env.POSTGRES_PORT || 5432), user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database: process.env.POSTGRES_DB });
+    await classificationDb.connect();
+    try {
+      const suppressedByQuote = await classificationDb.query('SELECT 1 FROM email_suppressions WHERE email=$1', [email]);
+      if (suppressedByQuote.rowCount) throw new Error('Quoted opt-out text must not suppress the reply sender');
+    } finally { await classificationDb.end(); }
     const unmatchedMail = await PostalMime.parse(Buffer.from(`From: Unknown <unknown-${suffix}@example.invalid>\r\nTo: ${sender.email}\r\nSubject: Question\r\nMessage-ID: <unknown-${suffix}@example.invalid>\r\n\r\nPlease call me`));
     if (await inbox.store({ id: sender.id }, validity, 2, unmatchedMail, new Date()) !== 0) throw new Error('Unmatched IMAP mail was linked unexpectedly');
     check(await api.get('/api/inbox/unmatched').set('Cookie', employee), 403);
@@ -257,6 +269,26 @@ async function main() {
     saved.filterTemplateId = null;
     check(await api.delete(`/api/email-templates/${emailTemplate.id}`).set('Cookie', employee), 200);
     saved.emailTemplateId = null;
+    for (const [uid, content, expectedKind] of [
+      [4, 'Ngừng nhận email. Tôi vẫn muốn nhận email.', 'other'],
+      [5, 'Tôi quan tâm', 'interested'],
+      [6, 'Tôi chưa có nhu cầu', 'not_interested'],
+      [7, 'Đừng gửi email cho tôi nữa', 'unsubscribe'],
+    ]) {
+      const mail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nContent-Type: text/plain; charset=utf-8\r\nMessage-ID: <classification-${uid}-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\n${content}`));
+      if (await inbox.store({ id: sender.id }, validity, uid, mail, new Date()) !== 1) throw new Error('Classification reply was not imported');
+      const rows = check(await api.get('/api/responses').set('Cookie', employee), 200);
+      const classified = rows.find((item) => item.email === email && item.content === mail.text);
+      if (!classified || classified.kind !== expectedKind || classified.status !== 'new') throw new Error('Classification changed intent or processing status');
+      const db = new Client({ host: process.env.POSTGRES_HOST || '127.0.0.1', port: Number(process.env.POSTGRES_PORT || 5432), user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database: process.env.POSTGRES_DB });
+      await db.connect();
+      try {
+        const suppressed = await db.query('SELECT 1 FROM email_suppressions WHERE email=$1', [email]);
+        const contact = await db.query('SELECT unsubscribed_at FROM contacts WHERE id=$1', [saved.contactIds[0]]);
+        if (Boolean(suppressed.rowCount) !== (expectedKind === 'unsubscribe') || Boolean(contact.rows[0].unsubscribed_at) !== (expectedKind === 'unsubscribe')) throw new Error('Only explicit opt-out may suppress the Contact');
+      } finally { await db.end(); }
+    }
+    check(await api.post(`/api/responses/${matchedResponse.id}/reply`).set('Cookie', employee).send({ subject: 'Blocked after opt-out', content: 'Must not send', senderAccountId: Number(sender.id) }), 409);
     console.log('Smoke passed: roles, templates, list approval, sender, campaign assets, preview, scheduling, IMAP matching, Response, Follow-up.');
   } finally {
     await app.close();
@@ -306,6 +338,7 @@ async function main() {
       }
       if (saved.contactIds) for (const id of saved.contactIds) await db.query('DELETE FROM contacts WHERE id=$1', [id]);
       await db.query('DELETE FROM email_suppressions WHERE email=$1', [suppressedEmail]);
+      await db.query('DELETE FROM email_suppressions WHERE email=$1', [email]);
       if (saved.senderId) await db.query('DELETE FROM sender_accounts WHERE id=$1', [saved.senderId]);
       if (saved.disposableSenderId) await db.query('DELETE FROM sender_accounts WHERE id=$1', [saved.disposableSenderId]);
     } finally { await db.end(); }

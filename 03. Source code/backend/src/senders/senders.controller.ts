@@ -12,6 +12,7 @@ import {
   Post,
   Req,
   UseGuards,
+  HttpException,
 } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 import { Roles } from '../auth/roles';
@@ -40,7 +41,7 @@ type SenderInput = {
   inboundEnabled?: unknown;
 };
 const publicFields =
-  'id, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, (smtp_secret IS NOT NULL) AS configured, created_at';
+  "id, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at";
 const usageField = `((SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
   AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
   +(SELECT count(*)::int FROM response_email_deliveries r WHERE r.sender_account_id=s.id
@@ -161,7 +162,18 @@ export class SendersController {
     const account = await this.privateOne(id);
     try {
       await this.smtp.verify(account);
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof HttpException) throw error;
+      if (
+        error !== null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'EAUTH'
+      ) {
+        throw new BadRequestException(
+          'Máy chủ email đã từ chối xác thực SMTP. Cấu hình đã lưu không đồng nghĩa với kết nối thành công. Kiểm tra tên đăng nhập SMTP và mật khẩu ứng dụng đang lưu.',
+        );
+      }
       throw new BadRequestException(
         'Không thể kết nối hoặc xác thực SMTP. Kiểm tra cấu hình tài khoản.',
       );
@@ -237,6 +249,17 @@ export class SendersController {
     )
       throw new BadRequestException('Tên đăng nhập SMTP không hợp lệ.');
     let secret = current?.smtp_secret ?? null;
+    if (
+      current?.google_refresh_secret &&
+      (email !== current.email ||
+        host !== current.smtp_host ||
+        port !== current.smtp_port ||
+        user !== current.smtp_user ||
+        body.smtpPassword !== undefined)
+    )
+      throw new BadRequestException(
+        'Ngắt kết nối Google trước khi đổi địa chỉ hoặc thông tin xác thực SMTP.',
+      );
     if (body.smtpPassword !== undefined) {
       if (
         typeof body.smtpPassword !== 'string' ||
@@ -246,9 +269,12 @@ export class SendersController {
         throw new BadRequestException('Mật khẩu SMTP không hợp lệ.');
       secret = this.smtp.encrypt(body.smtpPassword);
     }
-    if (status === 'active' && (!host || !port || !user || !secret))
+    if (
+      status === 'active' &&
+      (!host || !port || !user || (!secret && !current?.google_refresh_secret))
+    )
       throw new BadRequestException('Cần cấu hình SMTP trước khi kích hoạt.');
-    if (inbound && (!user || !secret))
+    if (inbound && (!user || (!secret && !current?.google_refresh_secret)))
       throw new BadRequestException(
         'Cần cấu hình thông tin Gmail trước khi bật IMAP.',
       );

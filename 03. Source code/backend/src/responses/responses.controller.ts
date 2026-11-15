@@ -148,7 +148,7 @@ export class ResponsesController {
       const sender = await client.query<
         SmtpAccount & { id: string; quota_3_days: number } & QueryResultRow
       >(
-        "SELECT * FROM sender_accounts WHERE id=$1 AND status='active' AND smtp_secret IS NOT NULL FOR UPDATE",
+        "SELECT * FROM sender_accounts WHERE id=$1 AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) FOR UPDATE",
         [body.senderAccountId],
       );
       account = sender.rows[0];

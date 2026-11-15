@@ -30,7 +30,7 @@ type Job = QueryResultRow &
 
 export const claimDeliverySql = `SELECT ca.id AS campaign_id, cr.contact_id, sa.id AS account_id,
   ct.email AS recipient_email,ct.full_name,ct.company,ct.unsubscribe_token,
-  ca.subject,ca.body,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.quota_3_days
+  ca.subject,ca.body,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days
  FROM campaign_recipients cr JOIN campaigns ca ON ca.id=cr.campaign_id
  JOIN contacts ct ON ct.id=cr.contact_id JOIN sender_accounts sa ON sa.id=ca.sender_account_id
  WHERE ca.status IN ('scheduled','sending') AND ca.scheduled_at<=now()

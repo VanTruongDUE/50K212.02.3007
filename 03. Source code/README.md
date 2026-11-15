@@ -115,5 +115,22 @@ Giao diện giữ bố cục Figma ở 1440 × 1024 và co lại cho desktop 136
 - Menu **Chiến dịch**, **Response** và **Follow-up** mở các danh sách tương ứng. Các màn chính dùng `?screen=campaign-list`, `response-list`, `followup-list`.
 - Chế độ đăng nhập thật dùng danh sách đã được Trưởng phòng duyệt để tạo chiến dịch, lưu nội dung, xem trước cá nhân hóa, chọn tài khoản gửi, đặt lịch và xác nhận. Response email gửi qua SMTP; SMS chỉ được ghi nhận thủ công sau khi đã gửi ngoài hệ thống. Follow-up lưu 7 thông số và kết quả vào database.
 - Các trạng thái minh họa Figma vẫn có thể mở riêng ở môi trường dev bằng `?preview=employee&screen=...` hoặc `?preview=manager&screen=...`. Ở chế độ `preview`, dữ liệu vẫn là demo và thao tác không lưu database. Không dùng URL preview để kiểm chứng dữ liệu thật.
+- Thư IMAP mới ghép với chiến dịch tự phân loại ý định tiếng Việt/Anh: Quan tâm, Cần thêm thông tin, Không quan tâm, Ngừng nhận email hoặc Khác. Bộ phân loại bỏ qua phần trích dẫn phổ biến, giữ nội dung gốc và trạng thái Mới; nhân viên vẫn có thể sửa nhãn. Xem quy tắc và giới hạn trong [backend/API.md](backend/API.md#phân-loại-response-từ-imap).
 
-Chưa kiểm thử kết nối Gmail/SMTP thật vì chưa có tài khoản thử và quyền truy cập. Các tài khoản đăng nhập local nằm trong `.env`, không ghi mật khẩu vào mã nguồn hoặc tài liệu.
+Đã thử cấu hình App Password của Gmail thật nhưng Google từ chối xác thực. OAuth được kiểm chứng bằng test và luồng giả lập; chưa xác nhận gửi/nhận Gmail thật cho tới khi cấu hình Google Cloud và cấp quyền thành công. Các tài khoản đăng nhập local nằm trong `.env`, không ghi mật khẩu vào mã nguồn hoặc tài liệu.
+
+### Kết nối Gmail bằng OAuth 2.0
+
+Giữ nguyên Gmail hiện tại. Trưởng phòng mở chi tiết tài khoản gửi và chọn **Kết nối với Google**. OAuth được dùng cho cả SMTP chiến dịch, phản hồi email và Gmail IMAP; không tích hợp Google Search trong bước này.
+
+1. Tạo hoặc chọn Google Cloud project. Trong **Google Auth Platform**, cấu hình Branding, Audience (External) và thêm Gmail cần kết nối vào Test users nếu dự án đang Testing.
+2. Tạo OAuth Client loại **Web application**. Đăng ký chính xác Authorized redirect URI: `http://127.0.0.1:5173/api/sender-accounts/google/callback`. Không thay `127.0.0.1` bằng `localhost` nếu đang mở FE bằng IP này. Cấu hình Data Access cho `openid`, email và `https://mail.google.com/` (SMTP/IMAP cần quyền này).
+3. Điền `GOOGLE_OAUTH_CLIENT_ID` và `GOOGLE_OAUTH_CLIENT_SECRET` vào `.env` cục bộ. Đặt `GOOGLE_OAUTH_REDIRECT_URI` như trên và `FRONTEND_BASE_URL=http://127.0.0.1:5173`. Giữ `SMTP_ENCRYPTION_KEY` ổn định. Không gửi secret/token qua chat, không đặt biến `VITE_`, không commit file client secret.
+4. Chạy `npm --prefix backend run db:migrate`, build và khởi động lại BE. Mở FE, đăng nhập Trưởng phòng, vào tài khoản gửi và bấm kết nối. Đăng nhập đúng Gmail, đọc và cấp quyền trên Google. Ứng dụng từ chối liên kết nếu Gmail được chọn khác địa chỉ tài khoản gửi.
+5. Trở về ứng dụng, kiểm tra **SMTP** và **IMAP**. Liên kết thành công không tự gửi thư. Nếu tạo tài khoản mới, lưu ở trạng thái Ngừng hoạt động và chưa bật IMAP, không cần mật khẩu; sau khi liên kết thì có thể kích hoạt và bật IMAP.
+
+Refresh token được mã hóa AES-256-GCM trong DB; access token chỉ giữ tạm trong bộ nhớ BE, dùng chung cho SMTP/IMAP. Phiên kết nối có state một lần, ràng buộc phiên đăng nhập và PKCE, hết hạn sau 10 phút. Callback kiểm tra danh tính, quyền Gmail và không đưa token lên URL FE. Quyền hết hạn/bị thu hồi hiển thị **Cần kết nối lại Google**. Lỗi mạng khi làm mới token không xóa quyền đã lưu.
+
+**Ngắt kết nối Google** xóa token trong ứng dụng, chuyển tài khoản sang Ngừng hoạt động và tắt đồng bộ IMAP. Thao tác này không thu hồi quyền trên Google; có thể quản lý quyền ở trang Tài khoản Google. Không tự quay lại mật khẩu cũ khi OAuth lỗi. Muốn dùng App Password trở lại, ngắt kết nối rồi cấu hình/kích hoạt SMTP thủ công.
+
+Ứng dụng External ở Testing dùng quyền Gmail có refresh token thường hết hạn sau 7 ngày. Quyền `https://mail.google.com/` là quyền rộng; trước khi phát hành công khai cần đáp ứng chính sách/xác minh của Google. Tài liệu: [OAuth cho web server](https://developers.google.com/identity/protocols/oauth2/web-server), [SMTP/IMAP OAuth và scope](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol), [vòng đời token](https://developers.google.com/identity/protocols/oauth2).

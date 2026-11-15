@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
+import { GoogleMailService } from './google-mail.service';
 import { SmtpService } from './smtp.service';
 
 jest.mock('nodemailer', () => ({
@@ -8,9 +9,65 @@ jest.mock('nodemailer', () => ({
 }));
 
 describe('SmtpService', () => {
+  it('uses OAuth for both SMTP and IMAP and never sends tokens to a custom SMTP host', async () => {
+    const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
+    const google = {
+      accessToken: jest.fn().mockResolvedValue('oauth-access'),
+    } as unknown as GoogleMailService;
+    const service = new SmtpService(config, google);
+    const verify = jest.fn().mockResolvedValue(true);
+    jest
+      .mocked(nodemailer.createTransport)
+      .mockReturnValue({ verify } as unknown as ReturnType<
+        typeof nodemailer.createTransport
+      >);
+    const account = {
+      email: 'sender@gmail.com',
+      smtp_host: 'untrusted.invalid',
+      smtp_port: 2525,
+      smtp_user: 'wrong-user',
+      smtp_secret: null,
+      google_refresh_secret: 'encrypted',
+      google_status: 'connected',
+    };
+    await service.verify(account);
+    expect(nodemailer.createTransport).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          type: 'OAuth2',
+          user: 'sender@gmail.com',
+          accessToken: 'oauth-access',
+        },
+      }),
+    );
+    expect(await service.inboxCredentials(account)).toEqual({
+      user: 'sender@gmail.com',
+      accessToken: 'oauth-access',
+    });
+  });
+  it.each([
+    ['smtp.gmail.com', 'abcdefghijklmnop'],
+    ['SMTP.GMAIL.COM', 'abcdefghijklmnop'],
+    ['smtp.example.com', 'abcd efgh ijkl mnop'],
+  ])('handles password spacing for %s', (host, expected) => {
+    const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
+    const service = new SmtpService(config, {} as GoogleMailService);
+    const credentials = service.credentials({
+      email: 'sender@example.com',
+      smtp_host: host,
+      smtp_port: 465,
+      smtp_user: 'sender@example.com',
+      smtp_secret: service.encrypt('abcd efgh ijkl mnop'),
+    });
+    expect(credentials.pass).toBe(expected);
+  });
+
   it('stores a different ciphertext and recovers the SMTP secret', () => {
     const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
-    const service = new SmtpService(config);
+    const service = new SmtpService(config, {} as GoogleMailService);
     const encrypted = service.encrypt('local-test-secret');
     expect(encrypted).not.toContain('local-test-secret');
     expect(
@@ -41,7 +98,7 @@ describe('SmtpService campaign HTML', () => {
       get: (key: string) =>
         key === 'SMTP_ENCRYPTION_KEY' ? '1'.repeat(64) : undefined,
     } as unknown as ConfigService;
-    const smtp = new SmtpService(config);
+    const smtp = new SmtpService(config, {} as GoogleMailService);
     const account = {
       email: 'sender@example.com',
       smtp_host: 'localhost',

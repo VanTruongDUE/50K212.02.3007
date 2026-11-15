@@ -1,10 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { GoogleMailService } from './google-mail.service';
+import { decryptMailSecret, encryptMailSecret } from './mail-secret';
 import nodemailer from 'nodemailer';
 import {
   parseCampaignBody,
@@ -17,6 +14,8 @@ export type SmtpAccount = {
   smtp_port: number | null;
   smtp_user: string | null;
   smtp_secret: string | null;
+  google_refresh_secret?: string | null;
+  google_status?: string | null;
 };
 export type MailAsset = {
   id: string;
@@ -28,25 +27,13 @@ export type MailAsset = {
 
 @Injectable()
 export class SmtpService {
-  constructor(private readonly config: ConfigService) {}
-
-  private key(): Buffer {
-    const value = this.config.get<string>('SMTP_ENCRYPTION_KEY');
-    if (!value || !/^[0-9a-fA-F]{64}$/.test(value)) {
-      throw new ServiceUnavailableException(
-        'Chưa cấu hình khóa SMTP trên máy chủ.',
-      );
-    }
-    return Buffer.from(value, 'hex');
-  }
+  constructor(
+    private readonly config: ConfigService,
+    private readonly google: GoogleMailService,
+  ) {}
 
   encrypt(secret: string): string {
-    const iv = randomBytes(12);
-    const cipher = createCipheriv('aes-256-gcm', this.key(), iv);
-    const data = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), data]
-      .map((part) => part.toString('hex'))
-      .join(':');
+    return encryptMailSecret(this.config, secret);
   }
 
   credentials(account: SmtpAccount): { user: string; pass: string } {
@@ -54,20 +41,41 @@ export class SmtpService {
       throw new BadRequestException(
         'Tài khoản chưa có thông tin xác thực email.',
       );
-    const [iv, tag, data] = account.smtp_secret
-      .split(':')
-      .map((part) => Buffer.from(part, 'hex'));
-    const decipher = createDecipheriv('aes-256-gcm', this.key(), iv);
-    decipher.setAuthTag(tag);
+    const password = decryptMailSecret(this.config, account.smtp_secret);
     return {
       user: account.smtp_user,
-      pass: Buffer.concat([decipher.update(data), decipher.final()]).toString(
-        'utf8',
-      ),
+      // Gmail displays app passwords in groups separated by spaces.
+      pass:
+        account.smtp_host?.toLowerCase() === 'smtp.gmail.com'
+          ? password.replace(/\s/g, '')
+          : password,
     };
   }
 
-  private transport(account: SmtpAccount) {
+  async inboxCredentials(account: SmtpAccount) {
+    if (account.google_refresh_secret)
+      return {
+        user: account.email,
+        accessToken: await this.google.accessToken(account),
+      };
+    return this.credentials(account);
+  }
+
+  private async transport(account: SmtpAccount) {
+    if (account.google_refresh_secret) {
+      return nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          type: 'OAuth2',
+          user: account.email,
+          accessToken: await this.google.accessToken(account),
+        },
+        connectionTimeout: 10000,
+        socketTimeout: 15000,
+      });
+    }
     if (
       !account.smtp_host ||
       !account.smtp_port ||
@@ -88,7 +96,7 @@ export class SmtpService {
   }
 
   async verify(account: SmtpAccount): Promise<void> {
-    await this.transport(account).verify();
+    await (await this.transport(account)).verify();
   }
 
   async send(
@@ -131,7 +139,9 @@ export class SmtpService {
     const rendered = personalizeCampaign
       ? renderCampaignBody(body, includedAssets, personalizeCampaign)
       : { text: body, html: escaped };
-    const result = await this.transport(account).sendMail({
+    const result = await (
+      await this.transport(account)
+    ).sendMail({
       from: account.email,
       to,
       subject,
