@@ -1,3 +1,4 @@
+import { SearchModule } from './search/search.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'node:path';
@@ -33,6 +34,7 @@ import { NotificationsController } from './notifications.controller';
     TemplatesModule,
     FilterTemplatesModule,
     InboxModule,
+    SearchModule,
   ],
   controllers: [
     AppController,

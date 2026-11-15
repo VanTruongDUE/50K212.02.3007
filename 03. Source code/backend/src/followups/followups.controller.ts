@@ -261,7 +261,7 @@ export class FollowupsController {
       [id],
     );
     if (!result.rowCount)
-      throw new ConflictException('Chỉ xóa lịch Follow-up đang chờ.');
+      throw new ConflictException('Chỉ Ẩn lịch Follow-up đang chờ.');
     return { deleted: true };
   }
 

@@ -7,7 +7,7 @@ const { randomBytes } = require('node:crypto');
 const { InboxService } = require('../dist/inbox/inbox.service');
 const { SmtpService } = require('../dist/senders/smtp.service');
 const { FollowupWorker } = require('../dist/followups/followup.worker');
-const { claimDeliverySql } = require('../dist/campaigns/delivery.worker');
+const { DeliveryWorker, claimDeliverySql } = require('../dist/campaigns/delivery.worker');
 const PostalMime = require('postal-mime').default ?? require('postal-mime');
 
 async function main() {
@@ -17,6 +17,9 @@ async function main() {
   process.env.PUBLIC_BASE_URL ||= 'http://localhost:3000';
   const app = await NestFactory.create(AppModule, { logger: ['error'] });
   app.use(cookieParser());
+  for (const service of [DeliveryWorker, FollowupWorker, InboxService])
+    app.get(service).onModuleInit = () => {};
+  app.get(SmtpService).send = async () => { throw new Error('External SMTP disabled during smoke verification'); };
   await app.init();
   const api = request(app.getHttpServer());
   const saved = {};
@@ -114,19 +117,38 @@ async function main() {
     if (brochure.kind !== 'pdf' || brochure.size_bytes !== 19) throw new Error('Campaign PDF upload failed');
     if (!check(await api.get(`/api/campaigns/${campaign.id}/assets`).set('Cookie', employee), 200).some((item) => item.id === brochure.id)) throw new Error('Campaign asset list is missing saved file');
     check(await api.get(`/api/campaigns/${campaign.id}/assets/${brochure.id}`).set('Cookie', employee), 200);
+    const image = check(await api.post(`/api/campaigns/${campaign.id}/assets`).set('Cookie', employee).field('kind', 'image').attach('file', Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]), 'content.png'), 201);
+    const richBody = `Chào {{Họ tên}} [[Hình ảnh:${image.id}]][[Nút:Đăng ký|https://example.com/register]][[Đường phân cách]]`;
+    check(await api.patch(`/api/campaigns/${campaign.id}/content`).set('Cookie', employee).send({ subject: 'Xin chào {{Họ tên}}', body: richBody }), 200);
+    check(await api.delete(`/api/campaigns/${campaign.id}/assets/${image.id}`).set('Cookie', employee), 409);
     const preview = check(await api.post(`/api/campaigns/${campaign.id}/preview`).set('Cookie', employee).send({}), 201);
     if (preview.subject !== 'Xin chào Smoke Contact') throw new Error('Preview personalization failed');
-    if (preview.assets.length !== 1) throw new Error('Preview did not include attachment');
+    if (preview.assets.length !== 2 || !preview.body.includes(`[[Hình ảnh:${image.id}]]`)) throw new Error('Preview did not include content image');
+    check(await api.patch(`/api/email-templates/${emailTemplate.id}`).set('Cookie', employee).send({ body: richBody, campaignId: Number(campaign.id) }), 200);
+    check(await api.patch(`/api/email-templates/${emailTemplate.id}`).set('Cookie', employee).send({ subject: 'Updated rich template' }), 200);
+    check(await api.post(`/api/email-templates/${emailTemplate.id}/apply`).set('Cookie', manager).send({ campaignId: Number(campaign.id) }), 403);
+    check(await api.patch(`/api/campaigns/${campaign.id}/content`).set('Cookie', employee).send({ subject: 'Xin chào {{Họ tên}}', body: 'Chào {{Họ tên}} tại {{Tên doanh nghiệp}}' }), 200);
+    check(await api.delete(`/api/campaigns/${campaign.id}/assets/${image.id}`).set('Cookie', employee), 200);
+    const applied = check(await api.post(`/api/email-templates/${emailTemplate.id}/apply`).set('Cookie', employee).send({ campaignId: Number(campaign.id) }), 201);
+    const copiedImageId = applied.body.match(/\[\[Hình ảnh:(\d+)\]\]/)?.[1];
+    if (!copiedImageId || copiedImageId === image.id) throw new Error('Template image was not copied to the campaign');
+    check(await api.patch(`/api/campaigns/${campaign.id}/content`).set('Cookie', employee).send(applied), 200);
+    check(await api.post(`/api/campaigns/${campaign.id}/preview`).set('Cookie', employee).send({}), 201);
+    check(await api.patch(`/api/campaigns/${campaign.id}/content`).set('Cookie', employee).send({ subject: 'Xin chào {{Họ tên}}', body: 'Chào {{Họ tên}} tại {{Tên doanh nghiệp}}' }), 200);
+    check(await api.delete(`/api/campaigns/${campaign.id}/assets/${copiedImageId}`).set('Cookie', employee), 200);
     check(await api.delete(`/api/campaigns/${campaign.id}/assets/${brochure.id}`).set('Cookie', employee), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/preview`).set('Cookie', employee).send({}), 201);
     check(await api.patch(`/api/campaigns/${campaign.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
     check(await api.patch(`/api/campaigns/${campaign.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/confirm`).set('Cookie', employee), 201);
     check(await api.patch(`/api/campaigns/${campaign.id}`).set('Cookie', employee).send({ name: `Scheduled campaign ${suffix}`, description: 'Edited before start' }), 200);
-    check(await api.post(`/api/campaigns/${campaign.id}/pause`).set('Cookie', employee), 201);
+    check(await api.post(`/api/campaigns/${campaign.id}/pause`).set('Cookie', employee).send({ reason: 'x'.repeat(251) }), 400);
+    const pausedCampaign = check(await api.post(`/api/campaigns/${campaign.id}/pause`).set('Cookie', employee).send({ reason: 'Cần sửa nội dung email' }), 201);
+    if (!pausedCampaign.paused_at || pausedCampaign.pause_reason !== 'Cần sửa nội dung email') throw new Error('Campaign pause details were not stored');
     check(await api.patch(`/api/campaigns/${campaign.id}/content`).set('Cookie', employee).send({ subject: 'Email đã sửa', body: 'Nội dung mới khi tạm dừng' }), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/resume`).set('Cookie', employee), 409);
     check(await api.post(`/api/campaigns/${campaign.id}/preview`).set('Cookie', employee).send({}), 201);
+    check(await api.patch(`/api/campaigns/${campaign.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
     check(await api.post(`/api/campaigns/${campaign.id}/resume`).set('Cookie', employee), 201);
     const pausedDisposable = check(await api.post('/api/campaigns').set('Cookie', employee).send({ name: `Paused disposable ${suffix}`, listIds: [Number(list.id)] }), 201);
     saved.disposableCampaignId = pausedDisposable.id;
@@ -135,8 +157,18 @@ async function main() {
     check(await api.patch(`/api/campaigns/${pausedDisposable.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
     check(await api.patch(`/api/campaigns/${pausedDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
     check(await api.post(`/api/campaigns/${pausedDisposable.id}/confirm`).set('Cookie', employee), 201);
-    check(await api.post(`/api/campaigns/${pausedDisposable.id}/pause`).set('Cookie', employee), 201);
+    const pausedWithoutReason = check(await api.post(`/api/campaigns/${pausedDisposable.id}/pause`).set('Cookie', employee).send({ reason: '' }), 201);
+    if (pausedWithoutReason.pause_reason !== null) throw new Error('Blank pause reason was not accepted');
     check(await api.delete(`/api/campaigns/${pausedDisposable.id}`).set('Cookie', employee), 200);
+    saved.disposableCampaignId = null;
+    const scheduledDisposable = check(await api.post('/api/campaigns').set('Cookie', employee).send({ name: `Scheduled disposable ${suffix}`, listIds: [Number(list.id)] }), 201);
+    saved.disposableCampaignId = scheduledDisposable.id;
+    check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/content`).set('Cookie', employee).send({ subject: 'Test', body: 'Delete before sending' }), 200);
+    check(await api.post(`/api/campaigns/${scheduledDisposable.id}/preview`).set('Cookie', employee).send({}), 201);
+    check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/sender`).set('Cookie', employee).send({ senderAccountId: Number(sender.id) }), 200);
+    check(await api.patch(`/api/campaigns/${scheduledDisposable.id}/schedule`).set('Cookie', employee).send({ scheduledAt: new Date(Date.now() + 30 * 60000).toISOString() }), 200);
+    check(await api.post(`/api/campaigns/${scheduledDisposable.id}/confirm`).set('Cookie', employee), 201);
+    check(await api.delete(`/api/campaigns/${scheduledDisposable.id}`).set('Cookie', employee), 200);
     saved.disposableCampaignId = null;
     const validity = String(parseInt(suffix, 16));
     saved.inboundAccountId = sender.id;
@@ -150,13 +182,25 @@ async function main() {
       await dbForInbox.query('INSERT INTO imap_cursors(sender_account_id,uid_validity,last_uid) VALUES($1,$2,0)', [sender.id, validity]);
     } finally { await dbForInbox.end(); }
     const inbox = app.get(InboxService);
-    const matchedMail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nMessage-ID: <reply-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\nI am interested`));
+    const replyContent = 'Tôi đã nhận được email và cần thêm thông tin\r\n\r\nOn Fri, sender@example.invalid wrote:\r\nNgừng nhận email';
+    const matchedMail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nContent-Type: text/plain; charset=utf-8\r\nMessage-ID: <reply-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\n${replyContent}`));
     if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 1) throw new Error('IMAP reply was not linked to campaign');
     if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 0) throw new Error('IMAP reply was imported twice');
     const inboxResponses = check(await api.get('/api/responses').set('Cookie', employee), 200);
     const matchedResponse = inboxResponses.find((item) => item.email === email && String(item.campaign_id) === String(campaign.id));
     if (!matchedResponse) throw new Error(`IMAP response correlation failed: ${JSON.stringify(inboxResponses.map(({ email, campaign_id, content }) => ({ email, campaign_id, content })))}`);
     saved.inboundResponseIds.push(matchedResponse.id);
+    if (matchedResponse.kind !== 'need_info' || matchedResponse.status !== 'new' || matchedResponse.content !== matchedMail.text || matchedResponse.assignee_id !== 'NV001') throw new Error('Reply classification must preserve original content, new status and assignee');
+    const correctedResponse = check(await api.patch(`/api/responses/${matchedResponse.id}`).set('Cookie', employee).send({ kind: 'interested' }), 200);
+    if (correctedResponse.kind !== 'interested' || correctedResponse.status !== 'new') throw new Error('Employee cannot correct the automatic label');
+    if (await inbox.store({ id: sender.id }, validity, 1, matchedMail, new Date()) !== 0) throw new Error('Corrected reply was imported twice');
+    if (check(await api.get(`/api/responses/${matchedResponse.id}`).set('Cookie', employee), 200).kind !== 'interested') throw new Error('IMAP overwrote an employee correction');
+    const classificationDb = new Client({ host: process.env.POSTGRES_HOST || '127.0.0.1', port: Number(process.env.POSTGRES_PORT || 5432), user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database: process.env.POSTGRES_DB });
+    await classificationDb.connect();
+    try {
+      const suppressedByQuote = await classificationDb.query('SELECT 1 FROM email_suppressions WHERE email=$1', [email]);
+      if (suppressedByQuote.rowCount) throw new Error('Quoted opt-out text must not suppress the reply sender');
+    } finally { await classificationDb.end(); }
     const unmatchedMail = await PostalMime.parse(Buffer.from(`From: Unknown <unknown-${suffix}@example.invalid>\r\nTo: ${sender.email}\r\nSubject: Question\r\nMessage-ID: <unknown-${suffix}@example.invalid>\r\n\r\nPlease call me`));
     if (await inbox.store({ id: sender.id }, validity, 2, unmatchedMail, new Date()) !== 0) throw new Error('Unmatched IMAP mail was linked unexpectedly');
     check(await api.get('/api/inbox/unmatched').set('Cookie', employee), 403);
@@ -210,7 +254,7 @@ async function main() {
     await followDb.connect();
     try { await followDb.query("UPDATE followups SET completed_at=now()-interval '2 days' WHERE id=$1", [waitingFollowup.id]); }
     finally { await followDb.end(); }
-    await app.get(FollowupWorker).tick();
+    await app.get(FollowupWorker).resolve(waitingFollowup.id);
     const resolvedFollowups = check(await api.get('/api/followups').set('Cookie', employee), 200).filter((item) => item.response_id === waiting.id);
     if (resolvedFollowups.length !== 2 || resolvedFollowups.find((item) => item.id === waitingFollowup.id)?.outcome !== 'no_response' || !resolvedFollowups.some((item) => item.attempt === 2 && item.status === 'pending')) throw new Error('Follow-up wait period or next attempt failed');
     const nextFollowup = resolvedFollowups.find((item) => item.attempt === 2);
@@ -228,6 +272,26 @@ async function main() {
     saved.filterTemplateId = null;
     check(await api.delete(`/api/email-templates/${emailTemplate.id}`).set('Cookie', employee), 200);
     saved.emailTemplateId = null;
+    for (const [uid, content, expectedKind] of [
+      [4, 'Ngừng nhận email. Tôi vẫn muốn nhận email.', 'other'],
+      [5, 'Tôi quan tâm', 'interested'],
+      [6, 'Tôi chưa có nhu cầu', 'not_interested'],
+      [7, 'Đừng gửi email cho tôi nữa', 'unsubscribe'],
+    ]) {
+      const mail = await PostalMime.parse(Buffer.from(`From: Smoke Contact <${email}>\r\nTo: ${sender.email}\r\nSubject: Re: Smoke campaign\r\nContent-Type: text/plain; charset=utf-8\r\nMessage-ID: <classification-${uid}-${suffix}@example.invalid>\r\nIn-Reply-To: <smoke-${suffix}@example.invalid>\r\n\r\n${content}`));
+      if (await inbox.store({ id: sender.id }, validity, uid, mail, new Date()) !== 1) throw new Error('Classification reply was not imported');
+      const rows = check(await api.get('/api/responses').set('Cookie', employee), 200);
+      const classified = rows.find((item) => item.email === email && item.content === mail.text);
+      if (!classified || classified.kind !== expectedKind || classified.status !== 'new') throw new Error('Classification changed intent or processing status');
+      const db = new Client({ host: process.env.POSTGRES_HOST || '127.0.0.1', port: Number(process.env.POSTGRES_PORT || 5432), user: process.env.POSTGRES_USER, password: process.env.POSTGRES_PASSWORD, database: process.env.POSTGRES_DB });
+      await db.connect();
+      try {
+        const suppressed = await db.query('SELECT 1 FROM email_suppressions WHERE email=$1', [email]);
+        const contact = await db.query('SELECT unsubscribed_at FROM contacts WHERE id=$1', [saved.contactIds[0]]);
+        if (Boolean(suppressed.rowCount) !== (expectedKind === 'unsubscribe') || Boolean(contact.rows[0].unsubscribed_at) !== (expectedKind === 'unsubscribe')) throw new Error('Only explicit opt-out may suppress the Contact');
+      } finally { await db.end(); }
+    }
+    check(await api.post(`/api/responses/${matchedResponse.id}/reply`).set('Cookie', employee).send({ subject: 'Blocked after opt-out', content: 'Must not send', senderAccountId: Number(sender.id) }), 409);
     console.log('Smoke passed: roles, templates, list approval, sender, campaign assets, preview, scheduling, IMAP matching, Response, Follow-up.');
   } finally {
     await app.close();
@@ -277,6 +341,7 @@ async function main() {
       }
       if (saved.contactIds) for (const id of saved.contactIds) await db.query('DELETE FROM contacts WHERE id=$1', [id]);
       await db.query('DELETE FROM email_suppressions WHERE email=$1', [suppressedEmail]);
+      await db.query('DELETE FROM email_suppressions WHERE email=$1', [email]);
       if (saved.senderId) await db.query('DELETE FROM sender_accounts WHERE id=$1', [saved.senderId]);
       if (saved.disposableSenderId) await db.query('DELETE FROM sender_accounts WHERE id=$1', [saved.disposableSenderId]);
     } finally { await db.end(); }

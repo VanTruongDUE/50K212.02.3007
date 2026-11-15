@@ -24,17 +24,91 @@ export function classifyIncoming(
   autoSubmitted = '',
 ): string {
   if (
-    /mailer-daemon|postmaster/i.test(email) &&
+    /^(?:mailer-daemon|postmaster)@/i.test(email.trim()) &&
     /delivery|undeliver|failure/i.test(subject)
   )
     return 'bounce';
-  if (/auto-replied/i.test(autoSubmitted)) return 'out_of_office';
-  if (
-    /(^|\n)\s*(unsubscribe|please remove me|ngừng nhận email|không gửi.*email)/i.test(
-      content.slice(0, 1000),
+  if (/^auto-replied(?:\s*;|$)/i.test(autoSubmitted.trim()))
+    return 'out_of_office';
+  // Only classify the new reply; quoted opt-out links must never suppress a Contact.
+  const normalised = content
+    .slice(0, 100000)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .replace(/’/g, "'")
+    .toLowerCase()
+    .replace(/\r\n?/g, '\n');
+  const reply = normalised
+    .split(
+      /^\s*(?:(?:on|vao)\b[^\n]*(?:\n[^\n]*){0,3}?\b(?:wrote|viet)\s*:|[- ]*(?:original message|forwarded message|thu goc|thu duoc chuyen tiep)[- ]*\s*$|begin forwarded message:|(?:from|tu|sent|da gui):|--\s*$|(?:best regards|kind regards|regards|tran trong|cam on|thank you|thanks)[,!]?\s*$|sent from my\b|gui tu\b)/m,
+    )[0]
+    .split('\n')
+    .filter((line) => !/^\s*>/.test(line))
+    .join('\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .trim();
+
+  const clauses = reply.split(/[.!;\n]+|,(?=\s)|\b(?:but|nhung)\b/);
+  let interested = false;
+  let notInterested = false;
+  let needsInfo = false;
+  let optOut = false;
+  const keepMail =
+    /\b(?:khong|chua|dung)\s+(?:muon\s+)?(?:ngung nhan|huy dang ky)|\b(?:do not|don't|not to|never)\s+(?:(?:want|wish) to )?(?:unsubscribe|remove|stop sending)|\b(?:van muon nhan (?:email|thu)|(?:keep|continue) sending (?:me )?(?:emails?|messages))\b/;
+  const conflictingOptOut =
+    keepMail.test(reply) ||
+    /\b(?:if|unless|neu|khong phai bay gio|not now|not yet|not sure|(?:khong|chua) chac|co the quan tam|maybe|might|not ready)\b/.test(
+      reply,
+    );
+  for (const raw of clauses) {
+    const clause = raw.trim();
+    // shortcut: only explicit phrases are recognised; expand from reviewed replies, not guessed intent.
+    if (!clause || /["“”]/.test(clause)) continue;
+    if (
+      /^(?:(?:please|vui long|lam on)\s+)?(?:unsubscribe(?: me)?(?: from (?:your|this|the) (?:mailing |email )?list)?|remove me from (?:this|your|the) (?:mailing |email )?list|stop sending (?:me )?(?:emails?|messages)|(?:do not|don't) send me (?:any more )?emails?(?: anymore)?|xoa toi khoi danh sach gui (?:email|thu)|ngung gui (?:email|thu) cho toi|(?:toi (?:muon|yeu cau) )?(?:ngung nhan email|huy dang ky(?: nhan email)?)|(?:dung|khong) gui(?: them)?(?: email| thu)(?: cho toi)?(?: nua)?)$/.test(
+        clause,
+      )
     )
-  )
-    return 'unsubscribe';
+      optOut = true;
+
+    // Indirect speech and nested negation are deliberately left for human review.
+    if (
+      /\b(?:khong (?:noi|phai)|chua noi|never said|did not say|didn't say|khach hang noi|he said|she said|they said)\b/.test(
+        clause,
+      )
+    )
+      return 'other';
+    const negative =
+      /\b(?:(?:toi )?(?:khong|chua) (?:(?:thuc su|con) )?(?:quan tam|co nhu cau)|(?:i am |i'm |i |we are |we're )?(?:not (?:really )?|no longer )interested|no thanks)\b/g;
+    if (negative.test(clause)) notInterested = true;
+    const affirmative = clause.replace(negative, '').trim();
+    if (
+      /\b(?:khong|chua|chang)\s+(?:muon|can|gui)|\b(?:do not|don't|does not|doesn't|not)\s+(?:need|want|send|wish)|\b(?:if|neu)\b/.test(
+        affirmative,
+      )
+    )
+      continue;
+    if (
+      /\b(?:can them thong tin|muon biet them|gui (?:cho |giup )?toi (?:bao gia|bang gia|thong tin|tai lieu)|cho toi xin (?:thong tin|bao gia|tai lieu)|muon nhan (?:tai lieu|thong tin|bao gia)|need (?:more |further )?(?:information|info|details)|(?:please )?(?:send|share) (?:me |us )?(?:more |further )?(?:information|info|details|pricing|a quote|a quotation))\b/.test(
+        affirmative,
+      )
+    )
+      needsInfo = true;
+    if (
+      !clause.includes('?') &&
+      /\b(?:(?:toi|rat|chung toi|ben minh) quan tam|muon dat lich (?:tu van|hen|demo)|we are interested|we're interested|i am interested|i'm interested|i (?:would like|want) to (?:schedule|book) (?:a )?(?:meeting|call|demo))\b/.test(
+        affirmative,
+      )
+    )
+      interested = true;
+  }
+  if (optOut && !conflictingOptOut) return 'unsubscribe';
+  if (conflictingOptOut || (notInterested && (interested || needsInfo)))
+    return 'other';
+  if (notInterested) return 'not_interested';
+  if (needsInfo) return 'need_info';
+  if (interested) return 'interested';
   return 'other';
 }
 
@@ -62,7 +136,7 @@ export class InboxService implements OnModuleInit, OnModuleDestroy {
 
   async verify(id: number): Promise<void> {
     const account = await this.account(id);
-    const client = this.client(account);
+    const client = await this.client(account);
     try {
       await client.connect();
       const lock = await client.getMailboxLock('INBOX');
@@ -209,7 +283,7 @@ export class InboxService implements OnModuleInit, OnModuleDestroy {
     this.activeAccounts.add(account.id);
     let client: ImapFlow | undefined;
     try {
-      client = this.client(account);
+      client = await this.client(account);
       await client.connect();
       const lock = await client.getMailboxLock('INBOX');
       try {
@@ -431,12 +505,12 @@ export class InboxService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private client(account: InboxAccount): ImapFlow {
+  private async client(account: InboxAccount): Promise<ImapFlow> {
     return new ImapFlow({
       host: 'imap.gmail.com',
       port: 993,
       secure: true,
-      auth: this.smtp.credentials(account),
+      auth: await this.smtp.inboxCredentials(account),
       logger: false,
       connectionTimeout: 10000,
     });

@@ -1,5 +1,18 @@
 # Đối chiếu FE với Figma — trang Đức + Huy
 
+## Kiểm tra lại luồng Chiến dịch dùng API — 13/11/2026
+
+- Figma Bridge đang kết nối. Đã so ảnh trực tiếp frame Xác nhận chiến dịch và hộp Xem nội dung email với FE; nội dung, bốn phần tóm tắt và bố cục desktop tương ứng. Không dùng tiêu chí khớp từng pixel.
+- Đã thao tác thật từ tạo chiến dịch → lọc danh sách → chọn bố cục → soạn email → chọn logo từ thư viện → xem trước với hai Contact → chọn tài khoản → gửi ngay → màn xác nhận. Phát hiện và sửa dữ liệu tài khoản gửi mới bị chi tiết cũ ghi đè trong màn lịch gửi; sau sửa hiện đúng email và hạn mức. Đã thử nút Chỉnh sửa, hộp xem email và điều kiện bật nút xác nhận. Chiến dịch QA đã Ẩn.
+- Đã mở chiến dịch tạm dừng từ danh sách và từ chi tiết: cả hai dẫn đến màn Tiếp tục gửi; nút chỉ bật sau khi xem email. Đã đối chiếu frame lỗi tạo bản xem trước và chạy thử lỗi API thật; FE hiện thông báo, giữ dữ liệu đã soạn và có nút quay lại. Chưa kích hoạt gửi hoặc tiếp tục gửi email thật; chưa so ảnh trực tiếp mọi frame Chiến dịch sau sửa.
+- Trạng thái “Không đủ hạn mức” đã thử trên FE bằng phản hồi tài khoản mô phỏng trong trình duyệt, không đổi dữ liệu PostgreSQL: hiện cảnh báo, vô hiệu hóa nút Tiếp tục gửi và mở được bước đổi tài khoản. BE kiểm tra lại hạn mức 3 ngày khi chọn tài khoản, xác nhận và tiếp tục; smoke trên PostgreSQL thật xác nhận đổi tài khoản ở chiến dịch tạm dừng rồi tiếp tục. Backend unit test xác nhận thiếu hạn mức giữ nguyên trạng thái tạm dừng.
+
+## Rà lại bản FE dùng API — 13/11/2026
+
+- Đã đăng nhập thật bằng hai vai trò, mở 49 route Nhân viên và 19 route Trưởng phòng ở 1440 × 1024: đều có tiêu đề, không có màn dự phòng hoặc cuộn ngang. Đã thao tác qua sidebar, breadcrumb, danh sách Chiến dịch, form sửa email của chiến dịch tạm dừng, hộp tạm dừng và màn tiếp tục gửi. Đã tạo rồi Ẩn một chiến dịch thử; thời điểm và lý do tạm dừng lưu/đọc lại đúng từ PostgreSQL. Trưởng phòng đi vào route Nhân viên được đưa về Trang chính.
+- Đã so trực tiếp ảnh Figma với màn Cập nhật Response, Sửa email khi tạm dừng và hộp tạm dừng. Các phần chính cùng bố cục desktop. Khối văn bản/hình/nút/đường phân cách kéo vào textarea được, và bản xem trước hiển thị dạng khối. Trình soạn thảo vẫn là textarea chứa mã khối, chưa có thao tác chọn logo từ thư viện như frame Figma vì dự án chưa có kho asset/logo dùng chung.
+- Các trạng thái lỗi/rỗng sau nối API xuất hiện theo dữ liệu và phản hồi API trên màn nghiệp vụ; các URL trạng thái demo cũ có thể đưa về màn chính tương ứng. Lượt này chưa so ảnh từng frame trong cả 75 + 121 frame hoặc kích hoạt tự nhiên mọi lỗi của Figma. Vì vậy kết quả route và smoke test **không chứng minh 196 trạng thái khớp đầy đủ**.
+
 ## Cập nhật sau khi nối API (12/11/2026)
 
 - Figma UI MCP Bridge đã kết nối lại và đã đọc trực tiếp các frame đại diện ở cả ba trang `Trường`, `Đức + Huy`, `Nhi + Thảo`. Bản FE chạy cùng PostgreSQL và BE thật ở viewport 1440 px; đã chụp 14 màn chính (9 Nhân viên, 5 Trưởng phòng), so trực quan các màn tiêu chí, Filter Template, xuất Contact, Chiến dịch, Response, Follow-up và tài khoản gửi. Không dùng tiêu chí khớp từng pixel.
@@ -20,7 +33,7 @@ Ngày rà soát: 10/11/2026. Phạm vi: chỉ trang `Đức + Huy`; không tính
 - Theo yêu cầu BA, breadcrumb của hai màn danh sách mở từ mục chính chỉ hiện một cấp: `Response` và `Follow-up`. Tiêu đề bên dưới vẫn là `Quản lý Response` và `Quản lý lịch Follow-up`; màn chi tiết giữ breadcrumb hai cấp để quay về danh sách. Đây là ngoại lệ chủ động so với chữ trong frame Figma của hai màn danh sách.
 
 - Cập nhật 11/11 sau lượt chạy toàn bộ luồng nhân viên: 196/196 trạng thái/route trong hai trang Trường và Đức + Huy mở được ở viewport bằng đúng kích thước frame Figma, không có lỗi JavaScript hoặc cuộn ngang/dọc toàn trang. Với #49 và #115, trạng thái được mở bằng thao tác ở dòng Chiến dịch tương ứng; #89–90 được kiểm tra sau khi chọn tài khoản. Chi tiết ảnh của 31 frame từng tràn chiều cao nằm ở `DOI_CHIEU_ANH_196_FRAME_2026-11-11.md`.
-- BA chốt **“Xóa Response” là nhãn giao diện, dữ liệu chỉ ẩn khỏi danh sách làm việc**. Đã đổi nhãn nút/hộp thoại/xác nhận theo Figma và chạy thử cả trường hợp xóa thành công, bị chặn. Không xóa bản ghi khỏi dữ liệu FE cục bộ.
+- BA chốt **“Ẩn Response” là nhãn giao diện, dữ liệu chỉ ẩn khỏi danh sách làm việc**. Đã đổi nhãn nút/hộp thoại/xác nhận theo Figma và chạy thử cả trường hợp Ẩn thành công, bị chặn. Không Ẩn bản ghi khỏi dữ liệu FE cục bộ.
 
 - Đợt chỉnh ngày 10/11: so lại frame Danh sách chiến dịch (`327:241209`, 1440 × 1267), Chọn danh sách contact (`327:251508`, 1440 × 1024) và Thiết lập lịch gửi (`327:257674`, 1440 × 1030). Bảng chiến dịch gốc đã giảm header về 48 px, điều chỉnh chiều cao 9 hàng và khung nút thao tác theo frame; màn chọn Contact không còn nút Hủy ngoài thiết kế và thanh hành động nằm ngay dưới thẻ. Ở màn lịch gửi, panel nằm y≈477 và thanh hành động y≈906, gần tọa độ Figma y=476 và y=906; ngày/giờ ban đầu để trống, phải nhập đủ trước khi tính lịch. Đã xác nhận qua DOM tại 1440 × 1030 và 1280 × 900 là không cuộn ngang; nút tính lịch báo lỗi khi thiếu ngày/giờ, hộp thông tin chiến dịch mở được từ danh sách. Ảnh chụp trình duyệt của màn lịch gửi chưa lấy được trong lượt này nên đối chiếu hình ảnh bên trong panel vẫn cần làm tiếp.
 - Kiểm tra FE bổ sung ngày 10/11: 62 route/trạng thái của Chiến dịch, Response và Follow-up đều mở được, không rơi vào trang “Không tìm thấy màn hình” hoặc cuộn ngang ở 1440 × 1024; 21 màn chính cũng không cuộn ngang ở 1280 × 900. Đã thao tác luồng chiến dịch đã duyệt → chọn mẫu → xem trước → lưu nội dung → chọn tài khoản → tính/lưu lịch → xác nhận; tên chiến dịch và nội dung mẫu được giữ đúng qua các bước. Đã sửa lỗi thông báo của Chiến dịch còn xuất hiện khi chuyển sang Response.
@@ -35,10 +48,10 @@ Ngày rà soát: 10/11/2026. Phạm vi: chỉ trang `Đức + Huy`; không tính
 - Đã chạy luồng Follow-up từ danh sách → chọn Response Việt Tín → nhập mục tiêu → tạo lịch thành công. Nút “Xem hồ sơ / Lập lịch” nay mở danh sách Response để chọn bản ghi thay vì luôn chọn An Phú đã có lịch chờ; “Tạo lịch khác” cũng quay về nơi chọn Response.
 - Đã đối chiếu lại riêng màn Quản lý Response ở 1440 × 1024: tăng chiều cao header/hàng, xuống dòng ngày giờ và hiển thị trạng thái bằng chữ như frame. Khung bảng hiện kết thúc đúng vùng khoảng 816 px của frame; đây là đối chiếu trực quan, chưa phải kiểm định pixel tự động.
 - Đã chỉnh tương tự màn Quản lý lịch Follow-up ở 1440 × 1024: chiều cao bảng, trạng thái chữ thường và thanh thao tác cuối; bỏ nút trái không có trong frame. Hai màn danh sách vẫn dùng dữ liệu FE cục bộ.
-- Đã chỉnh danh sách chiến dịch gốc ở 1440 px: bảng 9 hàng có chiều cao và cách xuống dòng thao tác gần frame 1267 px; nút Xóa có viền cảnh báo. Kiểm tra lại ở 1280, 1366 và 1440 px: bảng không gây cuộn ngang toàn trang. Phần nội dung/hành vi từng hộp thoại chiến dịch vẫn cần so riêng.
+- Đã chỉnh danh sách chiến dịch gốc ở 1440 px: bảng 9 hàng có chiều cao và cách xuống dòng thao tác gần frame 1267 px; nút Ẩn có viền cảnh báo. Kiểm tra lại ở 1280, 1366 và 1440 px: bảng không gây cuộn ngang toàn trang. Phần nội dung/hành vi từng hộp thoại chiến dịch vẫn cần so riêng.
 - Kiểm tra trình duyệt mới: 7 route lỗi nhập liệu, preview và màn thành công ở 1280 × 800 đều có nội dung và không gây cuộn ngang toàn trang; đã so ảnh màn thành công/lỗi Follow-up, Trình soạn thảo và Xem trước email với Figma ở 1440 × 1024. `npm run build` và `npm run lint` đều qua sau sửa. Các route lỗi máy chủ vẫn chỉ là mô phỏng do chưa có BE.
 - Đã bổ sung bản FE demo cho **31 frame từng được ghi là “Chưa có”** ở bảng kiểm bên dưới. Các route dùng cú pháp `?screen=<tên-route>` để BA mở trực tiếp trạng thái lỗi/rỗng khi chưa có BE. Những lỗi phụ thuộc mạng hoặc máy chủ là trạng thái mô phỏng, không phải kết quả gọi API thật.
-- Đã thêm màn xác nhận tạo Follow-up, bố cục email trống, form tên người gửi, thông tin tạm dừng/tiếp tục và các chi tiết trong thẻ xác nhận chiến dịch. Xóa Follow-up nay giữ bản ghi với trạng thái `Đã xóa`; phản hồi hỗ trợ Email/SMS; email được gắn với từng chiến dịch và chặn biến không được hỗ trợ.
+- Đã thêm màn xác nhận tạo Follow-up, bố cục email trống, form tên người gửi, thông tin tạm dừng/tiếp tục và các chi tiết trong thẻ xác nhận chiến dịch. Ẩn Follow-up nay giữ bản ghi với trạng thái `Đã Ẩn`; phản hồi hỗ trợ Email/SMS; email được gắn với từng chiến dịch và chặn biến không được hỗ trợ.
 - Đã chạy `npm run build`, `npm run lint`; mở 31 route trạng thái ở 1366 × 900, 19 màn đại diện ở 1280 × 800 và so ảnh trực quan các màn chính ở 1440 × 1024. Các màn đã kiểm tra không tạo cuộn ngang toàn trang ở hai độ rộng desktop này.
 - **Bảng 121 frame bên dưới là ảnh chụp kết quả rà soát trước đợt chỉnh sửa này**. Nhãn “Chưa có” trong bảng được giữ để truy nguyên khoảng trống ban đầu; xem bảng route mới ngay dưới đây để biết phần đã bổ sung. Chưa xác nhận toàn bộ 121 frame khớp pixel/trạng thái bằng trình duyệt.
 
@@ -69,7 +82,7 @@ Màn #19 xác nhận thêm Follow-up có route `followup-success`. Danh sách ch
 
 ## Các sai khác ưu tiên
 
-1. **P1 — Xóa lịch Follow-up:** FE loại hẳn lịch khỏi mảng; Figma xác nhận lịch chuyển sang `Đã xóa` và giữ dữ liệu. Đã tái hiện trên trình duyệt với RSP-031.
+1. **P1 — Ẩn lịch Follow-up:** FE loại hẳn lịch khỏi mảng; Figma xác nhận lịch chuyển sang `Đã Ẩn` và giữ dữ liệu. Đã tái hiện trên trình duyệt với RSP-031.
 2. **P1 — Biến email:** FE chấp nhận `{{Chuc vu}}` và hiện nguyên văn trong preview, không báo lỗi; Figma có hai frame lỗi biến (#81, #86). Đã tái hiện trên trình duyệt.
 3. **P1 — Sai dữ liệu giữa chiến dịch:** mở chiến dịch `Bản tin khách hàng tháng 11` từ danh sách, chọn tài khoản và `Gửi ngay` rồi sang xác nhận vẫn thấy tiêu đề email mẫu của `Webinar bảo mật dữ liệu 2026`. Đã tái hiện trên trình duyệt; dữ liệu nội dung hiện dùng chung thay vì gắn với chiến dịch.
 4. **P1 — Kênh phản hồi SMS:** UC8.1 yêu cầu chọn Email hoặc SMS; FE hiện chỉ có option Email và chỉ kiểm tra địa chỉ email.
@@ -81,7 +94,7 @@ Màn #19 xác nhận thêm Follow-up có route `followup-success`. Danh sách ch
 ## Điểm cần BA xác nhận
 
 - Frame tạm dừng (#43) đồng thời ghi lý do `(bắt buộc)` và `Không bắt buộc, tối đa 250 ký tự`. Đặc tả UC6.2 ghi **không bắt buộc**; BA cần đồng bộ lại Figma nếu muốn FE khớp cả thiết kế lẫn đặc tả.
-- Đã chốt ngày 11/11: dùng nhãn `Xóa Response` trên FE; thao tác là ẩn bản ghi khỏi danh sách, giữ dữ liệu gốc. Cảnh báo và xác nhận đều theo quyết định này.
+- Đã chốt ngày 11/11: dùng nhãn `Ẩn Response` trên FE; thao tác là ẩn bản ghi khỏi danh sách, giữ dữ liệu gốc. Cảnh báo và xác nhận đều theo quyết định này.
 - Frame từ chối Email (#17) nói An Phú/RSP-031 đã từ chối, nhưng dữ liệu mẫu của màn Quản lý Response gắn RSP-031 là `Cần xử lý`. Cần chốt dữ liệu minh họa nhất quán.
 - BA chốt ngày 11/11: giữ RSP-031 `Mới` ở màn danh sách Response và giữ bản lịch sử mẫu đã phản hồi ở màn lịch sử riêng. Đây là hai trạng thái minh họa theo từng frame, không phải lịch sử nhất quán của một bản ghi thực.
 
@@ -97,7 +110,7 @@ Màn #19 xác nhận thêm Follow-up có route `followup-success`. Danh sách ch
 | Quản lý Response | Hàng bảng FE cao hơn; badge trạng thái dạng pill khác frame. |
 | Soạn phản hồi | Figma đặt bốn trường trong lưới hai cột, có mẫu và nội dung điền sẵn; FE xếp một cột, mẫu mặc định `Không dùng mẫu`, nội dung trống. |
 | Tạo lịch Follow-up | Form FE hẹp hơn và bố cục trường/nút khác frame. |
-| Kết quả Follow-up | Frame là Việt Tín/RSP-033, trạng thái `Có phản hồi`, 2 mốc lịch sử; FE mở trực tiếp là An Phú/RSP-031, `Chờ thực hiện`, 1 mốc lịch sử và thêm nút Xóa. |
+| Kết quả Follow-up | Frame là Việt Tín/RSP-033, trạng thái `Có phản hồi`, 2 mốc lịch sử; FE mở trực tiếp là An Phú/RSP-031, `Chờ thực hiện`, 1 mốc lịch sử và thêm nút Ẩn. |
 | Chọn danh sách contact | Bố cục và nội dung danh sách còn khác frame; các trạng thái liên quan nằm ở hàng #64–#72. |
 | Danh sách chiến dịch | Cột hành động FE chật; hàng cuối và trạng thái khác frame gốc. |
 | Trình soạn thảo email | Frame có tiêu đề, thân thư, nút và tài liệu mẫu; FE mở trực tiếp để trống tiêu đề/thân thư và hiển thị vùng nhập lớn hơn. |
@@ -116,7 +129,7 @@ Các kết quả “mở trực tiếp” chỉ mô tả trạng thái FE khi tr
 | ---: | --- | --- | --- | --- |
 | 1 | `43:6174` | Quản lý Response | Có một phần | response-list: bảng và điều hướng có; hàng thấp hơn, badge trạng thái khác Figma. |
 | 2 | `43:6297` | Cập nhật trạng thái | Có một phần | response-status: có chọn trạng thái và ghi chú; không nạp ghi chú mẫu. |
-| 3 | `43:6298` | Kết quả Follow-up | Có một phần | followup-result: Figma là Việt Tín/RSP-033 `Có phản hồi` với 2 mốc lịch sử; FE mở trực tiếp là An Phú/RSP-031 `Chờ thực hiện` với 1 mốc và nút Xóa. |
+| 3 | `43:6298` | Kết quả Follow-up | Có một phần | followup-result: Figma là Việt Tín/RSP-033 `Có phản hồi` với 2 mốc lịch sử; FE mở trực tiếp là An Phú/RSP-031 `Chờ thực hiện` với 1 mốc và nút Ẩn. |
 | 4 | `43:6299` | Tạo lịch Follow-up | Có một phần | followup-create: có form; mục tiêu trống, bố cục trường và vị trí nút khác Figma. |
 | 5 | `43:6300` | Soạn phản hồi | Có một phần | response-reply: có form Email nhưng xếp một cột thay vì lưới hai cột; mẫu/nội dung chưa được nạp sẵn khi mở trực tiếp. Chưa có lựa chọn SMS như đặc tả UC8.1. |
 | 6 | `43:6301` | Thêm Response | Có một phần | response-add: có form và kiểm tra cơ bản; lưu cục bộ. |
@@ -136,19 +149,19 @@ Các kết quả “mở trực tiếp” chỉ mô tả trạng thái FE khi tr
 | 20 | `99:32140` | Kết quả Follow-up · Không có phản hồi | Có một phần | followup-result: có trạng thái Không phản hồi mẫu; chưa có màn hết lượt 2/2. |
 | 21 | `170:59855` | Tạo lịch Follow-up · Thiếu thông tin bắt buộc | Có một phần | followup-create: kiểm tra trường trống; hiển thị lỗi khác frame. |
 | 22 | `170:59966` | Tạo lịch Follow-up · Thời gian không hợp lệ | Có một phần | followup-create: kiểm tra thời gian quá khứ; chưa có bản lỗi riêng. |
-| 23 | `212:66195` | Quản lý Response · Không thể xóa | Có một phần | response-list: lỗi điều kiện ẩn nằm trong hộp thoại, không có màn Không thể xóa. |
+| 23 | `212:66195` | Quản lý Response · Không thể Ẩn | Có một phần | response-list: lỗi điều kiện ẩn nằm trong hộp thoại, không có màn Không thể Ẩn. |
 | 24 | `213:66320` | Thêm Response · Thông tin không hợp lệ | Có một phần | response-add: kiểm tra email/điện thoại/nội dung; thông báo khác frame. |
 | 25 | `213:66349` | Cập nhật Response · Thông tin không hợp lệ | Có một phần | response-edit: kiểm tra dữ liệu; thông báo khác frame. |
 | 26 | `213:66516` | Cập nhật Response · Không thể chỉnh sửa | Có một phần | response-detail: nút sửa bị vô hiệu hóa; không có màn giải thích Không thể chỉnh sửa. |
-| 27 | `213:66599` | Quản lý Response · Xác nhận xóa | Có một phần | response-list: có hộp thoại Ẩn; chi tiết xác nhận khác Figma. |
+| 27 | `213:66599` | Quản lý Response · Xác nhận Ẩn | Có một phần | response-list: có hộp thoại Ẩn; chi tiết xác nhận khác Figma. |
 | 28 | `213:66682` | Soạn phản hồi · Thông tin không hợp lệ | Có một phần | response-reply: có lỗi inline khi thiếu dữ liệu. |
 | 29 | `213:66786` | Soạn phản hồi · Gửi phản hồi thất bại | Chưa có | Chưa có trạng thái gửi phản hồi thất bại và giữ bản nháp. |
 | 30 | `213:66890` | Cập nhật trạng thái · Chuyển trạng thái không hợp lệ | Có một phần | response-status: giới hạn option hợp lệ; trạng thái lỗi chuyển sai không có đường đi thông thường. |
 | 31 | `213:66988` | Quản lý lịch Follow-up · Không tìm thấy khách hàng hoặc Response | Chưa có | Chưa có màn không tìm thấy khách hàng/Response. |
 | 32 | `213:67071` | Quản lý lịch Follow-up · Lỗi tải thông tin khách hàng | Chưa có | Chưa có màn lỗi tải thông tin khách hàng. |
 | 33 | `213:67154` | Tạo lịch Follow-up · Thông số không hợp lệ | Có một phần | followup-create: kiểm tra số nguyên dương; trình bày khác frame. |
-| 34 | `213:67270` | Quản lý lịch Follow-up · Xác nhận xóa | Có một phần | followup-list/result: có xác nhận xóa nhưng FE loại hàng; Figma ghi chuyển Đã xóa. |
-| 35 | `213:67353` | Quản lý lịch Follow-up · Không thể xóa | Có một phần | followup-list: hộp thoại vẫn có thể mở cho lịch đã hoàn tất; chỉ chặn khi xác nhận. |
+| 34 | `213:67270` | Quản lý lịch Follow-up · Xác nhận Ẩn | Có một phần | followup-list/result: có xác nhận Ẩn nhưng FE loại hàng; Figma ghi chuyển Đã Ẩn. |
+| 35 | `213:67353` | Quản lý lịch Follow-up · Không thể Ẩn | Có một phần | followup-list: hộp thoại vẫn có thể mở cho lịch đã hoàn tất; chỉ chặn khi xác nhận. |
 | 36 | `213:67436` | Kết quả Follow-up · Lưu trạng thái thất bại | Chưa có | Chưa có trạng thái lỗi lưu kết quả Follow-up. |
 | 37 | `213:67519` | Ghi chú kết quả · Lưu ghi chú thất bại | Chưa có | Chưa có trạng thái lỗi lưu ghi chú. |
 
@@ -164,10 +177,10 @@ Các kết quả “mở trực tiếp” chỉ mô tả trạng thái FE khi tr
 | 43 | `327:243452` | Danh sách chiến dịch - Hộp thoại tạm dừng | Có một phần | campaign-list: có hộp tạm dừng; thiếu số đã/chưa gửi và lý do. |
 | 44 | `327:244006` | Danh sách chiến dịch - Tạm dừng thất bại | Chưa có | Chưa có trạng thái tạm dừng thất bại; FE luôn đổi trạng thái. |
 | 45 | `327:244574` | Danh sách chiến dịch - Tạm dừng thành công | Có một phần | campaign-list: đổi badge và hiện thông báo cục bộ. |
-| 46 | `327:245090` | Danh sách chiến dịch - Hộp thoại xóa | Có một phần | campaign-list: có hộp xóa; thiếu tên cụ thể và cảnh báo không thể khôi phục. |
-| 47 | `327:245643` | Danh sách chiến dịch - Xóa thất bại | Chưa có | Chưa có trạng thái xóa thất bại; FE luôn xóa nếu progress bắt đầu 0/. |
-| 48 | `327:246210` | Danh sách chiến dịch - Không thể xóa | Chưa có | Chưa có màn Không thể xóa cho chiến dịch đang gửi; nút xóa bị ẩn. |
-| 49 | `327:246726` | Danh sách chiến dịch - Xóa thành công | Có một phần | campaign-list: xóa hàng và hiện thông báo cục bộ. |
+| 46 | `327:245090` | Danh sách chiến dịch - Hộp thoại Ẩn | Có một phần | campaign-list: có hộp Ẩn; thiếu tên cụ thể và cảnh báo không thể khôi phục. |
+| 47 | `327:245643` | Danh sách chiến dịch - Ẩn thất bại | Chưa có | Chưa có trạng thái Ẩn thất bại; FE luôn Ẩn nếu progress bắt đầu 0/. |
+| 48 | `327:246210` | Danh sách chiến dịch - Không thể Ẩn | Chưa có | Chưa có màn Không thể Ẩn cho chiến dịch đang gửi; nút Ẩn bị ẩn. |
+| 49 | `327:246726` | Danh sách chiến dịch - Ẩn thành công | Có một phần | campaign-list: Ẩn hàng và hiện thông báo cục bộ. |
 | 50 | `327:247194` | Danh sách chiến dịch - Chọn mục sửa | Có một phần | campaign-list: có hộp chọn mục sửa; lựa chọn và bước xác nhận khác Figma. |
 | 51 | `327:247782` | Danh sách chiến dịch - Sửa thông tin chung | Có một phần | campaign-list: có hộp sửa tên/mô tả. |
 | 52 | `327:248338` | Danh sách chiến dịch - Thông tin chung không hợp lệ | Có một phần | campaign-list: có lỗi inline tên trống/trùng; trình bày khác frame. |
@@ -255,4 +268,4 @@ Các kết quả “mở trực tiếp” chỉ mô tả trạng thái FE khi tr
 
 - Danh mục và bản tóm tắt đã đọc đủ 121 frame; 11 cặp màn chính được so ảnh trực quan trong lượt rà soát này. Frame Trình soạn thảo email cao 1430 px nên ảnh Figma đầy đủ chỉ được so với phần đầu viewport FE cao 1024 px. Chưa đọc cây node chi tiết, kiểm tra pixel, hover/focus và từng trạng thái lỗi cho toàn bộ 121 frame.
 - Trạng thái FE được kiểm tra trong `frontend/src/NextFlows.tsx`, `frontend/src/nextFlows.css` và điều hướng `frontend/src/App.tsx`; chưa có API nên các nhánh lỗi mạng không thể phát sinh tự nhiên.
-- Đã xác minh riêng bằng trình duyệt ba sai khác về biến email, xóa lịch Follow-up và dữ liệu email sai chiến dịch. Không sửa mã nguồn hay Figma trong lần đối chiếu này.
+- Đã xác minh riêng bằng trình duyệt ba sai khác về biến email, Ẩn lịch Follow-up và dữ liệu email sai chiến dịch. Không sửa mã nguồn hay Figma trong lần đối chiếu này.

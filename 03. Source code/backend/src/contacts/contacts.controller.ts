@@ -60,7 +60,7 @@ export class ContactsController {
   ) {
     const list = await this.getList(id, request);
     const contacts = await this.database.query(
-      `SELECT c.id, c.email, c.full_name, c.job_title, c.company, c.location, c.source_url, c.unsubscribed_at
+      `SELECT c.id, c.email, c.full_name, c.job_title, c.company, c.location, c.source_url, c.search_provenance, c.unsubscribed_at
        FROM contacts c JOIN contact_list_items i ON i.contact_id = c.id WHERE i.list_id = $1 ORDER BY c.id`,
       [id],
     );

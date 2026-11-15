@@ -30,7 +30,7 @@ type Job = QueryResultRow &
 
 export const claimDeliverySql = `SELECT ca.id AS campaign_id, cr.contact_id, sa.id AS account_id,
   ct.email AS recipient_email,ct.full_name,ct.company,ct.unsubscribe_token,
-  ca.subject,ca.body,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.quota_3_days
+  ca.subject,ca.body,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days
  FROM campaign_recipients cr JOIN campaigns ca ON ca.id=cr.campaign_id
  JOIN contacts ct ON ct.id=cr.contact_id JOIN sender_accounts sa ON sa.id=ca.sender_account_id
  WHERE ca.status IN ('scheduled','sending') AND ca.scheduled_at<=now()
@@ -166,7 +166,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
     let smtpAccepted = false;
     try {
       const assets = await this.database.query<MailAsset & QueryResultRow>(
-        'SELECT kind,file_name,content_type,content FROM campaign_assets WHERE campaign_id=$1 ORDER BY id',
+        'SELECT id,kind,file_name,content_type,content FROM campaign_assets WHERE campaign_id=$1 ORDER BY id',
         [job.campaign_id],
       );
       const link = `${baseUrl.replace(/\/$/, '')}/api/unsubscribe/${job.unsubscribe_token}`;
@@ -174,8 +174,9 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
         job,
         job.recipient_email,
         fill(job.subject, job.full_name, job.company),
-        `${fill(job.body, job.full_name, job.company)}\n\nNgừng nhận email: ${link}`,
+        `${job.body}\n\nNgừng nhận email: ${link}`,
         assets.rows,
+        (value) => fill(value, job.full_name, job.company),
       );
       smtpAccepted = true;
       const result = await this.database.connect();

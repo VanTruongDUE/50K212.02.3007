@@ -1,5 +1,7 @@
 # Chỉ mục Figma — trang Trường
 
+> Rà lại 13/11/2026: đã mở các route chính của Nhân viên trên bản FE dùng API ở 1440 × 1024 cùng bộ 49 route Nhân viên; các route đều có tiêu đề và không cuộn ngang. Điều này kiểm chứng điều hướng/màn render, chưa thay thế đối chiếu ảnh riêng cho 75 frame hoặc kiểm tra Google Search (chưa tích hợp theo phạm vi đã chốt).
+
 > Cập nhật 12/11/2026: bản FE đăng nhập thực dùng `LiveFlows.tsx` cho danh sách Contact và Filter Template, còn màn Thiết lập tiêu chí dùng `Flow.tsx` với Google Search bị khóa cho đến khi có tích hợp. Đã tách lại các bước kiểm tra, xác nhận, xem toàn bộ và xuất Contact với dữ liệu API; đã thử luồng xuất CSV trong trình duyệt. Figma Bridge đã kết nối lại: đã đối chiếu trực tiếp màn Thiết lập tiêu chí, Filter Template, Tạo Filter Template và Xuất Contact ở 1440 px; chưa so từng ảnh trong cả 75 frame trên bản FE dùng API.
 
 Nguồn: [Màn hình giao diện_Nhóm2](https://www.figma.com/design/jXKaLKxLAOL4mVyC4cReYZ/M%C3%A0n-h%C3%ACnh-giao-di%E1%BB%87n_Nh%C3%B3m2?m=auto&t=qDMpQZq3qnBanuPp-1), trang `Trường` (`11:2`). Đã đọc danh sách và nội dung 75 frame qua Figma UI MCP; đã xem ảnh một số frame chính. Đây là chỉ mục để tìm lại đúng thiết kế, không thay thế việc đọc frame/component và so ảnh khi code.
