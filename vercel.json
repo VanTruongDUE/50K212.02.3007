@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm --prefix '03. Source code/backend' ci",
+  "buildCommand": "npm --prefix '03. Source code/backend' run build",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 300,
+      "includeFiles": "03. Source code/backend/dist/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
+}

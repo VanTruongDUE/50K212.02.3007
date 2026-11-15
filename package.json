@@ -1,0 +1,7 @@
+{
+  "name": "v5-mail-gateway",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  }
+}
