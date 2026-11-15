@@ -6,13 +6,13 @@ Trang Trường có cả các frame đăng nhập/trang chính của Trưởng p
 
 ## Kiểm tra lại 31 ảnh từng tràn chiều cao và luồng FE
 
-Ngày 11/11/2026, mở lại đúng **31 frame từng có ảnh FE cao hơn frame Figma** ở viewport 1440 px và chiều cao bằng frame; chụp lại ảnh FE, đo `scrollHeight`/`scrollWidth` sau khi trang tải ổn định và so với ảnh Figma. Các trạng thái phụ thuộc thao tác được mở đúng cách: xóa Chiến dịch ở #49, mở “Thư cảm ơn đối tác 2026” ở #115, chọn tài khoản ở #89–90 và chuyển sang xem điện thoại ở #84. Kết quả **31/31 không còn cuộn dọc hoặc ngang ở kích thước frame tương ứng**. Lượt mở rộng **196/196 frame** cũng không gặp lỗi render, JavaScript hoặc cuộn toàn trang ở kích thước frame tương ứng.
+Ngày 11/11/2026, mở lại đúng **31 frame từng có ảnh FE cao hơn frame Figma** ở viewport 1440 px và chiều cao bằng frame; chụp lại ảnh FE, đo `scrollHeight`/`scrollWidth` sau khi trang tải ổn định và so với ảnh Figma. Các trạng thái phụ thuộc thao tác được mở đúng cách: Ẩn Chiến dịch ở #49, mở “Thư cảm ơn đối tác 2026” ở #115, chọn tài khoản ở #89–90 và chuyển sang xem điện thoại ở #84. Kết quả **31/31 không còn cuộn dọc hoặc ngang ở kích thước frame tương ứng**. Lượt mở rộng **196/196 frame** cũng không gặp lỗi render, JavaScript hoặc cuộn toàn trang ở kích thước frame tương ứng.
 
 | Nhóm frame từng tràn | Frame đã đo lại | Kết quả |
 | --- | --- | --- |
 | Trường | #15 | Vừa frame 1024 px |
 | Response và Follow-up | #4, #8, #21, #22, #33 | Vừa frame 1024 px; lỗi form hiện tại trường và dưới form, tự hết khi sửa giá trị |
-| Danh sách Chiến dịch | #40–53, #63, #121 | Vừa chiều cao từng frame, gồm trạng thái xóa thành công #49 |
+| Danh sách Chiến dịch | #40–53, #63, #121 | Vừa chiều cao từng frame, gồm trạng thái Ẩn thành công #49 |
 | Trình soạn email | #54, #112 | Vừa frame 1316 px; bỏ thanh bước không có ở hai frame này |
 | Chờ duyệt và xem trước | #71, #84 | Vừa frame 1024 px; #84 đã chuyển sang bản xem điện thoại |
 | Chọn tài khoản gửi | #88, #90, #94 | Vừa frame 1024 px; thông tin người gửi chỉ xuất hiện sau khi chọn tài khoản đủ điều kiện |
@@ -20,7 +20,7 @@ Ngày 11/11/2026, mở lại đúng **31 frame từng có ảnh FE cao hơn fram
 
 Sai khác màu ảnh trung bình trên **31 cặp** giảm từ **9,90 xuống 8,04 MAE** khi chụp lại trạng thái tương ứng. Đây là chỉ số tham khảo để ưu tiên rà soát; một số frame danh sách vẫn khác dữ liệu hoặc vi chi tiết so với Figma, nên không diễn giải 31/31 là khớp từng pixel. Ảnh mới `current31-*.png` và mã kiểm tra `compare31.py`, `smoke196.py`, `full_flow_audit.py` nằm trong thư mục tạm nêu bên dưới.
 
-Đã chạy thao tác liên tục: đăng nhập, chọn/kiểm tra tiêu chí, tìm kiếm, xác nhận và xuất Contact; tạo Template, xem lịch sử và danh sách; tạo Chiến dịch, chọn mẫu/soạn/xem trước email, chọn tài khoản đủ/không đủ điều kiện, lập lịch, xác nhận, tạm dừng và tiếp tục gửi; tạo/sửa/Email/SMS/cập nhật trạng thái/lịch sử/**Xóa Response**; tạo, ghi chú, xóa và chặn xóa Follow-up. Các nhánh này không phát sinh lỗi JavaScript. BA đã chốt nhãn **“Xóa Response”** trong Figma, còn hành vi FE là **ẩn bản ghi khỏi danh sách**, giữ dữ liệu gốc.
+Đã chạy thao tác liên tục: đăng nhập, chọn/kiểm tra tiêu chí, tìm kiếm, xác nhận và xuất Contact; tạo Template, xem lịch sử và danh sách; tạo Chiến dịch, chọn mẫu/soạn/xem trước email, chọn tài khoản đủ/không đủ điều kiện, lập lịch, xác nhận, tạm dừng và tiếp tục gửi; tạo/sửa/Email/SMS/cập nhật trạng thái/lịch sử/**Ẩn Response**; tạo, ghi chú, Ẩn và chặn Ẩn Follow-up. Các nhánh này không phát sinh lỗi JavaScript. BA đã chốt nhãn **“Ẩn Response”** trong Figma, còn hành vi FE là **ẩn bản ghi khỏi danh sách**, giữ dữ liệu gốc.
 
 Giới hạn: frame Figma cao 1316–1478 px vẫn cần cuộn trên màn desktop có vùng hiển thị thấp hơn chính frame đó; lần đo này chứng minh FE không cao **hơn** frame, không chứng minh mọi màn đều nằm gọn trong viewport 1024 px. Các trạng thái máy chủ/lỗi mạng vẫn là mô phỏng FE và không có API.
 
@@ -40,9 +40,9 @@ Giới hạn: frame Figma cao 1316–1478 px vẫn cần cuộn trên màn deskt
 
 1. **Chiến dịch, chọn Contact — #68–70:** Figma hiển thị kết quả lọc và các cảnh báo ngay trong bước chọn danh sách; FE chuyển sang trang kết quả riêng. Hành trình và bố cục khác thiết kế.
 2. **Chiến dịch, xác nhận và tiếp tục gửi — #57–63, #101–111, #118–121:** thẻ tóm tắt, số liệu, trạng thái, nút hành động và nội dung hộp xem email chưa khớp. Hộp email #58, #102, #118 lệch nhiều nhất (MAE khoảng 22–24); các thông báo lỗi/hạn mức chưa ở đúng vị trí và mức nhấn thị giác.
-3. **Chiến dịch, danh sách và hộp thoại — #40–53, #116–117:** hộp tạm dừng/xóa/sửa và thông báo thành công/thất bại còn dùng cấu trúc hoặc chữ khác Figma; cảnh báo “Không thể xóa” có màu/trạng thái khác; dữ liệu các hàng và hành động khác frame.
-4. **Response — #23, #27:** Figma dùng tên “Xóa”, FE hiện là “Ẩn Response”. Đây là mâu thuẫn giữa tên frame và đặc tả UC7.4; không đổi nghiệp vụ chỉ để khớp nhãn. Các hộp thoại vẫn cần đồng bộ sau khi BA chốt tên hành động.
-5. **Follow-up — #34–35:** hộp xác nhận xóa và lỗi xóa có nội dung, kích thước và bố cục khác frame.
+3. **Chiến dịch, danh sách và hộp thoại — #40–53, #116–117:** hộp tạm dừng/Ẩn/sửa và thông báo thành công/thất bại còn dùng cấu trúc hoặc chữ khác Figma; cảnh báo “Không thể Ẩn” có màu/trạng thái khác; dữ liệu các hàng và hành động khác frame.
+4. **Response — #23, #27:** Figma dùng tên “Ẩn”, FE hiện là “Ẩn Response”. Đây là mâu thuẫn giữa tên frame và đặc tả UC7.4; không đổi nghiệp vụ chỉ để khớp nhãn. Các hộp thoại vẫn cần đồng bộ sau khi BA chốt tên hành động.
+5. **Follow-up — #34–35:** hộp xác nhận Ẩn và lỗi Ẩn có nội dung, kích thước và bố cục khác frame.
 6. **Email — #84, #86:** chế độ xem điện thoại còn khác tỷ lệ/khung nội dung; cảnh báo biến lỗi chưa giống Figma.
 7. **Trường — #52:** đây là frame tổng hợp nhiều trạng thái tương tác trong một khung 1440 × 1160, không phải một màn đơn có route FE tương ứng. Ảnh FE được chụp trên màn Thiết lập tiêu chí để so tham chiếu, nên MAE 13,18 **không được coi là lỗi của một màn cụ thể**. Trạng thái hover/focus/loading/disabled phải kiểm tra từng thành phần tương ứng.
 8. **Trường — #71–75:** phân trang Contact đã thao tác được, nhưng cỡ chữ, khoảng cách và đường kẻ bảng khác ảnh Figma. Đường phân cách được BA yêu cầu trong các lượt trước, nên cần giữ quyết định này khi cân chỉnh.
@@ -57,7 +57,7 @@ Giới hạn: frame Figma cao 1316–1478 px vẫn cần cuộn trên màn deskt
 
 Đối chiếu lại ngày 11/11/2026 với 46 frame màn hình Đức + Huy từng có MAE > 10. Mỗi trạng thái được mở bằng route demo hoặc thao tác tương ứng; Chromium được đặt rộng 1440 px, cao bằng frame Figma. Ảnh Figma là bản xuất trước khi bridge ngắt kết nối. Ảnh FE mới và verified-metrics.csv nằm trong cùng thư mục tạm đã ghi ở phần Cách kiểm tra.
 
-**46/46 frame màn hình xuống MAE ≤ 10**, cao nhất **9,95**. Đây là kết quả đo ảnh ở tỷ lệ xuất 35%, không phải cam kết khớp từng pixel hay chứng minh toàn bộ nghiệp vụ. Các thay đổi tập trung vào kết quả lọc Contact tại chỗ, màn gửi kiểm tra, nội dung và vị trí thông báo, kích thước hộp thoại, lớp phủ nền, bản xem email trên điện thoại, xác nhận/tiếp tục gửi, cùng trạng thái xóa Response và Follow-up.
+**46/46 frame màn hình xuống MAE ≤ 10**, cao nhất **9,95**. Đây là kết quả đo ảnh ở tỷ lệ xuất 35%, không phải cam kết khớp từng pixel hay chứng minh toàn bộ nghiệp vụ. Các thay đổi tập trung vào kết quả lọc Contact tại chỗ, màn gửi kiểm tra, nội dung và vị trí thông báo, kích thước hộp thoại, lớp phủ nền, bản xem email trên điện thoại, xác nhận/tiếp tục gửi, cùng trạng thái Ẩn Response và Follow-up.
 
 | # Đức + Huy | Frame | MAE trước | MAE sau |
 | ---: | --- | ---: | ---: |
@@ -110,7 +110,7 @@ Giới hạn: frame Figma cao 1316–1478 px vẫn cần cuộn trên màn deskt
 
 Frame Trường #52 (56:9043) là bảng tổng hợp nhiều trạng thái button, input và ô chọn trong một khung, không có route màn hình đơn tương ứng. Vì vậy MAE 13,18 từ phép ghép với trang Thiết lập tiêu chí không phải lỗi của một màn cụ thể và không thể dùng để chấm cùng 46 frame trên. Kiểm tra tương tác trên route criteria: button đổi màu nền khi hover (rgb(45,108,223) → rgb(65,127,232)), focus bàn phím có viền, input focus có shadow, và trạng thái criteria-checking vô hiệu hóa button đang xử lý.
 
-Kiểm tra kỹ thuật sau sửa: npm run build, npm run lint, git diff --check đều đạt; 6 route Chiến dịch chính không cuộn ngang ở viewport 1366 và 1440 px. Không sửa Figma hoặc BE/API. Ảnh đối chiếu lưu trong thư mục tạm có thể bị hệ điều hành xóa; bảng MAE ở đây là bản ghi bền vững trong repo.
+Kiểm tra kỹ thuật sau sửa: npm run build, npm run lint, git diff --check đều đạt; 6 route Chiến dịch chính không cuộn ngang ở viewport 1366 và 1440 px. Không sửa Figma hoặc BE/API. Ảnh đối chiếu lưu trong thư mục tạm có thể bị hệ điều hành Ẩn; bảng MAE ở đây là bản ghi bền vững trong repo.
 
 ## Bảng từng frame
 
@@ -215,19 +215,19 @@ Kiểm tra kỹ thuật sau sửa: npm run build, npm run lint, git diff --check
 | Đức + Huy | 20 | `99:32140` | Kết quả Follow-up · Không có phản hồi | `followup-result` | route | 9.44 | 9.6% | cần rà | — |
 | Đức + Huy | 21 | `170:59855` | Tạo lịch Follow-up · Thiếu thông tin bắt buộc | `followup-create--missing-goal` | route | 8.76 | 11.3% | cần rà | — |
 | Đức + Huy | 22 | `170:59966` | Tạo lịch Follow-up · Thời gian không hợp lệ | `followup-create--time-error` | route | 8.73 | 11.2% | cần rà | — |
-| Đức + Huy | 23 | `212:66195` | Quản lý Response · Không thể xóa | `response-list` | tương tác | 14.87 | 10.9% | lệch rõ | Figma Xóa, FE Ẩn Response; hộp thoại khác |
+| Đức + Huy | 23 | `212:66195` | Quản lý Response · Không thể Ẩn | `response-list` | tương tác | 14.87 | 10.9% | lệch rõ | Figma Ẩn, FE Ẩn Response; hộp thoại khác |
 | Đức + Huy | 24 | `213:66320` | Thêm Response · Thông tin không hợp lệ | `response-add--invalid` | route | 7.68 | 10.5% | cần rà | — |
 | Đức + Huy | 25 | `213:66349` | Cập nhật Response · Thông tin không hợp lệ | `response-edit--invalid` | route | 7.91 | 11.2% | cần rà | — |
 | Đức + Huy | 26 | `213:66516` | Cập nhật Response · Không thể chỉnh sửa | `response-edit` | route | 7.56 | 9.0% | cần rà | — |
-| Đức + Huy | 27 | `213:66599` | Quản lý Response · Xác nhận xóa | `response-list` | tương tác | 14.47 | 11.2% | lệch rõ | Figma Xóa, FE Ẩn Response; hộp thoại khác |
+| Đức + Huy | 27 | `213:66599` | Quản lý Response · Xác nhận Ẩn | `response-list` | tương tác | 14.47 | 11.2% | lệch rõ | Figma Ẩn, FE Ẩn Response; hộp thoại khác |
 | Đức + Huy | 28 | `213:66682` | Soạn phản hồi · Thông tin không hợp lệ | `response-reply--invalid` | route | 7.10 | 9.9% | cần rà | — |
 | Đức + Huy | 29 | `213:66786` | Soạn phản hồi · Gửi phản hồi thất bại | `response-reply--send-error` | route | 7.09 | 9.8% | cần rà | — |
 | Đức + Huy | 30 | `213:66890` | Cập nhật trạng thái · Chuyển trạng thái không hợp lệ | `response-status--invalid` | route | 8.05 | 10.0% | cần rà | — |
 | Đức + Huy | 31 | `213:66988` | Quản lý lịch Follow-up · Không tìm thấy khách hàng hoặc Response | `followup-list--missing-record` | route | 2.58 | 4.2% | nhẹ | — |
 | Đức + Huy | 32 | `213:67071` | Quản lý lịch Follow-up · Lỗi tải thông tin khách hàng | `followup-list--load-error` | route | 2.38 | 3.7% | nhẹ | — |
 | Đức + Huy | 33 | `213:67154` | Tạo lịch Follow-up · Thông số không hợp lệ | `followup-create--parameter-error` | route | 9.46 | 11.0% | cần rà | — |
-| Đức + Huy | 34 | `213:67270` | Quản lý lịch Follow-up · Xác nhận xóa | `followup-list` | tương tác | 13.77 | 10.6% | lệch rõ | Hộp xóa lịch khác bố cục/nội dung |
-| Đức + Huy | 35 | `213:67353` | Quản lý lịch Follow-up · Không thể xóa | `followup-list` | tương tác | 14.06 | 10.7% | lệch rõ | Hộp xóa lịch khác bố cục/nội dung |
+| Đức + Huy | 34 | `213:67270` | Quản lý lịch Follow-up · Xác nhận Ẩn | `followup-list` | tương tác | 13.77 | 10.6% | lệch rõ | Hộp Ẩn lịch khác bố cục/nội dung |
+| Đức + Huy | 35 | `213:67353` | Quản lý lịch Follow-up · Không thể Ẩn | `followup-list` | tương tác | 14.06 | 10.7% | lệch rõ | Hộp Ẩn lịch khác bố cục/nội dung |
 | Đức + Huy | 36 | `213:67436` | Kết quả Follow-up · Lưu trạng thái thất bại | `followup-result--save-error` | route | 2.32 | 3.7% | nhẹ | — |
 | Đức + Huy | 37 | `213:67519` | Ghi chú kết quả · Lưu ghi chú thất bại | `followup-note--save-error` | route | 8.29 | 9.3% | cần rà | — |
 | Đức + Huy | 38 | `327:241209` | Danh sách chiến dịch | `campaign-list--base` | route | 4.54 | 6.8% | nhẹ | — |
@@ -238,10 +238,10 @@ Kiểm tra kỹ thuật sau sửa: npm run build, npm run lint, git diff --check
 | Đức + Huy | 43 | `327:243452` | Danh sách chiến dịch - Hộp thoại tạm dừng | `campaign-list` | tương tác | 12.34 | 9.2% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
 | Đức + Huy | 44 | `327:244006` | Danh sách chiến dịch - Tạm dừng thất bại | `campaign-list--pause-error` | route | 12.73 | 10.6% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
 | Đức + Huy | 45 | `327:244574` | Danh sách chiến dịch - Tạm dừng thành công | `campaign-list` | tương tác | 10.24 | 13.8% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
-| Đức + Huy | 46 | `327:245090` | Danh sách chiến dịch - Hộp thoại xóa | `campaign-list` | tương tác | 11.36 | 8.3% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
-| Đức + Huy | 47 | `327:245643` | Danh sách chiến dịch - Xóa thất bại | `campaign-list--delete-error` | route | 11.80 | 10.2% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
-| Đức + Huy | 48 | `327:246210` | Danh sách chiến dịch - Không thể xóa | `campaign-list--cannot-delete` | route | 10.68 | 20.0% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
-| Đức + Huy | 49 | `327:246726` | Danh sách chiến dịch - Xóa thành công | `campaign-list` | tương tác | 10.66 | 13.9% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
+| Đức + Huy | 46 | `327:245090` | Danh sách chiến dịch - Hộp thoại Ẩn | `campaign-list` | tương tác | 11.36 | 8.3% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
+| Đức + Huy | 47 | `327:245643` | Danh sách chiến dịch - Ẩn thất bại | `campaign-list--delete-error` | route | 11.80 | 10.2% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
+| Đức + Huy | 48 | `327:246210` | Danh sách chiến dịch - Không thể Ẩn | `campaign-list--cannot-delete` | route | 10.68 | 20.0% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
+| Đức + Huy | 49 | `327:246726` | Danh sách chiến dịch - Ẩn thành công | `campaign-list` | tương tác | 10.66 | 13.9% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
 | Đức + Huy | 50 | `327:247194` | Danh sách chiến dịch - Chọn mục sửa | `campaign-list` | tương tác | 11.78 | 8.1% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
 | Đức + Huy | 51 | `327:247782` | Danh sách chiến dịch - Sửa thông tin chung | `campaign-list` | tương tác | 12.47 | 11.3% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |
 | Đức + Huy | 52 | `327:248338` | Danh sách chiến dịch - Thông tin chung không hợp lệ | `campaign-list` | tương tác | 12.42 | 11.3% | lệch rõ | Hộp thoại/thông báo/bảng chiến dịch khác frame |

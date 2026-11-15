@@ -8,7 +8,7 @@ Kiểm thử luồng chính qua HTTP API đang chạy và PostgreSQL thật, dù
 - Người nhận được chủ dự án cho phép: `chanbedu14022006@gmail.com`.
 - Danh sách Contact #101; chiến dịch #144; Response #309; Follow-up #193.
 - Tổng email gửi trong lượt kiểm thử chiến dịch này: 2 (1 thư chiến dịch, 1 thư xác nhận khi Nhân viên thực hiện Follow-up).
-- Giữ dữ liệu kiểm thử để có thể xem lại trên giao diện; không xóa lịch sử gửi.
+- Giữ dữ liệu kiểm thử để có thể xem lại trên giao diện; không Ẩn lịch sử gửi.
 
 ## Kết quả đã kiểm chứng
 
@@ -20,7 +20,7 @@ Kiểm thử luồng chính qua HTTP API đang chạy và PostgreSQL thật, dù
 | Tạo chiến dịch | Chưa duyệt bị chặn 409; sau duyệt lọc đúng một người nhận. |
 | Nội dung/xem trước | Lưu nội dung và kiểm tra thay biến tên người nhận. |
 | Tài khoản/lịch | Chọn Gmail OAuth, kiểm tra hạn mức, xác nhận Gửi ngay. |
-| Gửi chiến dịch | Worker gửi 1/1, lưu provider message ID, chiến dịch completed. Xóa sau gửi bị chặn 409. |
+| Gửi chiến dịch | Worker gửi 1/1, lưu provider message ID, chiến dịch completed. Ẩn sau gửi bị chặn 409. |
 | Nhận phản hồi | IMAP nhập thư trả lời thật, tự ghép chiến dịch #144, tạo Response #309 và giao NV001. |
 | Phân loại/xử lý | Bộ phân loại ban đầu trả other; Nhân viên đổi need_info và chuyển new → processing. Có thông báo Response mới. |
 | Follow-up | Tạo lịch hẹn sau 45 giây để thử nhanh, nhắc trước 1 phút; giữ cấu hình chờ 2 ngày, tối đa 3 lần, khoảng cách 2 ngày. |
