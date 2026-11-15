@@ -32,6 +32,7 @@ export class FollowupWorker implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly database: DatabaseService) {}
 
   onModuleInit() {
+    if (process.env.VERCEL === '1') return;
     this.timer = setInterval(() => {
       void this.tick();
     }, 60_000);

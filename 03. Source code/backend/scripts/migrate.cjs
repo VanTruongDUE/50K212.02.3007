@@ -2,7 +2,10 @@ const { Client } = require('pg');
 const { readFileSync, readdirSync } = require('node:fs');
 const { join } = require('node:path');
 
-const client = new Client({
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const url = databaseUrl ? new URL(databaseUrl) : null;
+if (url?.hostname.endsWith('.neon.tech')) url.searchParams.set('sslmode', 'verify-full');
+const client = new Client(url ? { connectionString: url.toString(), connectionTimeoutMillis: 10000 } : {
   host: process.env.POSTGRES_HOST || '127.0.0.1',
   port: Number(process.env.POSTGRES_PORT || 5432),
   user: process.env.POSTGRES_USER,

@@ -8,5 +8,6 @@ import { FollowupWorker } from './followup.worker';
   imports: [AuthModule, DatabaseModule],
   controllers: [FollowupsController],
   providers: [FollowupWorker],
+  exports: [FollowupWorker],
 })
 export class FollowupsModule {}

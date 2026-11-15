@@ -52,6 +52,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    if (process.env.VERCEL === '1') return;
     void this.database
       .query(
         `UPDATE campaigns SET status='paused' WHERE id IN

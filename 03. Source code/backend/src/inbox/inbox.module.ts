@@ -9,5 +9,6 @@ import { InboxService } from './inbox.service';
   imports: [AuthModule, DatabaseModule, SendersModule],
   controllers: [InboxController, UnmatchedInboxController],
   providers: [InboxService],
+  exports: [InboxService],
 })
 export class InboxModule {}

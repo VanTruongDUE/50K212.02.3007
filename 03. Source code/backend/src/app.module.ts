@@ -1,3 +1,4 @@
+import { RuntimeJobsModule } from './runtime-jobs.module';
 import { SearchModule } from './search/search.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -35,6 +36,7 @@ import { NotificationsController } from './notifications.controller';
     FilterTemplatesModule,
     InboxModule,
     SearchModule,
+    RuntimeJobsModule,
   ],
   controllers: [
     AppController,

@@ -8,5 +8,6 @@ import { SerpProvider } from './serp.provider';
   imports: [AuthModule, DatabaseModule],
   controllers: [SearchController],
   providers: [SearchService, SerpProvider],
+  exports: [SearchService],
 })
 export class SearchModule {}

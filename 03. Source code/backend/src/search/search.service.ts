@@ -43,6 +43,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
     private provider: SerpProvider,
   ) {}
   onModuleInit() {
+    if (process.env.VERCEL === '1') return;
     this.timer = setInterval(() => {
       if (!this.active) {
         this.active = this.tick()

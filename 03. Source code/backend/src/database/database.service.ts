@@ -7,6 +7,18 @@ export class DatabaseService implements OnModuleDestroy {
   private readonly pool: Pool;
 
   constructor(config: ConfigService) {
+    const connectionString = config.get<string>('DATABASE_URL')?.trim();
+    if (connectionString) {
+      const url = new URL(connectionString);
+      if (url.hostname.endsWith('.neon.tech'))
+        url.searchParams.set('sslmode', 'verify-full');
+      this.pool = new Pool({
+        connectionString: url.toString(),
+        connectionTimeoutMillis: 10000,
+        ...(config.get<string>('VERCEL') ? { max: 2 } : {}),
+      });
+      return;
+    }
     const port = Number(config.get<string>('POSTGRES_PORT') ?? 5432);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
       throw new Error('POSTGRES_PORT must be a valid TCP port');

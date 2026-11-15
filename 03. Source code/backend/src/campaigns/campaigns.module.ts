@@ -10,5 +10,6 @@ import { AssetsController } from './assets.controller';
   imports: [AuthModule, DatabaseModule, SendersModule],
   controllers: [CampaignsController, AssetsController],
   providers: [DeliveryWorker],
+  exports: [DeliveryWorker],
 })
 export class CampaignsModule {}

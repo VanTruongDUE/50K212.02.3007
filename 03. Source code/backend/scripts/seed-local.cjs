@@ -22,7 +22,10 @@ if (accounts.some((account) => !account[4]))
     'Set both DEMO_EMPLOYEE_PASSWORD and DEMO_MANAGER_PASSWORD in .env',
   );
 
-const client = new Client({
+const databaseUrl = process.env.DATABASE_URL?.trim();
+const url = databaseUrl ? new URL(databaseUrl) : null;
+if (url?.hostname.endsWith('.neon.tech')) url.searchParams.set('sslmode', 'verify-full');
+const client = new Client(url ? { connectionString: url.toString(), connectionTimeoutMillis: 10000 } : {
   host: process.env.POSTGRES_HOST || '127.0.0.1',
   port: Number(process.env.POSTGRES_PORT || 5432),
   user: process.env.POSTGRES_USER,
@@ -42,12 +45,12 @@ async function seed() {
       );
       const hash = await hashPassword(password);
       await client.query(
-        'INSERT INTO login_accounts (employee_id, password_hash, role) VALUES ($1, $2, $3) ON CONFLICT (employee_id) DO UPDATE SET password_hash=EXCLUDED.password_hash, role=EXCLUDED.role',
+        'INSERT INTO login_accounts (employee_id, password_hash, role) VALUES ($1, $2, $3) ON CONFLICT (employee_id) ' + (databaseUrl ? 'DO NOTHING' : 'DO UPDATE SET password_hash=EXCLUDED.password_hash, role=EXCLUDED.role'),
         [id, hash, role],
       );
     }
     await client.query('COMMIT');
-    console.log('Local employee and manager accounts are ready');
+    console.log('Employee and manager accounts are ready');
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

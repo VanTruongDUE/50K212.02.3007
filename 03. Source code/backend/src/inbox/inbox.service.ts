@@ -125,6 +125,7 @@ export class InboxService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    if (process.env.VERCEL === '1') return;
     this.timer = setInterval(() => {
       void this.syncAll();
     }, 120000);
@@ -365,7 +366,7 @@ export class InboxService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async syncAll(): Promise<void> {
+  async syncAll(): Promise<void> {
     if (this.syncing) return;
     this.syncing = true;
     try {
