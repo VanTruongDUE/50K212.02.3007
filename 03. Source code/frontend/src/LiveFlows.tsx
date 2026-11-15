@@ -617,6 +617,11 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
   const followup = selectedRecord(followups, scope === "followupId" ? selected : "");
   const sender = selectedRecord(senders, scope === "senderId" ? selected : "");
   const loadedForm = useRef("");
+  useEffect(() => {
+    if (screen !== "campaign-list" || !campaigns.some(item => ["scheduled", "sending"].includes(item.status))) return;
+    const timer = window.setInterval(() => setReload(value => value + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, [screen, campaigns]);
   useLayoutEffect(() => {
     const sync = () => {
       const next = recordContext(new URLSearchParams(location.search).get("screen") || screen, location.search);
@@ -1723,6 +1728,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           <div className="next-actions-bar">{cancelEdit}
             <Button disabled={busy} onClick={() => {
               if (!subject.trim() || !body.trim() || invalidEmailVariable(subject + "\n" + body)) { setError(invalidEmailVariable(subject + "\n" + body) || "Vui lòng nhập tiêu đề và nội dung email."); return; }
+              setError("");
               setPreviewResult(null);
               setPreviewDraft({ subject, body });
               go("campaign-preview");
