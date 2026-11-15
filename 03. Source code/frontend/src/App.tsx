@@ -6,6 +6,7 @@ import NextFlows from './NextFlows'
 import ManagerFlows from './ManagerFlows'
 import LiveFlows from './LiveFlows'
 import { api } from './api'
+import { navigationParams, type Navigate, type RecordContext } from './recordNavigation'
 import './styles.css'
 
 const preview = new URLSearchParams(location.search).get('preview')
@@ -108,7 +109,7 @@ function NavItem({ icon, children, heading = false, active = false, expanded, on
   return onClick ? <button className={className} type="button" aria-current={active && !heading ? 'page' : undefined} aria-expanded={expanded} onClick={onClick}>{content}</button> : <div className={className}>{content}</div>
 }
 
-function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: boolean; screen: string; go: (screen: string) => void; accountEmail: string; onLogout: () => Promise<void>; live: boolean }) {
+function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: boolean; screen: string; go: Navigate; accountEmail: string; onLogout: () => Promise<void>; live: boolean }) {
   const workspaceRef = useRef<HTMLDivElement>(null)
   const [logoutError, setLogoutError] = useState(false)
   const [overview, setOverview] = useState<{ campaigns: number; emails_sent: number; responses: number; open_responses: number; due_followups: number; active_sender_accounts: number } | null>(null)
@@ -190,16 +191,17 @@ function App() {
   const [role, setRole] = useState<Role>(() => preview === 'manager' || new URLSearchParams(location.search).get('role') === 'manager' ? 'manager' : 'employee')
   const [authReady, setAuthReady] = useState(false)
   const manager = role === 'manager'
-  const go = useCallback((next: string, nextRole = role) => {
-    if (screen === next && new URLSearchParams(location.search).get('screen') === next) return
+  const go = useCallback((next: string, roleOrContext: Role | RecordContext = role) => {
+    const nextRole = typeof roleOrContext === 'string' ? roleOrContext : role
+    const context = typeof roleOrContext === 'string' ? undefined : roleOrContext
+    if (!context && screen === next && new URLSearchParams(location.search).get('screen') === next) return
     if (next === 'login') { setAccountEmail(''); setRole('employee'); setSignedOut(true) }
     setScreen(next)
     const query = next === 'login' ? '' : '?screen=' + encodeURIComponent(next) + (nextRole === 'manager' ? '&role=manager' : '')
     const nextUrl = new URL(location.pathname + query, location.origin)
     const currentParams = new URLSearchParams(location.search)
-    for (const name of ['searchId', 'listId']) {
-      const value = currentParams.get(name)
-      if (next !== 'login' && value) nextUrl.searchParams.set(name, value)
+    if (next !== 'login') {
+      navigationParams(next, currentParams, context).forEach((value, key) => nextUrl.searchParams.set(key, value))
     }
     history.pushState(null, '', nextUrl.pathname + nextUrl.search)
   }, [role, screen])

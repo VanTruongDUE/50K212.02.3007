@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { api, idNumber } from "./api";
+import { recordContext, recordKey, recordRequired, selectedRecord, type Navigate, type RecordContext } from "./recordNavigation";
 import { createContactExport, type ExportFormat } from "./exportContacts";
 import { CampaignInfo, Dialog, PreviewBody, Stepper } from "./NextFlows";
 import { selectionOptions } from "./criteriaOptions";
@@ -7,7 +8,7 @@ import "./flow.css";
 import "./nextFlows.css";
 import "./managerFlows.css";
 
-type Props = { screen: string; go: (screen: string) => void; manager: boolean };
+type Props = { screen: string; go: Navigate; manager: boolean };
 type Contact = {
   id: string;
   email: string;
@@ -388,7 +389,7 @@ function Table({ heads, rows }: { heads: string[]; rows: ReactNode[][] }) {
   );
 }
 
-export default function LiveFlows({ screen, go, manager }: Props) {
+export default function LiveFlows({ screen, go: navigate, manager }: Props) {
   const [lists, setLists] = useState<ContactList[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [senders, setSenders] = useState<Sender[]>([]);
@@ -397,7 +398,24 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [createdFollowup, setCreatedFollowup] = useState<Followup | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [filters, setFilters] = useState<FilterTemplate[]>([]);
-  const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get("listId") || "");
+  const [selection, setSelection] = useState(() => recordContext(screen, location.search));
+  const selectionRef = useRef(selection);
+  const scope = recordKey(screen);
+  const selected = selection.key === scope ? selection.id : recordContext(screen, location.search).id;
+  function setSelected(id: string) {
+    const next = { key: scope, id };
+    selectionRef.current = next;
+    setSelection(next);
+    if (scope) {
+      const url = new URL(location.href);
+      if (id) url.searchParams.set(scope, id);
+      else url.searchParams.delete(scope);
+      history.replaceState(null, "", url);
+    }
+  }
+  function go(next: string, context?: RecordContext) {
+    navigate(next, context ?? (selectionRef.current.key === recordKey(next) ? selectionRef.current : undefined));
+  }
   const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
   const [senderEditId, setSenderEditId] = useState(() =>
     new URLSearchParams(location.search).get("senderId") || "",
@@ -416,7 +434,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [detail, setDetail] = useState<
     ContactList | Campaign | ResponseItem | null
   >(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [filterLoadError, setFilterLoadError] = useState(false);
@@ -508,17 +526,55 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               : screen.startsWith("template") || screen === "templates"
                 ? "filters"
                 : "other";
-  const list = lists.find((item) => item.id === selected) ??
-    (manager && screen.startsWith("manager-review")
-      ? lists.find(item => item.manager_review === "pending" && item.confirmed_at)
-      : undefined) ?? lists[0];
-  const campaign =
-    campaigns.find((item) => item.id === selected) ?? campaigns[0];
-  const responseItem =
-    responses.find((item) => item.id === selected) ?? responses[0];
-  const followup =
-    followups.find((item) => item.id === selected) ?? followups[0];
-  const sender = senders.find((item) => item.id === selected) ?? senders[0];
+  const list = scope === "listId" && !selected && manager && screen.startsWith("manager-review")
+    ? lists.find(item => item.manager_review === "pending" && item.confirmed_at) ?? lists[0]
+    : selectedRecord(lists, scope === "listId" ? selected : "");
+  const campaign = selectedRecord(campaigns, scope === "campaignId" ? selected : "");
+  const responseItem = selectedRecord(responses, scope === "responseId" ? selected : "");
+  const followup = selectedRecord(followups, scope === "followupId" ? selected : "");
+  const sender = selectedRecord(senders, scope === "senderId" ? selected : "");
+  const loadedForm = useRef("");
+  useLayoutEffect(() => {
+    const sync = () => {
+      const next = recordContext(new URLSearchParams(location.search).get("screen") || screen, location.search);
+      selectionRef.current = next;
+      setSelection(next);
+      setDetail(null);
+      loadedForm.current = "";
+    };
+    sync();
+    addEventListener("popstate", sync);
+    return () => removeEventListener("popstate", sync);
+  }, [screen]);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const formKey = `${screen}:${selected}`;
+      if (loadedForm.current === formKey) return;
+      if (screen === "template-edit") {
+        const item = selectedRecord(filters, selected);
+        if (!item) return;
+        setName(item.name); setCriteria(item.criteria);
+      } else if (screen === "response-edit") {
+        if (!responseItem) return;
+        setName(responseItem.customer_name); setEmail(responseItem.email || "");
+        setPhone(responseItem.phone || ""); setBody(responseItem.content);
+      } else if (screen === "manager-account-edit") {
+        if (!sender) return;
+        setSenderEditId(sender.id);
+        setSenderForm({ name: sender.name, email: sender.email, smtpHost: sender.smtp_host || "",
+          smtpPort: String(sender.smtp_port || 465), smtpUser: sender.smtp_user || "", smtpPassword: "",
+          status: sender.status, quota3Days: String(sender.quota_3_days), inboundEnabled: sender.inbound_enabled });
+      } else {
+        loadedForm.current = "";
+        return;
+      }
+      loadedForm.current = formKey;
+    });
+    return () => { active = false; };
+  }, [screen, selected, filters, responseItem, sender]);
   useEffect(() => {
     if (group !== "senders" || !manager) return;
     let active = true;
@@ -619,11 +675,6 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         if (group === "filters") {
           const loaded = values[0] as FilterTemplate[];
           setFilters(loaded);
-          if (new URLSearchParams(location.search).get("screen") === "template-edit" && loaded[0]) {
-            setSelected(loaded[0].id);
-            setName(loaded[0].name);
-            setCriteria(loaded[0].criteria);
-          }
         }
       })
       .catch((e) => {
@@ -853,6 +904,19 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     </>
   );
 
+  const selectedItem = scope === "listId" ? list : scope === "campaignId" ? campaign
+    : scope === "responseId" ? responseItem : scope === "followupId" ? followup
+    : scope === "senderId" ? sender : selectedRecord(filters, selected);
+  if ((recordRequired(screen) && !selected) || (selected && !loading && !selectedItem)) {
+    const back = scope === "listId" ? manager ? "manager-review" : "contact-lists"
+      : scope === "campaignId" ? "campaign-list" : scope === "responseId" ? "response-list"
+      : scope === "followupId" ? "followup-list" : scope === "senderId" ? manager ? "manager-account-list" : "sender-list" : "templates";
+    return <Page section="Thông tin" title="Không tìm thấy bản ghi" go={go}>
+      {feedback}<Card><p role="alert">Bản ghi không tồn tại hoặc bạn không có quyền truy cập. Vui lòng chọn lại từ danh sách.</p>
+        <Button onClick={() => navigate(back, { key: scope, id: "" })}>Về danh sách</Button></Card>
+    </Page>;
+  }
+
   if (
     screen === "criteria" ||
     screen === "criteria-adjust" ||
@@ -883,7 +947,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
     );
 
   if (screen.startsWith("template") || screen === "templates") {
-    const active = filters.find((item) => item.id === selected) ?? filters[0];
+    const active = selectedRecord(filters, selected);
     const edit = screen === "template-edit";
     if (screen === "templates" && filterLoadError && !loading) return <Page section="Tìm kiếm Contact" title="Không thể tải Filter Template" description="Chưa truy xuất được danh sách. Bộ tiêu chí hiện tại chưa bị thay đổi." crumbLabel="Không thể tải dữ liệu" go={go}>
       <section className="flow-panel next-template-load-error" role="alert"><p>Chưa nhận được danh sách Filter Template.<br />Chọn “Tải lại Template” để thử lại; bộ tiêu chí đang nhập được giữ nguyên.</p></section>
@@ -904,11 +968,11 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 <td>{item.criteria.size.join(", ") || "—"}</td>
               </tr>)}</tbody>
             </table>
-            <p className="panel-footnote">Đang chọn: {active.name}</p>
+            <p className="panel-footnote">Đang chọn: {active?.name || "Chưa chọn Template"}</p>
           </> : <p>Chưa có Filter Template. Tạo Template để lưu bộ tiêu chí tìm kiếm.</p>}
         </section>
         <div className="flow-actions"><div>
-          <Button disabled={!active} onClick={() => { if (!active) return; setSelected(active.id); setCriteria(active.criteria); setName(active.name); go("template-edit"); }}>Cập nhật Template</Button>
+          <Button disabled={!active} onClick={() => { if (!active) return; setSelected(active.id); setCriteria(active.criteria); setName(active.name); go("template-edit", { key: "filterId", id: active.id }); }}>Cập nhật Template</Button>
           <Button onClick={() => { setName(""); setCriteria(emptyCriteria); go("template-create"); }}>Tạo Template</Button>
         </div><div><Button primary disabled={!active} onClick={() => { if (!active) return; sessionStorage.setItem("v5-applied-filter", JSON.stringify(active.criteria)); go("criteria"); }}>Xem / áp dụng tiêu chí</Button></div></div>
       </Page>
@@ -2269,7 +2333,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                       if (failure.message.includes("đã có lịch Follow-up")) go("followup-duplicate");
                       else if (failure.message.includes("từ chối nhận email")) go("followup-optout");
                     },
-                  ).then(item => { if (item) { setCreatedFollowup(item); go("followup-success"); } })
+                  ).then(item => { if (item) { setCreatedFollowup(item); go("followup-success", { key: "followupId", id: item.id }); } })
                 }
               >
                 Lưu lịch
@@ -2739,10 +2803,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                       quota3Days: String(sender.quota_3_days),
                       inboundEnabled: sender.inbound_enabled,
                     });
-                    go("manager-account-edit");
-                    const editUrl = new URL(location.href);
-                    editUrl.searchParams.set("senderId", sender.id);
-                    history.replaceState(null, "", editUrl);
+                    go("manager-account-edit", { key: "senderId", id: sender.id });
                   }}
                 >
                   Sửa

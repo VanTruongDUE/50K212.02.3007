@@ -1,3 +1,4 @@
+import type { Navigate } from "./recordNavigation";
 import { useEffect, useRef, useState } from "react";
 import Flow, { type Criteria } from "./Flow";
 import { api } from "./api";
@@ -70,7 +71,7 @@ export default function SearchFlows({
   owner,
 }: {
   screen: string;
-  go: (screen: string) => void;
+  go: Navigate;
   owner: string;
 }) {
   const key = "v5-search:" + owner,
@@ -216,10 +217,7 @@ export default function SearchFlows({
   }
   function openList() {
     if (!job?.list_id) return;
-    const url = new URL(location.href);
-    url.searchParams.set("listId", job.list_id);
-    window.history.replaceState({}, "", url);
-    navigate("check");
+    go("check", { key: "listId", id: job.list_id });
   }
   if (["criteria", "criteria-adjust", "criteria-invalid"].includes(screen))
     return (
