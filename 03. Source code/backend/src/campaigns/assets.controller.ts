@@ -187,7 +187,7 @@ export class AssetsController {
       asset.rows[0].body?.includes(`[[Hình ảnh:${assetId}]]`)
     )
       throw new ConflictException(
-        'Hãy xóa ảnh khỏi nội dung email rồi lưu trước khi xóa tệp.',
+        'Hãy Ẩn ảnh khỏi nội dung email rồi lưu trước khi Ẩn tệp.',
       );
     const result = await this.database.query(
       'DELETE FROM campaign_assets WHERE campaign_id=$1 AND id=$2 RETURNING id',

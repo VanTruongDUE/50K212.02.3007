@@ -472,7 +472,7 @@ export class CampaignsController {
       [id],
     );
     if (!result.rowCount)
-      throw new ConflictException('Chỉ xóa chiến dịch chưa gửi.');
+      throw new ConflictException('Chỉ Ẩn chiến dịch chưa gửi.');
     return { deleted: true };
   }
 

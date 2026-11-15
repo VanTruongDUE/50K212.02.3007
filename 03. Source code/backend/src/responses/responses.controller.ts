@@ -83,7 +83,7 @@ export class ResponsesController {
         [id],
       ),
       this.database.query(
-        'SELECT actor_id,from_status,to_status,changed_at FROM response_status_history WHERE response_id=$1 ORDER BY changed_at',
+        'SELECT actor_id,from_status,to_status,note,changed_at FROM response_status_history WHERE response_id=$1 ORDER BY changed_at',
         [id],
       ),
     ]);
@@ -313,6 +313,7 @@ export class ResponsesController {
       kind?: unknown;
       status?: unknown;
       content?: unknown;
+      note?: unknown;
     },
     @Req() request: AuthenticatedRequest,
   ) {
@@ -321,6 +322,15 @@ export class ResponsesController {
     const kind = body?.kind === undefined ? item.kind : body.kind;
     const status = body?.status === undefined ? item.status : body.status;
     const content = body?.content === undefined ? item.content : body.content;
+    if (
+      body?.note !== undefined &&
+      (typeof body.note !== 'string' || body.note.length > 1000)
+    )
+      throw new BadRequestException(
+        'Ghi chú trạng thái không được vượt quá 1000 ký tự.',
+      );
+    const note =
+      typeof body?.note === 'string' ? body.note.trim() || null : null;
     const customerName =
       body?.customerName === undefined
         ? item.customer_name
@@ -403,8 +413,8 @@ export class ResponsesController {
       saved = result.rows[0];
       if (status !== item.status)
         await client.query(
-          'INSERT INTO response_status_history(response_id,actor_id,from_status,to_status) VALUES($1,$2,$3,$4)',
-          [id, request.account.id, item.status, status],
+          'INSERT INTO response_status_history(response_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5)',
+          [id, request.account.id, item.status, status, note],
         );
       await client.query('COMMIT');
     } catch (error) {

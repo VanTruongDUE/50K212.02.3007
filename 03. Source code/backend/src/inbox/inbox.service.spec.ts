@@ -90,6 +90,7 @@ describe('classifyIncoming', () => {
     ['Do not send me emails anymore', 'unsubscribe'],
     ["Don't send me any more emails", 'unsubscribe'],
     ['Vui lòng xóa tôi khỏi danh sách gửi email', 'unsubscribe'],
+    ['Vui lòng Ẩn tôi khỏi danh sách gửi email', 'other'],
     ['Tôi quan tâm\n--- Forwarded message ---\nUnsubscribe', 'interested'],
     ['Tôi quan tâm\nBegin forwarded message:\nUnsubscribe', 'interested'],
     [

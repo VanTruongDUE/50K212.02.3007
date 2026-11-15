@@ -7,7 +7,7 @@ const { randomBytes } = require('node:crypto');
 const { InboxService } = require('../dist/inbox/inbox.service');
 const { SmtpService } = require('../dist/senders/smtp.service');
 const { FollowupWorker } = require('../dist/followups/followup.worker');
-const { claimDeliverySql } = require('../dist/campaigns/delivery.worker');
+const { DeliveryWorker, claimDeliverySql } = require('../dist/campaigns/delivery.worker');
 const PostalMime = require('postal-mime').default ?? require('postal-mime');
 
 async function main() {
@@ -17,6 +17,9 @@ async function main() {
   process.env.PUBLIC_BASE_URL ||= 'http://localhost:3000';
   const app = await NestFactory.create(AppModule, { logger: ['error'] });
   app.use(cookieParser());
+  for (const service of [DeliveryWorker, FollowupWorker, InboxService])
+    app.get(service).onModuleInit = () => {};
+  app.get(SmtpService).send = async () => { throw new Error('External SMTP disabled during smoke verification'); };
   await app.init();
   const api = request(app.getHttpServer());
   const saved = {};
@@ -251,7 +254,7 @@ async function main() {
     await followDb.connect();
     try { await followDb.query("UPDATE followups SET completed_at=now()-interval '2 days' WHERE id=$1", [waitingFollowup.id]); }
     finally { await followDb.end(); }
-    await app.get(FollowupWorker).tick();
+    await app.get(FollowupWorker).resolve(waitingFollowup.id);
     const resolvedFollowups = check(await api.get('/api/followups').set('Cookie', employee), 200).filter((item) => item.response_id === waiting.id);
     if (resolvedFollowups.length !== 2 || resolvedFollowups.find((item) => item.id === waitingFollowup.id)?.outcome !== 'no_response' || !resolvedFollowups.some((item) => item.attempt === 2 && item.status === 'pending')) throw new Error('Follow-up wait period or next attempt failed');
     const nextFollowup = resolvedFollowups.find((item) => item.attempt === 2);

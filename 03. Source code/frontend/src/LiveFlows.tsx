@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, idNumber } from "./api";
 import { createContactExport, type ExportFormat } from "./exportContacts";
 import { CampaignInfo, Dialog, PreviewBody, Stepper } from "./NextFlows";
+import { selectionOptions } from "./criteriaOptions";
 import "./flow.css";
 import "./nextFlows.css";
 import "./managerFlows.css";
@@ -13,6 +14,8 @@ type Contact = {
   full_name: string | null;
   job_title: string | null;
   company: string | null;
+  search_provenance?: { emailStatus?: string; method?: string; industry?: string | null; sizeNote?: string };
+  source_url?: string;
 };
 type ContactList = {
   id: string;
@@ -85,6 +88,7 @@ type ResponseItem = {
     from_status: string;
     to_status: string;
     changed_at: string;
+    note?: string | null;
   }[];
   followups?: { id: string; due_at: string; status: string }[];
 };
@@ -210,6 +214,7 @@ function Page({
   backTo,
   description: descriptionOverride,
   crumbLabel,
+  className = "",
   children,
 }: {
   section: string;
@@ -218,6 +223,7 @@ function Page({
   backTo?: string;
   description?: string | null;
   crumbLabel?: string;
+  className?: string;
   children: ReactNode;
 }) {
   const target = backTo ?? (
@@ -241,7 +247,7 @@ function Page({
       : pageDescriptions[section]) ??
     "Chọn chức năng để bắt đầu làm việc.";
   return (
-    <section className={"next-page" + (["Quản lý Response", "Quản lý lịch Follow-up"].includes(title) ? " next-list-page" : "")}>
+    <section className={"next-page " + className + (["Quản lý Response", "Quản lý lịch Follow-up"].includes(title) ? " next-list-page" : "")}>
       <nav className="next-breadcrumb" aria-label="Đường dẫn">
         {section === title ||
          (section === "Tài khoản gửi" && title === "Kiểm tra tài khoản gửi") ||
@@ -348,9 +354,12 @@ function Field({
     </div>
   );
 }
+function ContactEmail({contact}: {contact: Contact}) {
+  return <>{contact.email}{contact.search_provenance && <small className="search-source-note"><br/><span title="Email công khai trên website nguồn và hợp lệ cú pháp; chưa xác minh khả năng nhận thư.">Đã xác nhận</span> · Chức vụ/ngành/khu vực suy đoán: Chưa đảm bảo{contact.source_url && <> · <a href={contact.source_url} target="_blank" rel="noreferrer">Nguồn</a></>}</small>}</>;
+}
 function Table({ heads, rows }: { heads: string[]; rows: ReactNode[][] }) {
   return (
-    <div className="next-table-wrap">
+    <div className="next-table-wrap" tabIndex={0} role="region" aria-label={heads.join(" · ")}>
       <table className="next-table">
         <thead>
           <tr>
@@ -388,7 +397,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [createdFollowup, setCreatedFollowup] = useState<Followup | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [filters, setFilters] = useState<FilterTemplate[]>([]);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get("listId") || "");
   const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
   const [senderEditId, setSenderEditId] = useState(() =>
     new URLSearchParams(location.search).get("senderId") || "",
@@ -410,6 +419,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [filterLoadError, setFilterLoadError] = useState(false);
   const [notice, setNotice] = useState("");
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
@@ -419,6 +429,8 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   } | null>(null);
   const [pauseCampaign, setPauseCampaign] = useState<Campaign | null>(null);
   const [pauseReason, setPauseReason] = useState("");
+  const [campaignOverview, setCampaignOverview] = useState<Campaign | null>(null);
+  const [statusNote, setStatusNote] = useState("");
   const [showConfirmEmail, setShowConfirmEmail] = useState(false);
   const [confirmEmailViewed, setConfirmEmailViewed] = useState(false);
   const [showCampaignEditChoice, setShowCampaignEditChoice] = useState(false);
@@ -541,6 +553,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       if (active) {
         setLoading(true);
         setError("");
+        if (group === "filters") setFilterLoadError(false);
       }
     });
     const resources: Record<string, () => Promise<unknown>[]> = {
@@ -614,7 +627,10 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         }
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active) {
+          setError(e.message);
+          if (group === "filters") setFilterLoadError(true);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -699,7 +715,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       <p>{account.email} · {account.google_status === "connected" ? "Đã liên kết Google" : account.google_status === "reconnect_required" ? "Cần kết nối lại Google" : "Chưa liên kết Google"}</p>
       <p>Cho phép gửi SMTP và đồng bộ IMAP bằng tài khoản Google, không cần nhập mật khẩu ứng dụng.</p>
       {googleResult === "connected" && account.google_status === "connected" && <p role="status" className="mgr-callout">{googleMessages.connected}</p>}
-      {googleConfigured === false && <p role="status" className="mgr-callout">Máy chủ chưa cấu hình kết nối Google. Quản trị viên cần thiết lập OAuth theo README trước khi kết nối.</p>}
+      {googleConfigured === false && <p role="status" className="mgr-callout">Kết nối Google tạm thời không khả dụng. Vui lòng thử lại sau.</p>}
       {dirty && <p role="status">Hãy lưu các thay đổi trong form trước khi chuyển sang Google.</p>}
       <div className="next-actions-bar">
         {account.google_status && <Button disabled={busy || dirty} onClick={() => ask("Ngắt kết nối Google", "Tài khoản sẽ ngừng gửi và đồng bộ IMAP trong ứng dụng. Quyền đã cấp trên Google không bị thu hồi bởi thao tác này.", () => void run(async () => {
@@ -859,7 +875,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <p>
             {screen === "history"
               ? "Chưa có lần tìm kiếm Google nào được ghi nhận."
-              : "Google Search chưa được kết nối. Khi được cấu hình, kết quả sẽ được kiểm tra và lưu thành danh sách Contact trước khi duyệt."}
+              : "Thiết lập tiêu chí để tìm kiếm và lưu danh sách Contact."}
           </p>
           {screen !== "history" && <Button disabled>Tìm kiếm</Button>}
         </Card>
@@ -869,11 +885,15 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   if (screen.startsWith("template") || screen === "templates") {
     const active = filters.find((item) => item.id === selected) ?? filters[0];
     const edit = screen === "template-edit";
+    if (screen === "templates" && filterLoadError && !loading) return <Page section="Tìm kiếm Contact" title="Không thể tải Filter Template" description="Chưa truy xuất được danh sách. Bộ tiêu chí hiện tại chưa bị thay đổi." crumbLabel="Không thể tải dữ liệu" go={go}>
+      <section className="flow-panel next-template-load-error" role="alert"><p>Chưa nhận được danh sách Filter Template.<br />Chọn “Tải lại Template” để thử lại; bộ tiêu chí đang nhập được giữ nguyên.</p></section>
+      <div className="flow-actions"><Button onClick={() => setReload(value => value + 1)}>Tải lại Template</Button></div>
+    </Page>;
     return screen === "templates" ? (
       <Page section="Tìm kiếm Contact" title="Filter Template" go={go}>
         {feedback}
         <section className="flow-panel">
-          {filters.length ? <>
+          {loading ? <p role="status">Đang tải Filter Template…</p> : filters.length ? <>
             <table className="flow-table">
               <thead><tr><th>Template</th><th>Chức vụ Contact</th><th>Từ khóa</th><th>Khu vực</th><th>Quy mô doanh nghiệp</th></tr></thead>
               <tbody>{filters.map((item) => <tr key={item.id} className={active?.id === item.id ? "selected-row" : ""}>
@@ -893,7 +913,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         </div><div><Button primary disabled={!active} onClick={() => { if (!active) return; sessionStorage.setItem("v5-applied-filter", JSON.stringify(active.criteria)); go("criteria"); }}>Xem / áp dụng tiêu chí</Button></div></div>
       </Page>
     ) : (
-      <Page section="Tìm kiếm Contact" title={edit ? "Cập nhật Filter Template" : "Tạo Filter Template"} go={go}>
+      <Page section="Tìm kiếm Contact" title={edit ? "Cập nhật Filter Template" : "Tạo Filter Template"} className="next-template-figma" go={go}>
         {feedback}
         <form onSubmit={(event) => {
           event.preventDefault();
@@ -902,12 +922,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <section className="flow-panel template-editor">
             <Field label="Tên Filter Template" value={name} set={setName} required />
             <div className="editor-grid">
-              {(["role", "industry", "location", "keyword", "size", "email"] as const).map((key) => <Field
-                key={key}
-                label={{ role: "Chức vụ Contact", industry: "Ngành nghề / lĩnh vực", location: "Địa điểm / khu vực", keyword: "Từ khóa doanh nghiệp", size: "Quy mô doanh nghiệp", email: "Trạng thái email" }[key]}
-                value={key === "keyword" ? criteria.keyword : criteria[key].join(", ")}
-                set={(value) => setCriteria({ ...criteria, [key]: key === "keyword" ? value : value.split(",").map((part) => part.trim()).filter(Boolean) })}
-              />)}
+              {(["role", "industry", "location", "keyword", "size", "email"] as const).map((key) => key === "keyword" ? <Field key={key} label="Từ khóa doanh nghiệp" value={criteria.keyword} set={value => setCriteria({ ...criteria, keyword: value })} /> : <div key={key} className="next-field">
+                <label htmlFor={`template-${key}`}>{selectionOptions.find(item => item.key === key)?.label}</label>
+                <select id={`template-${key}`} value={criteria[key].join(", ")} onChange={event => setCriteria({ ...criteria, [key]: event.target.value === criteria[key].join(", ") ? criteria[key] : event.target.value ? [event.target.value] : [] })}>
+                  <option value="">Chọn điều kiện</option>
+                  {[...new Set([criteria[key].join(", "), ...(selectionOptions.find(item => item.key === key)?.options || [])])].filter(Boolean).map(value => <option key={value} value={value}>{value}</option>)}
+                </select>
+              </div>)}
             </div>
             <p>Chỉ nhập những điều kiện sử dụng cho lần tìm kiếm.</p>
           </section>
@@ -1007,7 +1028,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           {feedback}
           <Card title={current.name}>
             <p>{n(current.contact_count)} Contact ban đầu · {n(valid)} hợp lệ · {n(invalid)} email không hợp lệ · {n(duplicates)} email trùng</p>
-            <Table heads={["Họ tên", "Địa chỉ email", "Chức vụ", "Doanh nghiệp", "Kết quả lọc"]} rows={contacts.map(item => [item.full_name || "—", item.email, item.job_title || "—", item.company || "—", !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email) ? "Email không hợp lệ" : "Kiểm tra"])}/>
+            <Table heads={["Họ tên", "Địa chỉ email", "Chức vụ", "Doanh nghiệp", "Kết quả lọc"]} rows={contacts.map(item => [item.full_name || "—", <ContactEmail key={item.id} contact={item} />, item.job_title || "—", item.company || "—", !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email) ? "Email không hợp lệ" : "Kiểm tra"])}/>
           </Card>
           <div className="next-actions-bar"><Button onClick={() => go("manager-review-detail")}>Quay lại kiểm tra</Button></div>
         </Page>;
@@ -1035,7 +1056,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <Card title="Kết quả lọc người nhận">
             <div className="mgr-stats">{[["Contact ban đầu", n(current.contact_count)], ["Email không hợp lệ", n(invalid)], ["Email trùng", n(duplicates)], ["Người nhận hợp lệ", n(valid)]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
             <div className="mgr-list-heading"><h2>Người nhận hợp lệ</h2><button type="button" onClick={() => go("manager-review-all-contacts")}>Xem toàn bộ danh sách</button></div>
-            <Table heads={["Họ tên", "Địa chỉ email", "Chức vụ", "Doanh nghiệp"]} rows={contacts.filter(item => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email)).slice(0, 5).map(item => [item.full_name || "—", item.email, item.job_title || "—", item.company || "—"])} />
+            <Table heads={["Họ tên", "Địa chỉ email", "Chức vụ", "Doanh nghiệp"]} rows={contacts.filter(item => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email)).slice(0, 5).map(item => [item.full_name || "—", <ContactEmail key={item.id} contact={item} />, item.job_title || "—", item.company || "—"])} />
             <p className="mgr-callout">{current.name}</p>
           </Card>
           <div className="next-actions-bar">
@@ -1049,7 +1070,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       const showAll = (from: string) => { setContactPage(1); setContactReturnScreen(from); go("all-contacts"); };
       if (screen === "all-contacts") return <Page section="Danh sách Contact" title="Toàn bộ Contact" go={go}>
         {feedback}<Card title={current.name}><p>Hiển thị {current.contacts?.length ? (contactPage - 1) * 10 + 1 : 0}–{Math.min(contactPage * 10, current.contacts?.length || 0)} trong {n(current.contact_count)} Contact · Trang {contactPage}/{Math.max(1, Math.ceil((current.contacts?.length || 0) / 10))}</p>
-          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice((contactPage - 1) * 10, contactPage * 10).map(c => [c.full_name || "—", c.email, c.job_title || "—", c.company || "—"])} />
+          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice((contactPage - 1) * 10, contactPage * 10).map(c => [c.full_name || "—", <ContactEmail key={c.id} contact={c} />, c.job_title || "—", c.company || "—"])} />
         </Card>
         <div className="next-actions-bar"><Button onClick={() => go(contactReturnScreen)}>Quay lại</Button><Button disabled={contactPage <= 1} onClick={() => setContactPage(p => p - 1)}>Trang trước</Button><Button primary disabled={contactPage >= Math.ceil((current.contacts?.length || 0) / 10)} onClick={() => setContactPage(p => p + 1)}>Trang tiếp</Button></div>
       </Page>;
@@ -1057,7 +1078,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         {feedback}<Card title={current.name}>
           <p>{n(current.contact_count)} Contact · Rà soát chức danh, ngành nghề, quy mô, vị trí và chất lượng email.</p>
           <div className="mgr-list-heading"><h2>Danh sách cần kiểm tra</h2><button type="button" onClick={() => showAll(screen)}>Xem toàn bộ Contact</button></div>
-          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", c.email, c.job_title || "—", c.company || "—"])} />
+          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", <ContactEmail key={c.id} contact={c} />, c.job_title || "—", c.company || "—"])} />
           <p className="next-hint">Email: định dạng · tên miền · khả năng sử dụng từ nguồn · trùng lặp. Lưu kết quả kiểm tra chưa tự xác nhận danh sách.</p>
         </Card>
         <div className="next-actions-bar"><Button disabled={busy || !!current.confirmed_at} onClick={() => void run(() => api(`contact-lists/${current.id}/review`, "PATCH", { result: "failed" }), "Đã ghi kết quả không đạt.", "check-rejected")}>Lưu: Chưa đạt yêu cầu</Button><Button primary disabled={busy || !!current.confirmed_at} onClick={() => void run(() => api(`contact-lists/${current.id}/review`, "PATCH", { result: "passed" }), "Đã ghi kết quả đạt.", "confirm")}>Lưu: Đạt yêu cầu</Button></div>
@@ -1066,12 +1087,12 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         {feedback}<Card title={current.name}>
           <p>Kết quả kiểm tra: {current.employee_review === "passed" ? "Đạt yêu cầu" : "Chưa đạt yêu cầu"} · Trạng thái xác nhận: {current.confirmed_at ? "Đã xác nhận" : "Chưa xác nhận"}</p>
           <div className="mgr-list-heading"><h2>Contact trong danh sách</h2><button type="button" onClick={() => showAll("confirm")}>Xem toàn bộ Contact</button></div>
-          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", c.email, c.job_title || "—", c.company || "—"])} />
+          <Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", <ContactEmail key={c.id} contact={c} />, c.job_title || "—", c.company || "—"])} />
         </Card>
         <div className="next-actions-bar"><Button onClick={() => go("check")}>Quay lại</Button><Button primary disabled={busy || current.employee_review !== "passed" || !!current.confirmed_at} onClick={() => void run(() => api(`contact-lists/${current.id}/confirm`, "POST"), "Đã xác nhận danh sách và gửi Trưởng phòng duyệt.", "confirmed")}>Xác nhận danh sách</Button></div>
       </Page>;
       if (screen === "confirmed") return <Page section="Danh sách Contact" title="Danh sách đã xác nhận" go={go}>
-        {feedback}<Card title={current.name}><p>{n(current.contact_count)} Contact · Trưởng phòng: {current.manager_review === "approved" ? "Đã duyệt" : current.manager_review === "rejected" ? "Không đạt" : "Chờ duyệt"}</p><div className="mgr-list-heading"><h2>Contact trong danh sách</h2><button type="button" onClick={() => showAll("confirmed")}>Xem toàn bộ Contact</button></div><Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", c.email, c.job_title || "—", c.company || "—"])} /></Card>
+        {feedback}<Card title={current.name}><p>{n(current.contact_count)} Contact · Trưởng phòng: {current.manager_review === "approved" ? "Đã duyệt" : current.manager_review === "rejected" ? "Không đạt" : "Chờ duyệt"}</p><div className="mgr-list-heading"><h2>Contact trong danh sách</h2><button type="button" onClick={() => showAll("confirmed")}>Xem toàn bộ Contact</button></div><Table heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]} rows={(current.contacts || []).slice(0, 5).map(c => [c.full_name || "—", <ContactEmail key={c.id} contact={c} />, c.job_title || "—", c.company || "—"])} /></Card>
         <div className="next-actions-bar"><Button primary onClick={() => go("export")}>Xuất danh sách</Button></div>
       </Page>;
       if (screen === "export" || screen === "export-success") return <Page section="Danh sách Contact" title={screen === "export" ? "Xuất danh sách Contact" : "Xuất danh sách thành công"} go={go}>
@@ -1081,7 +1102,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
          </section>
          <div className="next-actions-bar"><Button onClick={() => go("confirmed")}>Quay lại danh sách</Button><Button primary disabled={busy || !exportFormat || !current.contacts?.length} onClick={() => void run(async () => {
            if (!exportFormat) return;
-           const blob = await createContactExport(exportFormat, current.contacts!.map(c => ({ name: c.full_name || "", email: c.email, role: c.job_title || "", company: c.company || "" })));
+           const blob = await createContactExport(exportFormat, current.contacts!.map(c => ({ name: c.full_name || "", email: c.email, role: c.job_title || "", company: c.company || "", ...(c.search_provenance ? { source: c.source_url || "", note: "Email: Đã xác nhận nguồn công khai và cú pháp; chưa kiểm tra khả năng nhận thư. Thông tin suy đoán: Chưa đảm bảo." } : {}) })));
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a"); link.href = url; link.download = `contact-list-${current.id}.${exportFormat.toLowerCase()}`; link.click();
           setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -1119,7 +1140,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 heads={["Contact", "Email", "Chức vụ", "Doanh nghiệp"]}
                 rows={(current.contacts ?? []).map((c) => [
                   c.full_name || "—",
-                  c.email,
+                  <ContactEmail key={c.id} contact={c} />,
                   c.job_title || "—",
                   c.company || "—",
                 ])}
@@ -1224,8 +1245,8 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <td><strong>{item.name}</strong></td><td>{campaignStatuses[item.status] || item.status}</td>
             <td>{n(item.sent_count)}/{n(item.recipient_count)}</td><td>{date(item.created_at)}</td>
             <td className="next-row-actions"><div className="next-campaign-actions">
-              {item.sent_count === 0 && ["draft", "approved", "scheduled", "paused"].includes(item.status) && <button className="danger-link" onClick={() => { setSelected(item.id); ask("Xóa chiến dịch", `Chiến dịch “${item.name}” đã xóa sẽ không thể khôi phục.`, () => void run(() => api(`campaigns/${item.id}`, "DELETE"), "Đã xóa chiến dịch.")); }}>Xóa chiến dịch</button>}
-              <button onClick={() => choose(item.id, "campaign-detail")}>Xem</button>
+              {item.sent_count === 0 && ["draft", "approved", "scheduled", "paused"].includes(item.status) && <button className="danger-link" onClick={() => { setSelected(item.id); ask("Ẩn chiến dịch", `Chiến dịch “${item.name}” đã Ẩn sẽ không thể khôi phục.`, () => void run(() => api(`campaigns/${item.id}`, "DELETE"), "Đã Ẩn chiến dịch.")); }}>Ẩn chiến dịch</button>}
+              <button onClick={() => setCampaignOverview(item)}>Xem</button>
               {item.status === "approved" && <button onClick={() => choose(item.id, !item.subject ? "campaign-email" : !item.sender_account_id ? "campaign-sender" : !item.scheduled_at ? "campaign-schedule" : "campaign-confirm")}>Mở</button>}
               {["approved", "scheduled", "paused"].includes(item.status) && <button onClick={() => openCampaignEdit(item)}>Chỉnh sửa</button>}
               {item.status === "paused" && <button onClick={() => openCampaignEmail(item)}>Sửa email</button>}
@@ -1234,6 +1255,17 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             </div></td>
           </tr>) : <tr><td colSpan={5}>Chưa có chiến dịch. Tạo chiến dịch mới để bắt đầu.</td></tr>}</tbody></table></div>
           {campaignEditDialog}
+          {campaignOverview && <Dialog title="Thông tin chiến dịch" className={"next-campaign-dialog" + (campaignOverview.status === "paused" ? " next-paused-detail" : "")} onClose={() => setCampaignOverview(null)}>
+            <dl className="next-details">
+              <dt>Tên</dt><dd>{campaignOverview.name}</dd>
+              <dt>Trạng thái</dt><dd>{campaignStatuses[campaignOverview.status] || campaignOverview.status}</dd>
+              <dt>Số người nhận</dt><dd>{n(campaignOverview.recipient_count)}</dd>
+              <dt>Tiêu đề email</dt><dd>{campaignOverview.subject || "Chưa có nội dung"}</dd>
+              <dt>Tài khoản gửi</dt><dd>{senders.find(item => item.id === campaignOverview.sender_account_id)?.email || "Chưa chọn"}</dd>
+              <dt>Thời điểm bắt đầu</dt><dd>{date(campaignOverview.scheduled_at)}</dd>
+              {campaignOverview.status === "paused" && <><dt>Thời điểm tạm dừng</dt><dd>{date(campaignOverview.paused_at)}</dd><dt>Lý do tạm dừng</dt><dd>{campaignOverview.pause_reason || "Không ghi lý do"}</dd></>}
+            </dl>
+          </Dialog>}
         </Page>
       );
     if (screen === "campaign-contacts")
@@ -1414,7 +1446,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 <label htmlFor="campaign-body" className="sr-only">Nội dung email</label>
                 <textarea id="campaign-body" ref={editorBodyRef} value={body} rows={8} onChange={event => { setBody(event.target.value); setPreviewResult(null); }} onDragOver={event => { if (event.dataTransfer.types.some(type => type.startsWith("application/x-v5-"))) event.preventDefault(); }} onDrop={event => { const type = event.dataTransfer.getData("application/x-v5-block"); if (!type) return; event.preventDefault(); if (type === "image") imageInputRef.current?.click(); if (type === "button") { setError(""); setButtonBlock({ label: "", url: "" }); } }} placeholder="Nhập nội dung email" />
                 {/\[\[(?:Hình ảnh:|Nút:|Đường phân cách)/.test(body) && <div className="next-editor-rendered" aria-label="Bản dựng nội dung email"><PreviewBody value={body} campaignId={current.id} /></div>}
-                <div className="next-unsubscribe">Liên kết từ chối nhận email (tự động, không xóa được)</div>
+                <div className="next-unsubscribe">Liên kết từ chối nhận email (tự động, không Ẩn được)</div>
               </div>
             </section>
             <aside className="next-editor-aside">
@@ -1434,7 +1466,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                   <input type="file" accept="application/pdf" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadAsset(file, current.id); event.target.value = ""; }} /></label>
               </Card>
               <Card title="Tệp đính kèm">
-                {assets.length ? assets.map(item => <div key={item.id} className="next-inline"><span>{item.file_name}</span><Button disabled={busy} onClick={() => void run(() => api(`campaigns/${current.id}/assets/${item.id}`, "DELETE"), "Đã xóa tệp.").then(deleted => { if (deleted) { setPreviewResult(null); if (item.kind === "image") setBody(current => current.replaceAll(`[[Hình ảnh:${item.id}]]`, "")); } })}>Xóa</Button></div>) : <p>Chưa có tệp đính kèm</p>}
+                {assets.length ? assets.map(item => <div key={item.id} className="next-inline"><span>{item.file_name}</span><Button disabled={busy} onClick={() => void run(() => api(`campaigns/${current.id}/assets/${item.id}`, "DELETE"), "Đã Ẩn tệp.").then(deleted => { if (deleted) { setPreviewResult(null); if (item.kind === "image") setBody(current => current.replaceAll(`[[Hình ảnh:${item.id}]]`, "")); } })}>Ẩn</Button></div>) : <p>Chưa có tệp đính kèm</p>}
               </Card>
             </aside>
           </div>
@@ -1725,16 +1757,16 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               rows={current.recipients.map((item) => [
                 item.full_name || "—",
                 item.email,
-                item.status,
+                ({ pending: "Chưa gửi", sending: "Đang gửi", sent: "Đã gửi", failed: "Gửi thất bại", skipped: "Đã bỏ qua", unsubscribed: "Từ chối nhận email" } as Record<string, string>)[item.status] || item.status,
               ])}
             />
           )}
           <div className="next-actions-bar">
             {current.sent_count === 0 && ["draft", "approved", "scheduled", "paused"].includes(current.status) && (
               <Button disabled={busy} onClick={() => {
-                ask("Xóa chiến dịch", "Chỉ xóa chiến dịch chưa gửi email nào.", () =>
-                  void run(() => api(`campaigns/${current.id}`, "DELETE"), "Đã xóa chiến dịch.", "campaign-list"));
-              }}>Xóa chiến dịch</Button>
+                ask("Ẩn chiến dịch", "Chỉ Ẩn chiến dịch chưa gửi email nào.", () =>
+                  void run(() => api(`campaigns/${current.id}`, "DELETE"), "Đã Ẩn chiến dịch.", "campaign-list"));
+              }}>Ẩn chiến dịch</Button>
             )}
             <div className="next-delete-other-actions">
             {["approved", "paused"].includes(current.status) && (
@@ -1772,7 +1804,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
   if (group === "responses") {
     if (screen === "response-list" || screen === "response-hide")
       return (
-        <Page section="Response" title="Quản lý Response" go={go}>
+        <Page section="Response" title="Quản lý Response" className="next-response-list-page" go={go}>
           {feedback}
           <Card title="Response do tôi phụ trách">
             {error && !responses.length ? <div className="next-scenario-empty centered"><strong>Không thể tải danh sách Response</strong><span>Kiểm tra kết nối rồi thử lại.</span><Button onClick={() => setReload(value => value + 1)}>Thử tải lại</Button></div> : !loading && !responses.length ? <div className="next-scenario-empty centered"><strong>Không tìm thấy Response phù hợp</strong><span>Chưa có Response trong phạm vi bạn phụ trách.</span></div> : <Table
@@ -1798,17 +1830,17 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             />}
           </Card>
           <div className="next-actions-bar">
-            <Button disabled={!responses.length} onClick={() => { setHideResponseId(responses[0]?.id || ""); setShowHideResponse(true); }}>Xóa Response</Button>
+            <Button disabled={!responses.length} onClick={() => { setHideResponseId(responses[0]?.id || ""); setShowHideResponse(true); }}>Ẩn Response</Button>
             <Button primary onClick={() => { setName(""); setEmail(""); setPhone(""); setBody(""); go("response-add"); }}>Thêm Response</Button>
           </div>
-          {(showHideResponse || screen === "response-hide") && <Dialog title="Xóa Response" onClose={() => { setShowHideResponse(false); if (screen === "response-hide") go("response-list"); }} onConfirm={() => {
+          {(showHideResponse || screen === "response-hide") && <Dialog title="Ẩn Response" onClose={() => { setShowHideResponse(false); if (screen === "response-hide") go("response-list"); }} onConfirm={() => {
             const targetId = hideResponseId || responses[0]?.id;
             if (!targetId) return;
             setShowHideResponse(false);
             if (screen === "response-hide") go("response-list");
             void run(() => api(`responses/${targetId}/hide`, "POST"), "Đã ẩn Response khỏi danh sách.");
-          }} confirmLabel="Xóa Response" danger>
-            <div className="next-field"><label htmlFor="hide-response">Response cần xóa</label>
+          }} confirmLabel="Ẩn Response" danger>
+            <div className="next-field"><label htmlFor="hide-response">Response cần Ẩn</label>
               <select id="hide-response" value={hideResponseId || responses[0]?.id || ""} onChange={event => setHideResponseId(event.target.value)}>
                 {responses.map(item => <option value={item.id} key={item.id}>RSP-{item.id} · {item.customer_name}</option>)}
               </select></div>
@@ -1818,9 +1850,8 @@ export default function LiveFlows({ screen, go, manager }: Props) {
       );
     if (screen === "response-add")
       return (
-        <Page section="Response" title="Thêm Response" go={go}>
+        <Page section="Response" title="Thêm Response" className="next-figma-form" go={go}>
           {feedback}
-          <Card title="Thông tin Response ngoại tuyến">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1837,6 +1868,8 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 );
               }}
             >
+          <Card title="Thông tin Response ngoại tuyến">
+            <div className="next-grid">
               <Field
                 label="Khách hàng"
                 value={name}
@@ -1856,11 +1889,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 label="Nội dung phản hồi"
                 value={body}
                 set={setBody}
-                rows={5}
+                rows={1}
                 required
                 placeholder="Nhập nội dung khách hàng phản hồi"
               />
+            </div>
               <p className="next-hint">Mã Response và thời gian nhận được hệ thống tự ghi khi lưu. Trạng thái ban đầu: Mới.</p>
+          </Card>
               <div className="next-actions-bar">
                 <Button onClick={() => go("response-list")}>Hủy</Button>
                 <Button type="submit" primary disabled={busy}>
@@ -1868,7 +1903,6 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 </Button>
               </div>
             </form>
-          </Card>
         </Page>
       );
     const d = detail as ResponseItem | null;
@@ -1894,20 +1928,23 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         {feedback}
         <Card title={`Lịch sử xử lý · ${(current.status_history?.length || 0) + 1} mốc`}>
           <Table heads={["Thời điểm", "Trạng thái mới", "Ghi chú"]}
-            rows={[[date(current.received_at), responseStatuses[current.status_history?.[0]?.from_status || "new"] || "Mới", "Hệ thống tiếp nhận Response."], ...(current.status_history || []).map(item => [date(item.changed_at), responseStatuses[item.to_status] || item.to_status, `Nhân viên ${item.actor_id} cập nhật trạng thái.`])]} />
+            rows={[[date(current.received_at), responseStatuses[current.status_history?.[0]?.from_status || "new"] || "Mới", "Hệ thống tiếp nhận Response."], ...(current.status_history || []).map(item => [date(item.changed_at), responseStatuses[item.to_status] || item.to_status, item.note || `Nhân viên ${item.actor_id} cập nhật trạng thái.`])]} />
         </Card>
         <div className="next-actions-bar"><Button onClick={() => go("response-detail")}>Về chi tiết Response</Button></div>
       </Page>;
     if (screen === "response-status") {
       const nextStatus = { new: "processing", processing: "replied", replied: "closed" }[current.status];
-      return <Page section="Response" title="Cập nhật trạng thái" go={go}>
+      return <Page section="Response" title="Cập nhật trạng thái" className="next-figma-form" go={go}>
         {feedback}
         <Card title={`Trạng thái xử lý · RSP-${current.id}`}>
-          <dl className="next-details"><dt>Trạng thái hiện tại</dt><dd>{responseStatuses[current.status]}</dd></dl>
-          <div className="next-field"><label htmlFor="new-response-status">Trạng thái mới</label><select id="new-response-status" value={nextStatus || ""} disabled><option value={nextStatus || ""}>{nextStatus ? responseStatuses[nextStatus] : "Không còn bước tiếp theo"}</option></select></div>
+          <div className="next-grid">
+            <div className="next-field"><label htmlFor="current-response-status">Trạng thái hiện tại</label><input id="current-response-status" value={responseStatuses[current.status]} readOnly /></div>
+            <div className="next-field"><label htmlFor="new-response-status">Trạng thái mới</label><select id="new-response-status" defaultValue={nextStatus || ""} key={current.status} disabled={!nextStatus}><option value={nextStatus || ""}>{nextStatus ? responseStatuses[nextStatus] : "Không còn bước tiếp theo"}</option></select></div>
+          </div>
+          <div className="next-field"><label htmlFor="response-status-note">Lý do / Ghi chú</label><input id="response-status-note" value={statusNote} maxLength={1000} onChange={event => setStatusNote(event.target.value)} /></div>
           <p className="next-hint">Chuyển trạng thái theo luồng xử lý hợp lệ.</p>
         </Card>
-        <div className="next-actions-bar"><Button onClick={() => go("response-detail")}>Hủy thao tác</Button><Button primary disabled={busy || !nextStatus} onClick={() => void run(() => api(`responses/${current.id}`, "PATCH", { status: nextStatus }), "Đã cập nhật trạng thái.", "response-detail")}>Xác nhận</Button></div>
+        <div className="next-actions-bar"><Button onClick={() => go("response-detail")}>Hủy thao tác</Button><Button primary disabled={busy || !nextStatus} onClick={() => void run(() => api(`responses/${current.id}`, "PATCH", { status: nextStatus, note: statusNote }), "Đã cập nhật trạng thái.", "response-detail").then(saved => { if (saved) setStatusNote(""); })}>Xác nhận</Button></div>
       </Page>;
     }
     if (screen === "response-edit")
@@ -2030,9 +2067,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           <div className="next-actions-bar">
             {["spam", "unsubscribe"].includes(current.kind) && (
               <Button disabled={busy} onClick={() => {
-                ask("Xóa Response", "Response này sẽ không còn trong danh sách hiện hành.", () =>
+                ask("Ẩn Response", "Response này sẽ không còn trong danh sách hiện hành.", () =>
                   void run(() => api(`responses/${current.id}/hide`, "POST"), "Đã ẩn Response.", "response-list"));
-              }}>Xóa Response</Button>
+              }}>Ẩn Response</Button>
             )}
             <div className="next-delete-other-actions">
             <Button
@@ -2061,7 +2098,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             {["new", "processing", "replied"].includes(current.status) && (
               <Button
                 disabled={busy}
-                onClick={() => go("response-status")}
+                onClick={() => { setStatusNote(""); go("response-status"); }}
               >
                 Cập nhật trạng thái
               </Button>
@@ -2069,7 +2106,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <Button
               onClick={() => {
                 setSelected(current.id);
-                go("followup-create");
+                go(current.kind === "unsubscribe" ? "followup-optout" : "followup-create");
               }}
             >
               Tạo lịch Follow-up
@@ -2116,24 +2153,25 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               ])}
             />}
           </Card>
-          <div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép xóa.</span></div>
+          <div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép Ẩn.</span></div>
           <div className="next-actions-bar">
-            <Button disabled={!followups.length} onClick={() => go("followup-delete")}>Xóa lịch Follow-up</Button>
+            <Button disabled={!followups.length} onClick={() => go("followup-delete")}>Ẩn lịch Follow-up</Button>
             <Button primary onClick={() => go("response-list")}>Xem hồ sơ / Lập lịch</Button>
           </div>
         </Page>
       );
     if (screen === "followup-duplicate" || screen === "followup-optout")
       return <Page section="Follow-up" title="Lập lịch Follow-up" go={go}>
-        <div className="next-state" role="alert"><div><span>{screen === "followup-duplicate" ? "LỊCH FOLLOW-UP ĐANG TỒN TẠI" : "EMAIL ĐÃ BỊ TỪ CHỐI"}</span><h2>{screen === "followup-duplicate" ? "Không thể tạo thêm lịch Follow-up" : "Không thể tạo Follow-up qua Email"}</h2><p>{error || (screen === "followup-duplicate" ? "Response này đã có lịch hẹn chờ thực hiện." : "Khách hàng đã từ chối nhận Email.")}</p><small>Biểu mẫu được giữ nguyên để chọn lại hoặc điều chỉnh kênh liên hệ.</small></div><div className="next-state-actions"><Button primary onClick={() => { setError(""); go("followup-create"); }}>Quay lại biểu mẫu</Button></div></div>
+        <div className="next-state" role="alert"><div><span>{screen === "followup-duplicate" ? "LỊCH FOLLOW-UP ĐANG TỒN TẠI" : "EMAIL ĐÃ BỊ TỪ CHỐI"}</span><h2>{screen === "followup-duplicate" ? "Không thể tạo thêm lịch Follow-up" : "Không thể tạo Follow-up qua Email"}</h2><p>{error || (screen === "followup-duplicate" ? "Response này đã có lịch hẹn chờ thực hiện." : `Khách hàng ${responses.find(item => item.id === selected)?.customer_name || "đang chọn"} đã từ chối nhận Email.`)}</p><small>Biểu mẫu được giữ nguyên để chọn lại hoặc điều chỉnh kênh liên hệ.</small></div><div className="next-state-actions"><Button primary onClick={() => { setError(""); go(screen === "followup-optout" ? "response-detail" : "followup-create"); }}>{screen === "followup-optout" ? "Về chi tiết Response" : "Quay lại biểu mẫu"}</Button></div></div>
       </Page>;
     if (screen === "followup-create") {
       const selectedFollowChannel = followChannel === "email" && responses.some(item => item.id === selected && !item.email) ? "phone" : followChannel;
       return (
-        <Page section="Follow-up" title="Lập lịch Follow-up" go={go}>
+        <Page section="Follow-up" title="Tạo lịch Follow-up" className="next-figma-form" go={go}>
           {feedback}
           <Card title="Thiết lập lịch">
-            <label className="next-field">
+            <div className="next-grid">
+            <label className="next-field next-form-wide">
               Response
               <select
                 value={selected}
@@ -2175,10 +2213,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
               label="Nội dung / Mục tiêu"
               value={goal}
               set={setGoal}
-              rows={4}
+              rows={1}
               required
             />
-            <div className="next-grid next-three">
               <Field
                 label="Nhắc trước (phút)"
                 value={reminderMinutes}
@@ -2207,7 +2244,9 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <p>
               Nhân viên thực hiện thủ công; hệ thống chỉ lưu lịch và nhắc việc.
             </p>
+          </Card>
             <div className="next-actions-bar">
+              <Button onClick={() => go("response-detail")}>Hủy</Button>
               <Button
                 primary
                 disabled={busy || !selected || !goal.trim()}
@@ -2236,7 +2275,6 @@ export default function LiveFlows({ screen, go, manager }: Props) {
                 Lưu lịch
               </Button>
             </div>
-          </Card>
         </Page>
       );
     }
@@ -2266,7 +2304,7 @@ export default function LiveFlows({ screen, go, manager }: Props) {
           ...(followup.completed_at ? [[date(followup.completed_at), "Đã thực hiện", "Hệ thống"]] : []),
         ]} /></Card>
         <div className="next-actions-bar">
-          {followup.status === "pending" && <Button onClick={() => go("followup-delete")}>Xóa lịch Follow-up</Button>}
+          {followup.status === "pending" && <Button onClick={() => go("followup-delete")}>Ẩn lịch Follow-up</Button>}
           <div className="next-delete-other-actions">
           <Button primary onClick={() => { setDecisionNote(followup.note || ""); go("followup-note"); }}>Bổ sung ghi chú</Button>
           {followup.status === "pending" && <Button onClick={() => go("followup-detail")}>Ghi nhận kết quả</Button>}
@@ -2285,13 +2323,13 @@ export default function LiveFlows({ screen, go, manager }: Props) {
         <div className="next-actions-bar"><Button onClick={() => go("followup-result")}>Hủy</Button><Button primary disabled={busy} onClick={() => void run(() => api(`followups/${followup.id}/note`, "PATCH", { note: decisionNote }), "Đã lưu ghi chú.", "followup-result")}>Lưu ghi chú</Button></div>
       </Page>;
     if (screen === "followup-delete" && followup)
-      return <Page section="Follow-up" title="Xóa lịch Follow-up" go={go}>
+      return <Page section="Follow-up" title="Ẩn lịch Follow-up" go={go}>
         {feedback}
         <Card title={`Lịch Follow-up · ${followup.customer_name}`}>
           <dl className="next-details"><dt>Response</dt><dd>RSP-{followup.response_id}</dd><dt>Mốc thời gian</dt><dd>{date(followup.due_at)}</dd><dt>Trạng thái</dt><dd>{followup.status === "pending" ? "Chờ thực hiện" : "Đã xử lý"}</dd></dl>
-          <p>Chỉ lịch Chờ thực hiện được phép xóa. Lịch đã xóa được giữ lại trong lịch sử.</p>
+          <p>Chỉ lịch Chờ thực hiện được phép Ẩn. Lịch đã Ẩn được giữ lại trong lịch sử.</p>
         </Card>
-        <div className="next-actions-bar"><Button disabled={busy || followup.status !== "pending"} onClick={() => ask("Xóa lịch Follow-up", "Lịch đang chờ sẽ được hủy và giữ lại trong lịch sử.", () => void run(() => api(`followups/${followup.id}`, "DELETE"), "Đã hủy lịch Follow-up.", "followup-list"))}>Xóa lịch Follow-up</Button><Button onClick={() => go("followup-list")}>Hủy</Button></div>
+        <div className="next-actions-bar"><Button disabled={busy || followup.status !== "pending"} onClick={() => ask("Ẩn lịch Follow-up", "Lịch đang chờ sẽ được hủy và giữ lại trong lịch sử.", () => void run(() => api(`followups/${followup.id}`, "DELETE"), "Đã hủy lịch Follow-up.", "followup-list"))}>Ẩn lịch Follow-up</Button><Button onClick={() => go("followup-list")}>Hủy</Button></div>
       </Page>;
     return (
       <Page section="Follow-up" title="Chi tiết Follow-up" go={go}>
@@ -2676,15 +2714,15 @@ export default function LiveFlows({ screen, go, manager }: Props) {
             <p>
               Đã dùng {n(sender.used_3_days)} / {n(sender.quota_3_days)} email
               trong 3 ngày · SMTP:{" "}
-              {sender.configured ? "Đã cấu hình" : "Chưa cấu hình"} · Gmail
+              {sender.configured ? "Đã lưu thông tin kết nối" : "Cần kết nối"} · Gmail
               IMAP: {sender.inbound_enabled ? "Bật" : "Tắt"}
             </p>
             {manager && (
               <div className="next-actions-bar">
                 <Button disabled={busy} onClick={() => {
-                  ask("Xóa tài khoản gửi", "Chỉ có thể xóa tài khoản chưa dùng trong chiến dịch.", () =>
-                    void run(() => api(`sender-accounts/${sender.id}`, "DELETE"), "Đã xóa tài khoản gửi.", "manager-account-list"));
-                }}>Xóa</Button>
+                  ask("Ẩn tài khoản gửi", "Chỉ có thể Ẩn tài khoản chưa dùng trong chiến dịch.", () =>
+                    void run(() => api(`sender-accounts/${sender.id}`, "DELETE"), "Đã Ẩn tài khoản gửi.", "manager-account-list"));
+                }}>Ẩn</Button>
                 <div className="next-delete-other-actions">
                 <Button
                   onClick={() => {

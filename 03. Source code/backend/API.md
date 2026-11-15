@@ -8,7 +8,7 @@ Base URL: `http://localhost:3000`. Các endpoint `/api/*` (trừ đăng nhập v
 | --- | --- | --- |
 | POST | `/api/auth/login` | `{ "email": "...", "password": "..." }`; đặt cookie HTTP-only |
 | GET | `/api/auth/me` | Vai trò và email của phiên hiện tại |
-| POST | `/api/auth/logout` | Xóa phiên và cookie |
+| POST | `/api/auth/logout` | Ẩn phiên và cookie |
 
 ## Contact
 
@@ -35,7 +35,7 @@ Filter Template: Nhân viên dùng `GET/POST /api/filter-templates`, `GET/PATCH/
 | POST | `/api/sender-accounts/:id/sync-inbox` | Trưởng phòng | Đồng bộ email mới ngay; lần đầu chỉ khởi tạo con trỏ |
 | DELETE | `/api/sender-accounts/:id` | Trưởng phòng | Chỉ khi tài khoản chưa gắn chiến dịch |
 | GET/POST | `/api/email-templates` | Cả hai / Nhân viên | Mẫu email; tạo bằng `name`, `subject`, `body`, thêm `campaignId` nếu nội dung có ảnh |
-| PATCH/DELETE | `/api/email-templates/:id` | Chủ mẫu | Sửa hoặc xóa mẫu của mình; khi sửa nội dung có ảnh phải gửi `campaignId` chứa ảnh |
+| PATCH/DELETE | `/api/email-templates/:id` | Chủ mẫu | Sửa hoặc Ẩn mẫu của mình; khi sửa nội dung có ảnh phải gửi `campaignId` chứa ảnh |
 | POST | `/api/email-templates/:id/apply` | Nhân viên | `{ "campaignId": 1 }`; sao chép ảnh của mẫu vào chiến dịch và trả `subject`, `body` với ID ảnh mới |
 
 `smtpPassword` chỉ gửi qua kết nối HTTPS ở môi trường thật. Máy chủ mã hóa bằng `SMTP_ENCRYPTION_KEY`; API không trả khóa hoặc mật khẩu. Gmail có thể cấu hình `smtp.gmail.com:465` nếu tài khoản được phép dùng SMTP và phương thức xác thực phù hợp.
@@ -70,7 +70,7 @@ Response mới giữ trạng thái `new` và nhân viên phụ trách chiến d�
 | PATCH | `/api/campaigns/:id/content` | Chủ chiến dịch | `{ "subject": "...", "body": "..." }`; hỗ trợ `{{Họ tên}}`, `{{Tên doanh nghiệp}}`, khối ảnh `[[Hình ảnh:ID]]`, nút `[[Nút:Tên|https://...]]` và `[[Đường phân cách]]`; cho phép sửa khi chuẩn bị hoặc tạm dừng |
 | POST | `/api/campaigns/:id/preview` | Chủ chiến dịch | `{ "contactId": 1 }` hoặc `{}` để xem Contact đầu tiên; cần xem lại sau mỗi lần sửa nội dung, kể cả trước khi tiếp tục chiến dịch tạm dừng |
 | GET/POST | `/api/campaigns/:id/assets` | Cả hai / Chủ chiến dịch | Xem danh sách hoặc tải multipart `kind=logo|pdf|image`, trường tệp `file`; ảnh nội dung PNG/JPG tối đa 2 MB, logo PNG/JPG/SVG tối đa 2 MB, tối đa 3 PDF mỗi tệp 10 MB; cho phép sửa khi chuẩn bị hoặc tạm dừng |
-| GET/DELETE | `/api/campaigns/:id/assets/:assetId` | Cả hai / Chủ chiến dịch | Tải về hoặc xóa khi chiến dịch đang chuẩn bị hoặc tạm dừng |
+| GET/DELETE | `/api/campaigns/:id/assets/:assetId` | Cả hai / Chủ chiến dịch | Tải về hoặc Ẩn khi chiến dịch đang chuẩn bị hoặc tạm dừng |
 | PATCH | `/api/campaigns/:id/sender` | Chủ chiến dịch | `{ "senderAccountId": 1 }` |
 | PATCH | `/api/campaigns/:id/schedule` | Chủ chiến dịch | `{ "scheduledAt": "2026-11-12T02:00:00.000Z" }` để hẹn trước ít nhất 15 phút, hoặc `{ "sendNow": true }` để bắt đầu ngay sau xác nhận |
 | POST | `/api/campaigns/:id/confirm` | Chủ chiến dịch | Xác nhận lịch gửi sau khi hoàn tất các bước |
@@ -110,6 +110,26 @@ Các dấu định dạng từ thanh công cụ soạn thảo (`**đậm**`, `_n
 | GET | `/api/sender-accounts/google/status` | `{configured: boolean}`, không trả secrets |
 | POST | `/api/sender-accounts/:id/google/connect` | `{url}` để chuyển đến Google; state ràng buộc phiên, PKCE và tài khoản |
 | GET | `/api/sender-accounts/google/callback` | Google trả code/state hoặc error; kiểm tra phiên, scope và danh tính rồi redirect 303 về FE với mã kết quả, không có token |
-| POST | `/api/sender-accounts/:id/google/disconnect` | Xóa token cục bộ, hủy phiên liên kết đang chờ, ngừng hoạt động và tắt IMAP; không thu hồi grant Google |
+| POST | `/api/sender-accounts/:id/google/disconnect` | Ẩn token cục bộ, hủy phiên liên kết đang chờ, ngừng hoạt động và tắt IMAP; không thu hồi grant Google |
 
 Tài khoản gửi trả thêm `google_status`: `null`, `connected`, `reconnect_required`. `configured` hỗ trợ cả App Password và OAuth. Không trả refresh token. Khi đã liên kết Google, không sửa email/SMTP/mật khẩu trước khi ngắt kết nối. Các endpoint kiểm tra SMTP, IMAP, gửi chiến dịch và phản hồi tự dùng OAuth khi có liên kết; không fallback mật khẩu nếu OAuth hết quyền.
+
+
+## Google Search/Web — Nhân viên
+
+Các endpoint `/api/contact-searches` yêu cầu SessionGuard và role employee; chỉ đọc job/lịch sử của chủ sở hữu.
+
+| Method | URL | Nội dung |
+| --- | --- | --- |
+| GET | `/api/contact-searches/capabilities` | configured, source, emailVerification=source_and_syntax, catchAll=false, sizeHardFilter=false; không trả key |
+| POST | `/api/contact-searches` | `{criteria:{role:[],industry:[],location:[],size:[],email:[],keyword:"phần mềm",source:"Google Search/Web"},requestKey:"UUID"}` → 202 job; dùng lại requestKey khi mất response |
+| GET | `/api/contact-searches/history?cursor=ID` | 25 lần/job của chủ sở hữu, gồm queued/running/failed/succeeded; cursor=ID cuối để tải tiếp |
+| GET | `/api/contact-searches/:id` | criteria snapshot, status/stage, processed, received/invalid/duplicate/new_count, results, warnings, list_id, error, timestamps |
+
+queued → running → succeeded/failed. Không dùng phần trăm giả. Khóa idempotency cùng owner + cùng payload trả lại job; khác payload 409. Một owner chỉ có một job chưa xong. Lease 150 giây, job timeout 120 giây, tối đa 2 lần claim sau gián đoạn. Khi succeeded: received=invalid+duplicate+new_count. Email không hợp lệ xếp trước trùng. Contact tồn tại không ghi đè. Danh sách chỉ tạo khi có Contact mới và giữ trạng thái chưa kiểm tra/chưa duyệt. Toàn bộ Contact/list/result commit cùng transaction.
+
+Các trạng thái lỗi: 400 tiêu chí/requestKey/cursor sai, 401 thiếu phiên, 403 sai role, 404 không sở hữu/không có job, 409 job khác đang chạy hoặc key khác payload, 503 thiếu key. Provider/crawler lỗi sau khi nhận job được lưu status failed và safe error, không giả kết quả rỗng. Website lỗi một phần được lưu warnings, thành công chỉ phản ánh phạm vi đã đọc. Không có email mới vẫn lưu job succeeded với list_id=null.
+
+contacts có thêm search_provenance: emailStatus, method=inferred, industry, evidence, companySize/sizeMethod/sizeNote và publicEmailCount. Quy mô `public-email-count-proxy-v1` gán khoảng 1–10/11–50/51–200/201–500 theo khoảng số email đã quan sát; ngoài 1–500 để null. Đây là proxy chưa hiệu chuẩn, luôn “Chưa đảm bảo”, không phải số nhân viên thật và không lọc cứng. Không đoán địa chỉ email. Email chung không gán chức vụ cá nhân. API danh sách Contact trả metadata này; xuất danh sách có nguồn và ghi chú khi chứa Contact từ tìm kiếm.
+
+Thiết kế ban đầu ở tasks/ chỉ là đề xuất; các endpoint thực tế ở mục này và source là hợp đồng đã triển khai. Lần thử live SerpAPI chưa chạy vì thiếu key; không xem fixtures là bằng chứng chất lượng Google thật.

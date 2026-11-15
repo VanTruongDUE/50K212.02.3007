@@ -163,3 +163,17 @@
   .flow-actions small { max-width: none; }
   .flow-notice { min-height: 180px; padding: 48px 16px 20px; }
 }
+
+.search-table-scroll { overflow-x: auto; }
+.search-table-scroll td { overflow-wrap: anywhere; vertical-align: top; }
+.search-table-scroll td small { display: block; margin-top: 8px; color: #b4c7e2; }
+.search-table-scroll a { color: #91baff; }
+.search-table-scroll details { margin-top: 8px; }
+
+.search-content .flow-notice, .search-config-notice { min-height: 0; margin: 16px 0; padding: 16px 20px; display: block; text-align: left; }
+.search-content .flow-notice::before, .search-config-notice::before { content: none; }
+.search-content .flow-notice ul { margin: 8px 0 0; padding-left: 20px; }
+.search-content .table-overline { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+.search-content .flow-table td { padding: 14px 16px; }
+.search-history-table tbody tr:hover, .search-history-table tbody tr:focus-within { background-color: #203f64; }
+.search-source-note { color: #b4c7e2; font-weight: normal; }

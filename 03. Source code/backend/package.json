@@ -22,7 +22,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:search:local": "npm run build && node --env-file=../.env scripts/smoke-search.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -30,13 +31,16 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/throttler": "^6.7.1",
+    "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "google-auth-library": "^11.3.4",
     "imapflow": "^2.11.0",
+    "ipaddr.js": "^2.5.0",
     "nodemailer": "^10.5.0",
     "pg": "^8.23.1",
     "postal-mime": "^4.2.1",
     "reflect-metadata": "^0.2.2",
+    "robots-parser": "^3.0.1",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {

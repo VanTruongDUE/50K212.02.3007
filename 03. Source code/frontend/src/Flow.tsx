@@ -1,9 +1,10 @@
+import { selectionOptions } from './criteriaOptions'
 import { useEffect, useState } from 'react'
 import { demoContacts } from './demoContacts'
 import { createContactExport, type ExportFormat } from './exportContacts'
 import './flow.css'
 
-type Criteria = {
+export type Criteria = {
   role: string[]
   industry: string[]
   location: string[]
@@ -13,7 +14,7 @@ type Criteria = {
   source: 'Google Search/Web' | 'Apollo' | ''
 }
 type Template = { id: string; name: string; role: string; keyword: string; location: string; size: string; criteria?: Criteria }
-type Props = { screen: string; go: (screen: string) => void; searchUnavailable?: boolean }
+type Props = { screen: string; go: (screen: string) => void; searchUnavailable?: boolean; draftKey?: string }
 
 const emptyCriteria: Criteria = { role: [], industry: [], location: [], keyword: '', size: [], email: [], source: '' }
 const sampleCriteria: Criteria = { role: ['Giám đốc Marketing'], industry: ['Phần mềm doanh nghiệp'], location: ['Hà Nội'], keyword: 'SaaS, B2B', size: ['51–200 nhân viên'], email: ['Đã xác minh'], source: 'Google Search/Web' }
@@ -32,13 +33,7 @@ const historyRows = [
   ['02/11/2026 14:10', 'Nhân viên Marketing', 'Google Search/Web', '12 Contact'],
 ]
 const formats: ExportFormat[] = ['CSV', 'XLSX', 'JSON', 'XML']
-const selectionOptions: { key: 'role' | 'industry' | 'location' | 'size' | 'email'; label: string; options: string[] }[] = [
-  { key: 'role', label: 'Chức vụ Contact', options: ['Giám đốc Marketing', 'Founder', 'Quản lý', 'Trưởng phòng'] },
-  { key: 'industry', label: 'Ngành nghề / lĩnh vực', options: ['Phần mềm doanh nghiệp', 'Thương mại điện tử', 'Công nghệ', 'Bán lẻ'] },
-  { key: 'location', label: 'Địa điểm / khu vực', options: ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Bình Dương'] },
-  { key: 'size', label: 'Quy mô doanh nghiệp', options: ['51–200 nhân viên', '201–500 nhân viên', '1–10 nhân viên', '11–50 nhân viên'] },
-  { key: 'email', label: 'Trạng thái email', options: ['Đã xác minh', 'Chưa xác minh', 'Catch-all'] },
-]
+
 const criteriaLabels: { key: keyof Criteria; label: string }[] = [
   { key: 'role', label: 'Chức vụ Contact' }, { key: 'industry', label: 'Ngành nghề / lĩnh vực' },
   { key: 'location', label: 'Địa điểm / khu vực' }, { key: 'keyword', label: 'Từ khóa doanh nghiệp' },
@@ -136,7 +131,7 @@ function Notice({ kind = 'info', children }: { kind?: 'info' | 'warning' | 'erro
   return <div className={'flow-notice ' + kind} role={kind === 'error' ? 'alert' : undefined}>{children}</div>
 }
 
-export default function Flow({ screen, go, searchUnavailable = false }: Props) {
+export default function Flow({ screen, go, searchUnavailable = false, draftKey }: Props) {
   const [criteria, setCriteria] = useState<Criteria>(() => {
     if (screen === 'criteria') {
       const applied = sessionStorage.getItem('v5-applied-filter')
@@ -153,8 +148,10 @@ export default function Flow({ screen, go, searchUnavailable = false }: Props) {
         } catch { /* Ignore a stale local draft. */ }
       }
     }
+    if (draftKey) { try { const saved = sessionStorage.getItem(draftKey); if (saved) return JSON.parse(saved) as Criteria } catch { /* Invalid local draft. */ } }
     return screen === 'criteria-invalid' ? { ...sampleCriteria, keyword: '   ' } : ['criteria', 'criteria-adjust'].includes(screen) ? emptyCriteria : sampleCriteria
   })
+  useEffect(() => { if (draftKey) sessionStorage.setItem(draftKey, JSON.stringify(criteria)) }, [criteria, draftKey])
   const [templates, setTemplates] = useState<Template[]>(startingTemplates)
   const [selectedTemplate, setSelectedTemplate] = useState(0)
   const [templateName, setTemplateName] = useState(screen === 'template-name-missing' ? '' : 'B2B SaaS – Hà Nội')
@@ -240,15 +237,15 @@ export default function Flow({ screen, go, searchUnavailable = false }: Props) {
 
   return <div className="flow-content"><Heading screen={screen} selected={selectedCriteria.length > 0} go={go} returnScreen={allContactsReturn} />
     {criteriaScreens.includes(screen) && <>
-      <div className="criteria-status"><strong>{screen === 'criteria-adjust' ? 'Cần điều chỉnh' : 'Đang chọn'}</strong>{screen === 'criteria-adjust' ? <span>Nhập ít nhất một điều kiện có giá trị, rồi kiểm tra lại.</span> : selectedCriteria.length ? <button type="button" className="criteria-chip" onClick={() => setCriteria(current => ({ ...emptyCriteria, source: current.source }))} aria-label="Xóa các tiêu chí đã chọn">{selectedCriteria.join(' · ')} <span aria-hidden="true">×</span></button> : <span>Chưa chọn tiêu chí</span>}</div>
+      <div className="criteria-status"><strong>{screen === 'criteria-adjust' ? 'Cần điều chỉnh' : 'Đang chọn'}</strong>{screen === 'criteria-adjust' ? <span>Nhập ít nhất một điều kiện có giá trị, rồi kiểm tra lại.</span> : selectedCriteria.length ? <button type="button" className="criteria-chip" onClick={() => setCriteria(current => ({ ...emptyCriteria, source: current.source }))} aria-label="Ẩn các tiêu chí đã chọn">{selectedCriteria.join(' · ')} <span aria-hidden="true">×</span></button> : <span>Chưa chọn tiêu chí</span>}</div>
       <div className="criteria-grid">
-        {selectionOptions.slice(0, 3).map(group => <section className="criteria-card" key={group.key}><h2>{group.label}</h2><input aria-label={'Tìm ' + group.label} placeholder="Tìm trong danh sách..." value={searchTerm[group.key] ?? ''} disabled={criteriaBusy} onChange={e => setSearchTerm(current => ({ ...current, [group.key]: e.target.value }))} />{group.options.filter(option => option.toLocaleLowerCase().includes((searchTerm[group.key] ?? '').toLocaleLowerCase())).map(option => <label key={option}><input type="checkbox" checked={criteria[group.key].includes(option)} disabled={criteriaBusy} onChange={() => toggle(group.key, option)} />{option}</label>)}</section>)}
+        {selectionOptions.slice(0, 3).map(group => <section className="criteria-card" key={group.key}><h2>{group.label}</h2><input aria-label={'Tìm ' + group.label} placeholder="Tìm trong danh sách..." value={searchTerm[group.key] ?? ''} disabled={criteriaBusy} onChange={e => setSearchTerm(current => ({ ...current, [group.key]: e.target.value }))} />{group.options.filter(option => option.toLocaleLowerCase().includes((searchTerm[group.key] ?? '').toLocaleLowerCase())).map(option => <label key={option}><input type="checkbox" checked={criteria[group.key].includes(option)} disabled={criteriaBusy} onChange={() => toggle(group.key, option)} />{draftKey && group.key === 'email' && option === 'Đã xác minh' ? 'Đã xác nhận' : option}</label>)}</section>)}
         <section className="criteria-card"><h2>Từ khóa doanh nghiệp</h2><input aria-label="Từ khóa doanh nghiệp" placeholder="Nhập từ khóa doanh nghiệp..." value={criteria.keyword} disabled={criteriaBusy} aria-invalid={screen === 'criteria-invalid'} onChange={e => setCriteria(current => ({ ...current, keyword: e.target.value }))} />{screen === 'criteria-invalid' && <span className="flow-field-error" role="alert">Từ khóa không được chỉ gồm khoảng trắng. Nhập từ khóa hoặc bỏ điều kiện này.</span>}</section>
-        {selectionOptions.slice(3).map(group => <section className="criteria-card" key={group.key}><h2>{group.label}</h2><input aria-label={'Tìm ' + group.label} placeholder="Tìm trong danh sách..." value={searchTerm[group.key] ?? ''} disabled={criteriaBusy} onChange={e => setSearchTerm(current => ({ ...current, [group.key]: e.target.value }))} />{group.options.filter(option => option.toLocaleLowerCase().includes((searchTerm[group.key] ?? '').toLocaleLowerCase())).map(option => <label key={option}><input type="checkbox" checked={criteria[group.key].includes(option)} disabled={criteriaBusy} onChange={() => toggle(group.key, option)} />{option}</label>)}</section>)}
+        {selectionOptions.slice(3).map(group => <section className="criteria-card" key={group.key}><h2>{group.label}</h2><input aria-label={'Tìm ' + group.label} placeholder="Tìm trong danh sách..." value={searchTerm[group.key] ?? ''} disabled={criteriaBusy} onChange={e => setSearchTerm(current => ({ ...current, [group.key]: e.target.value }))} />{group.options.filter(option => option.toLocaleLowerCase().includes((searchTerm[group.key] ?? '').toLocaleLowerCase())).map(option => <label key={option}><input type="checkbox" checked={criteria[group.key].includes(option)} disabled={criteriaBusy} onChange={() => toggle(group.key, option)} />{draftKey && group.key === 'email' && option === 'Đã xác minh' ? 'Đã xác nhận' : option}</label>)}</section>)}
       </div>
        <div className="source-row"><strong>Nguồn tìm kiếm</strong>{(['Google Search/Web', 'Apollo'] as const).map(source => <label key={source}><input type="checkbox" checked={criteria.source === source} disabled={criteriaBusy} aria-invalid={sourceError} aria-describedby={sourceError ? 'source-error' : undefined} onChange={() => { setCriteria(current => ({ ...current, source })); setSourceError(false) }} />{source}</label>)}</div>
        {sourceError && <span className="flow-field-error" id="source-error" role="alert">Chọn Google Search/Web hoặc Apollo trước khi tiếp tục.</span>}
-        <Actions left={<><Button disabled={criteriaBusy} onClick={() => go('templates')}>Xem Filter Template</Button>{searchUnavailable && <small role="status">Google Search chưa được kết nối; hãy cấu hình dịch vụ để tìm kiếm.</small>}</>} right={<Button primary disabled={criteriaBusy || searchUnavailable} onClick={checkCriteria}>{criteriaBusy ? 'Đang kiểm tra…' : screen === 'criteria-invalid' ? 'Kiểm tra lại' : screen === 'criteria-check-error' ? 'Thử kiểm tra lại' : 'Kiểm tra tiêu chí'}</Button>} />
+        <Actions left={<><Button disabled={criteriaBusy} onClick={() => go('templates')}>Xem Filter Template</Button>{searchUnavailable && <small role="status">Tìm kiếm tạm thời không khả dụng. Vui lòng thử lại sau.</small>}</>} right={<Button primary disabled={criteriaBusy || searchUnavailable} onClick={checkCriteria}>{criteriaBusy ? 'Đang kiểm tra…' : screen === 'criteria-invalid' ? 'Kiểm tra lại' : screen === 'criteria-check-error' ? 'Thử kiểm tra lại' : 'Kiểm tra tiêu chí'}</Button>} />
     </>}
 
     {screen === 'templates' && <>
@@ -285,7 +282,7 @@ function messageText(screen: string, source: string, format: string, downloadUrl
   const messages: Record<string, React.ReactNode> = {
     'search-empty': <>{source} không trả về Contact phù hợp.<br />Đã lưu lịch sử với các số lượng bằng 0; không tạo Contact mới.<br />Điều chỉnh tiêu chí để tìm lại hoặc xem lịch sử.</>,
     'search-error': <>Tìm kiếm không thành công qua {source}.<br />Không có Contact mới được tạo. Bộ tiêu chí đã nhập vẫn được giữ.<br />Bạn có thể thử lại hoặc điều chỉnh tiêu chí.</>,
-    'apollo-unavailable': <>Cấu hình kết nối Apollo không khả dụng nên yêu cầu chưa được gửi.<br />Không có Contact mới được tạo.<br />Chọn Google Search/Web hoặc thử lại khi kết nối Apollo khả dụng.</>,
+    'apollo-unavailable': <>Không thể kết nối nguồn Apollo trong lần tìm kiếm này.<br />Không có Contact mới được tạo.<br />Chọn Google Search/Web hoặc thử lại khi kết nối Apollo khả dụng.</>,
     'apollo-empty': <>Apollo không trả về Contact phù hợp.<br />Đã lưu lịch sử với các số lượng bằng 0; không tạo Contact mới.<br />Điều chỉnh tiêu chí để tìm lại hoặc xem lịch sử.</>,
     'template-empty': 'Bạn chưa lưu Filter Template nào. Tạo Template để dùng lại bộ tiêu chí.',
     'template-load-error': 'Chưa nhận được danh sách Filter Template. Chọn “Tải lại Template” để thử lại; bộ tiêu chí đang nhập được giữ nguyên.',
