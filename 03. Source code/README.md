@@ -16,7 +16,7 @@ Thư mục này dùng để lưu mã nguồn của dự án.
 
 ## Tài liệu chuẩn bị
 
-- [Triển khai FE Vercel + BE Render](DEPLOY_VERCEL_RENDER.md) — cấu hình, biến môi trường và thứ tự đưa website lên Internet.
+- [Triển khai FE Vercel + API Render + Neon + SMTP gateway](DEPLOY_VERCEL_RENDER.md) — biến môi trường, callback Google và lịch chạy job.
 
 - [Ghi chú yêu cầu](GHI_CHU_YEU_CAU.md)
 - [Chỉ mục Figma trang Trường](GHI_CHU_FIGMA_TRUONG.md)
@@ -59,6 +59,10 @@ compose.yaml    PostgreSQL dùng cho môi trường phát triển
 
 Chỉ thêm thư mục `features` ở FE và `modules` ở BE khi triển khai chức năng đầu tiên; không tạo sẵn các module trống.
 
+## Triển khai public
+
+FE dùng `https://v5-marketing.vercel.app`; API nghiệp vụ/timer nền dùng Render Free, PostgreSQL Neon Free và SMTP gateway Vercel. Neon đã có 23 migration và hai tài khoản; API Render đang build, rewrite FE và kiểm tra public còn chờ. Gateway health đã đạt nhưng secret relay mới cần deployment nạp lại; chưa xác nhận SMTP/IMAP thật. Chưa chuyển dữ liệu nghiệp vụ local; dự kiến chỉ chuyển Gmail ID 164 và mã hóa lại token bằng khóa cloud, không mặc định yêu cầu cấp quyền lại nếu token còn hợp lệ. Render Free có thể sleep, nên lịch nền không được bảo đảm khi service ngủ. Xem hướng dẫn triển khai ở trên.
+
 ## Cài đặt và chạy trên máy phát triển
 
 Cần Node.js, npm và Docker Desktop. Trong PowerShell tại thư mục này:
@@ -82,7 +86,7 @@ npm run test:smoke:local
 npm run test:migrations:local
 ```
 
-`db:seed:local` đặt lại mật khẩu hai tài khoản thử theo `.env` khi chạy lại. Không đưa `.env` hoặc mật khẩu lên Git.
+`db:seed:local` đặt lại mật khẩu hai tài khoản thử theo `.env` với `POSTGRES_*` local. Khi có `DATABASE_URL`, lệnh chỉ tạo tài khoản chưa tồn tại, không ghi đè mật khẩu/vai trò. Không đưa `.env` hoặc mật khẩu lên Git.
 
 `db:seed:demo` nạp dữ liệu mẫu cho hai vai trò: 56 Contact, 5 danh sách ở các trạng thái kiểm tra/duyệt khác nhau, 2 Filter Template, 2 mẫu email, 3 tài khoản gửi, 5 chiến dịch, 9 Response, 5 Follow-up và 1 thư đến chưa ghép. Tên hiển thị không có nhãn `[Demo]`; khi chạy lại trên database cũ, lệnh bỏ nhãn khỏi các bản ghi mẫu đã tạo. Lệnh chạy trong một transaction và chạy lại không nhân đôi dữ liệu. Email dùng miền `example.invalid`; tài khoản gửi mẫu dùng SMTP loopback và không bật IMAP, nên không gửi thư thật. Chiến dịch đã lên lịch có ngày bắt đầu sau 30 ngày; các trạng thái gửi và phản hồi đã gửi là dữ liệu minh họa, không phải email đã gửi ngoài đời.
 

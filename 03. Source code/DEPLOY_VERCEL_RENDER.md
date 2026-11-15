@@ -1,57 +1,63 @@
-# Triển khai Vercel + Render
+# Triển khai miễn phí: FE Vercel + API Render + Neon + SMTP gateway Vercel
 
-Phương án đã chốt: React trên Vercel, NestJS trên Render, PostgreSQL riêng cho môi trường public. Chưa tạo dịch vụ hoặc phát sinh phí.
+FE public: `https://v5-marketing.vercel.app`. API nghiệp vụ và timer nền chạy trên Render Free; Neon Free lưu PostgreSQL; Vercel chỉ làm SMTP gateway để tránh giới hạn kết nối SMTP của Render Free. Không nâng gói có phí.
 
-## Render — Backend
+## Trạng thái đã xác nhận và phần đang chờ
 
-- Repository: `VanTruongDUE/50K212.02.3007`.
-- Root Directory tính từ Git root: `03. Source code/backend`.
-- Runtime: Node.js 24.
-- Build Command: `npm ci --include=dev && npm run build`.
-- Start Command: `node scripts/migrate.cjs && node dist/main.js`.
-- Health Check Path: `/health`.
-- Một instance BE ban đầu vì worker gửi thư/IMAP chạy trong tiến trình này.
+- Neon project `v5-marketing-db`: 23 migration và hai tài khoản đăng nhập đã khởi tạo. Chưa chuyển dữ liệu nghiệp vụ local.
+- SMTP gateway Vercel đã trả health 200 qua wrapper API ở Git root, framework Other, Root Directory để trống. Secret relay vừa được nhập trong Environment; cần redeploy để bảo đảm deployment đang chạy nhận biến mới.
+- Render service `srv-dbsp3foae00c738m7bi0` đang build commit `23be990`. Đã cấu hình 13 biến môi trường, gồm `REMOTE_SMTP_URL` trỏ gateway; chưa coi API Live khi chưa kiểm tra health public.
+- Rewrite FE sang URL Render thật đang chờ. Chưa xác nhận đăng nhập, SMTP hoặc IMAP end-to-end trên public.
+- Dự kiến chỉ chuyển tài khoản Gmail local ID 164 và mã hóa lại secret/token bằng khóa cloud. Chưa xác nhận đã chuyển hoặc gửi/nhận thành công. Không yêu cầu reconnect nếu token chuyển còn hợp lệ; chỉ reconnect khi Google báo hết hạn/thu hồi hoặc tài khoản chưa có quyền.
 
-Tạo PostgreSQL cùng vùng với BE, dùng thông tin kết nối nội bộ. Đặt `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` trong Environment của Render. Không trỏ service public về PostgreSQL trên máy cá nhân.
+## API Render Free
 
-Các biến khác ở Render:
+Repository `VanTruongDUE/50K212.02.3007`; Root Directory `03. Source code/backend`; Node.js 24. Build `npm ci --include=dev && npm run build`; Start `node scripts/migrate.cjs && node dist/main.js`; health `/health`. Render cấp `PORT`; không đặt `VERCEL` trên Render để timer nền hoạt động. Free service có thể sleep; timer không chạy trong lúc sleep, nên không cam kết lịch gửi chính xác từng phút. Không dùng cron ping để coi như đã có worker luôn chạy.
 
-| Biến | Giá trị |
+| Biến API Render | Cách dùng |
 |---|---|
 | `NODE_ENV` | `production` |
-| `NODE_VERSION` | `24` |
-| `PUBLIC_BASE_URL` | HTTPS origin của BE Render, dùng cho liên kết ngừng nhận email |
-| `FRONTEND_BASE_URL` | HTTPS origin của FE Vercel |
-| `GOOGLE_OAUTH_REDIRECT_URI` | `https://<FE-Vercel>/api/sender-accounts/google/callback` |
-| `GOOGLE_OAUTH_CLIENT_ID` | OAuth client đã cấu hình |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | Chỉ lưu ở Render |
-| `SMTP_ENCRYPTION_KEY` | 32 byte dạng hex, giữ cố định; phải giữ khóa cũ nếu chuyển dữ liệu Gmail đã mã hóa |
-| `SERPAPI_API_KEY` | Chỉ lưu ở Render |
+| `DATABASE_URL` | URL Neon, ưu tiên hơn `POSTGRES_*`; TLS `verify-full` |
+| `PUBLIC_BASE_URL` | HTTPS origin phục vụ `/api/unsubscribe`: FE có rewrite đúng hoặc API Render thật |
+| `FRONTEND_BASE_URL` | `https://v5-marketing.vercel.app` |
+| `GOOGLE_OAUTH_REDIRECT_URI` | `https://v5-marketing.vercel.app/api/sender-accounts/google/callback` |
+| `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth Web client, chỉ ở backend |
+| `SMTP_ENCRYPTION_KEY` | Khóa hex 32 byte của cloud; gateway phải dùng đúng cùng khóa |
+| `REMOTE_SMTP_URL` | HTTPS origin SMTP gateway Vercel, không thêm `/api/internal/smtp` |
+| `SMTP_RELAY_SECRET` | Secret giống gateway, khác `JOBS_SECRET` |
+| `SERPAPI_API_KEY` | Key backend, tìm kiếm thật có thể tiêu credit |
+| `JOBS_SECRET` | Chỉ dùng khi chủ động gọi job nội bộ qua Bearer |
 
-Render cung cấp `PORT`; không ép dùng cổng localhost. Không chạy seed hoặc reset database mỗi lần deploy. Khởi tạo hai tài khoản một lần hoặc chuyển dữ liệu sau khi BA chọn phương án; mật khẩu không đưa vào Git hoặc log.
+Không đưa secret vào Git, `VITE_*`, log hoặc ảnh. Không trỏ dịch vụ public vào PostgreSQL máy cá nhân. Seed bằng `DATABASE_URL` chỉ thêm hai tài khoản chưa tồn tại, không reset mật khẩu/vai trò. Không chạy `db:seed:demo` hoặc chuyển toàn bộ DB local khi chưa có yêu cầu.
 
-Render Free chặn SMTP 25/465/587 và có thể ngủ khi không sử dụng. Muốn giữ gửi Gmail SMTP và worker chạy liên tục cần chọn gói phù hợp trước khi tạo dịch vụ.
+## SMTP gateway Vercel
 
-## Vercel — Frontend
+Gateway dùng wrapper API tại Git root thay vì NestJS adapter từ thư mục con có dấu cách; Framework Other và Root Directory để trống. Dùng cấu hình Vercel hiện có cho wrapper, không thêm `functions.src/main.ts`. Fluid Compute Hobby mặc định/tối đa 300 giây; kiểm tra cấu hình deployment thật.
 
-- Cùng repository, Root Directory: `03. Source code/frontend`.
-- Framework: Vite.
-- Install Command: `npm ci`.
-- Build Command: `npm run build`.
-- Output Directory: `dist`.
-- Node.js 24.
+Gateway cần cùng `DATABASE_URL`, `SMTP_ENCRYPTION_KEY`, Google OAuth client và `SMTP_RELAY_SECRET` với API Render. Không đặt `REMOTE_SMTP_URL` ở gateway. Biến `VERCEL` tự có và tắt timer nền; không chạy gửi chiến dịch/đồng bộ Inbox tự động trên gateway.
 
-Sau khi có URL BE thật, thêm external rewrite `/api/:path*` → `https://<BE-Render>/api/:path*` trong `frontend/vercel.json`. FE đang dùng URL tương đối `/api`; giữ cách này để cookie đăng nhập và callback Google cùng origin Vercel. Không đổi toàn bộ lời gọi FE sang cross-origin hoặc đưa secret vào biến `VITE_*`.
+- Render tạo yêu cầu UUID tạm trong `smtp_relay_requests`, chứa email tài khoản và nội dung đã render; tệp đính kèm mã hóa base64 trong DB. HTTP chỉ gửi UUID nên không áp giới hạn body Vercel lên tệp email.
+- `POST /api/internal/smtp/verify` và `/api/internal/smtp/send` yêu cầu `Authorization: Bearer <SMTP_RELAY_SECRET>`. Đây là endpoint nội bộ dùng secret, không dùng session đăng nhập; có cookie đăng nhập cũng không vượt được kiểm tra secret.
+- Gateway lấy/xóa yêu cầu còn hạn 2 phút bằng `DELETE ... RETURNING` trước khi gửi, rồi tra tài khoản SMTP active từ DB. Không nhận SMTP host, mật khẩu hoặc token từ HTTP. UUID đã dùng/không tồn tại không gửi lại được.
+- Render gọi HTTPS, timeout 30 giây, không tự retry. Khi timeout, phải kiểm tra hộp thư đã gửi trước khi thử lại để tránh trùng. Payload được xóa khi tiêu thụ hoặc kết thúc lời gọi; bản hết hạn được dọn khi có yêu cầu relay tiếp theo.
+- SMTP tại gateway; IMAP vẫn chạy trực tiếp trên API Render. Cấu hình secret và health đạt không chứng minh tài khoản Gmail gửi/nhận thật.
 
-URL BE phải được xác định trước khi ghi rewrite; không deploy cấu hình trỏ tới URL minh họa. Không cache API chứa dữ liệu người dùng. Kiểm tra cookie Secure/HttpOnly, đăng nhập, đăng xuất và callback Google trên HTTPS sau deploy.
+## FE, Google OAuth và tài khoản Gmail
 
-## Thứ tự thực hiện
+FE root `03. Source code/frontend`, Vite, install `npm ci`, build `npm run build`, output `dist`. Khi Render có URL thật, rewrite `/api/:path*` trong `frontend/vercel.json` đến `https://<Render-thật>/api/:path*`. Giữ API tương đối để cookie/callback qua origin FE; không deploy URL minh họa.
 
-1. Chốt gói Render và phạm vi dữ liệu chuyển lên public.
-2. Tạo PostgreSQL và BE Render; nhập secret trực tiếp vào Environment, chạy migration và kiểm tra `/health` trả 200.
-3. Ghi rewrite với URL Render thật, triển khai FE Vercel.
-4. Cập nhật origin FE và callback trên Render; thêm đúng callback HTTPS vào Google Cloud OAuth client. Giữ callback localhost để vẫn phát triển cục bộ.
-5. Khởi tạo/chuyển dữ liệu theo lựa chọn BA, không tự kích hoạt các chiến dịch đang chờ gửi khi chuyển dữ liệu. Kết nối lại Gmail nếu không chuyển token.
-6. Thử trên website public: đăng nhập hai role, phiên sau reload, lưu/đọc dữ liệu, quyền truy cập, tài khoản gửi, SMTP/IMAP, Google OAuth và SerpAPI. Chỉ báo website sẵn sàng sau khi kiểm tra live đạt.
+Google Cloud OAuth Web client phải có chính xác `https://v5-marketing.vercel.app/api/sender-accounts/google/callback` trong Authorized redirect URIs. Giữ callback localhost riêng; Gmail phải nằm trong Test users nếu app còn Testing. Nếu chuyển Gmail ID 164, giải mã bằng khóa local rồi mã hóa lại bằng khóa cloud trong tiến trình kín; không in token hoặc mang nguyên ciphertext với khóa khác. Không chuyển chiến dịch/danh sách/Response ngoài phạm vi yêu cầu. Nếu quyền Google không còn hợp lệ, Trưởng phòng dùng **Kết nối với Google** để cấp lại.
 
-Nguồn: [Render Free](https://render.com/docs/free), [Render Web Services](https://render.com/docs/web-services), [Render Postgres](https://render.com/docs/postgresql-creating-connecting), [Vercel Rewrites](https://vercel.com/docs/routing/rewrites).
+## Job nền
+
+API Render chạy timer Delivery, Inbox, Follow-up và Search khi tiến trình còn hoạt động. Không cấu hình scheduler ngoài gọi song song các timer. Các endpoint `POST /api/internal/jobs/{delivery,inbox,followups,search}` vẫn được bảo vệ bằng `JOBS_SECRET`, so sánh constant-time; các task dùng chung PostgreSQL advisory transaction lock để hạn chế chạy đồng thời. Scheduler ngoài theo phút chưa cấu hình và không phải thành phần đã kiểm chứng của phương án hiện tại. Trên Vercel, timer bị tắt; gateway không thay vai trò worker Render.
+
+## Kiểm tra sau deploy
+
+1. Render Live, `/health` database up; FE `/api/auth/me` trả API thay vì HTML.
+2. Đăng nhập hai vai trò, reload, logout, Secure/HttpOnly cookie và CRUD fixture riêng.
+3. Gateway deployment nhận secret mới; endpoint relay không secret trả 401, không chạy SMTP.
+4. Chuyển đúng tài khoản Gmail được yêu cầu và kiểm tra SMTP/IMAP theo người nhận thử đã được chỉ định; báo riêng gửi, nhận và lịch nền.
+5. Ghi rõ giới hạn Render Free sleep, timeout relay và các phần chưa kiểm chứng. Không báo website hoạt động đầy đủ chỉ từ health 200.
+
+Nguồn: [Render Free](https://render.com/docs/free), [Render Web Services](https://render.com/docs/web-services), [Vercel Function duration](https://vercel.com/docs/functions/configuring-functions/duration), [node-postgres SSL](https://node-postgres.com/features/ssl), [Google OAuth](https://developers.google.com/identity/protocols/oauth2/web-server).
