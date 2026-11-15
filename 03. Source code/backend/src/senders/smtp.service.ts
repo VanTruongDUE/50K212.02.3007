@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { DatabaseService } from '../database/database.service';
 import { ConfigService } from '@nestjs/config';
 import { GoogleMailService } from './google-mail.service';
 import { decryptMailSecret, encryptMailSecret } from './mail-secret';
@@ -24,12 +26,25 @@ export type MailAsset = {
   content_type: string;
   content: Buffer;
 };
+export type RelayMail = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  attachments: {
+    filename: string;
+    content: string;
+    contentType: string;
+    cid?: string;
+  }[];
+};
 
 @Injectable()
 export class SmtpService {
   constructor(
     private readonly config: ConfigService,
     private readonly google: GoogleMailService,
+    @Optional() private readonly database?: DatabaseService,
   ) {}
 
   encrypt(secret: string): string {
@@ -95,7 +110,98 @@ export class SmtpService {
     });
   }
 
+  private async remote(
+    account: SmtpAccount,
+    action: 'verify' | 'send',
+    mail?: RelayMail,
+  ) {
+    const origin = this.config.get<string>('REMOTE_SMTP_URL');
+    const secret = this.config.get<string>('SMTP_RELAY_SECRET');
+    if (!origin?.startsWith('https://') || !secret)
+      throw new BadRequestException(
+        'SMTP relay chưa được cấu hình HTTPS và secret.',
+      );
+    if (!this.database) throw new Error('SMTP relay database unavailable.');
+    const requestId = randomUUID();
+    await this.database.query(
+      "DELETE FROM smtp_relay_requests WHERE created_at<now()-interval '2 minutes'",
+    );
+    await this.database.query(
+      'INSERT INTO smtp_relay_requests(id,account_email,action,mail) VALUES($1,$2,$3,$4)',
+      [requestId, account.email, action, mail ?? null],
+    );
+    const body = JSON.stringify({ requestId });
+    try {
+      const response = await fetch(
+        `${origin.replace(/\/$/, '')}/api/internal/smtp/${action}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${secret}`,
+          },
+          body,
+          signal: AbortSignal.timeout(30000),
+          redirect: 'error',
+        },
+      );
+      if (!response.ok) throw new Error('relay rejected');
+      const result = (await response.json()) as {
+        messageId?: string;
+        accepted?: string[];
+      };
+      if (
+        action === 'send' &&
+        (!result.messageId || !result.accepted?.includes(mail!.to))
+      )
+        throw new Error('recipient rejected');
+      return result;
+    } catch {
+      throw new Error(
+        'SMTP relay chưa xác nhận kết quả. Kiểm tra hộp thư đã gửi trước khi thử lại để tránh gửi trùng.',
+      );
+    } finally {
+      await this.database.query('DELETE FROM smtp_relay_requests WHERE id=$1', [
+        requestId,
+      ]);
+    }
+  }
+
+  async relay(
+    account: SmtpAccount,
+    action: 'verify' | 'send',
+    mail?: RelayMail,
+  ) {
+    if (action === 'verify') {
+      await (await this.transport(account)).verify();
+      return { ok: true };
+    }
+    const result = await (
+      await this.transport(account)
+    ).sendMail({
+      from: account.email,
+      to: mail!.to,
+      subject: mail!.subject,
+      text: mail!.text,
+      html: mail!.html,
+      disableFileAccess: true,
+      disableUrlAccess: true,
+      attachments: mail!.attachments.map((item) => ({
+        ...item,
+        content: Buffer.from(item.content, 'base64'),
+      })),
+    });
+    return {
+      messageId: result.messageId,
+      accepted: result.accepted.filter((value) => typeof value === 'string'),
+    };
+  }
+
   async verify(account: SmtpAccount): Promise<void> {
+    if (this.config.get<string>('REMOTE_SMTP_URL')) {
+      await this.remote(account, 'verify');
+      return;
+    }
     await (await this.transport(account)).verify();
   }
 
@@ -139,15 +245,28 @@ export class SmtpService {
     const rendered = personalizeCampaign
       ? renderCampaignBody(body, includedAssets, personalizeCampaign)
       : { text: body, html: escaped };
-    const result = await (
-      await this.transport(account)
-    ).sendMail({
-      from: account.email,
+    const mail = {
       to,
       subject,
       text: rendered.text,
       html: `${logo ? '<p><img src="cid:v5-logo" alt="Logo V5" style="max-width:240px"></p>' : ''}<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${rendered.html}</div>`,
       attachments,
+    };
+    if (this.config.get<string>('REMOTE_SMTP_URL')) {
+      const result = await this.remote(account, 'send', {
+        ...mail,
+        attachments: attachments.map((item) => ({
+          ...item,
+          content: item.content.toString('base64'),
+        })),
+      });
+      return result.messageId!;
+    }
+    const result = await (
+      await this.transport(account)
+    ).sendMail({
+      from: account.email,
+      ...mail,
     });
     if (!result.accepted.includes(to))
       throw new Error('SMTP không chấp nhận người nhận.');

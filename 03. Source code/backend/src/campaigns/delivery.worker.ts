@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { QueryResultRow } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 import { DatabaseService } from '../database/database.service';
 import {
   SmtpService,
@@ -127,7 +127,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
           [job.campaign_id, job.contact_id],
         );
         await client.query('COMMIT');
-        await this.finishIfDone(job.campaign_id);
+        await this.finishIfDone(job.campaign_id, client);
         return;
       }
       const quota = await client.query<{ used: string; hourly: string }>(
@@ -220,11 +220,11 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async finishIfDone(id: string): Promise<void> {
-    await this.database.query(
-      `UPDATE campaigns SET status='completed',updated_at=now() WHERE id=$1 AND status IN ('scheduled','sending')
+  private async finishIfDone(id: string, client?: PoolClient): Promise<void> {
+    const sql = `UPDATE campaigns SET status='completed',updated_at=now() WHERE id=$1 AND status IN ('scheduled','sending')
        AND NOT EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending')`,
-      [id],
-    );
+      values = [id];
+    if (client) await client.query(sql, values);
+    else await this.database.query(sql, values);
   }
 }

@@ -10,7 +10,10 @@ jest.mock('nodemailer', () => ({
 
 describe('SmtpService', () => {
   it('uses OAuth for both SMTP and IMAP and never sends tokens to a custom SMTP host', async () => {
-    const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
+    const config = {
+      get: (key: string) =>
+        key === 'SMTP_ENCRYPTION_KEY' ? 'ab'.repeat(32) : undefined,
+    } as unknown as ConfigService;
     const google = {
       accessToken: jest.fn().mockResolvedValue('oauth-access'),
     } as unknown as GoogleMailService;
@@ -53,7 +56,10 @@ describe('SmtpService', () => {
     ['SMTP.GMAIL.COM', 'abcdefghijklmnop'],
     ['smtp.example.com', 'abcd efgh ijkl mnop'],
   ])('handles password spacing for %s', (host, expected) => {
-    const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
+    const config = {
+      get: (key: string) =>
+        key === 'SMTP_ENCRYPTION_KEY' ? 'ab'.repeat(32) : undefined,
+    } as unknown as ConfigService;
     const service = new SmtpService(config, {} as GoogleMailService);
     const credentials = service.credentials({
       email: 'sender@example.com',
@@ -66,7 +72,10 @@ describe('SmtpService', () => {
   });
 
   it('stores a different ciphertext and recovers the SMTP secret', () => {
-    const config = { get: () => 'ab'.repeat(32) } as unknown as ConfigService;
+    const config = {
+      get: (key: string) =>
+        key === 'SMTP_ENCRYPTION_KEY' ? 'ab'.repeat(32) : undefined,
+    } as unknown as ConfigService;
     const service = new SmtpService(config, {} as GoogleMailService);
     const encrypted = service.encrypt('local-test-secret');
     expect(encrypted).not.toContain('local-test-secret');

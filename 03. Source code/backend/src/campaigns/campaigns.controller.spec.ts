@@ -45,17 +45,24 @@ describe('Campaign confirmation', () => {
   );
 
   it('keeps a paused campaign paused when the sender lacks quota', async () => {
-    const query = jest.fn()
-      .mockResolvedValueOnce({ rows: [{ status: 'paused', sender_account_id: '2' }] })
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [{ status: 'paused', sender_account_id: '2' }],
+      })
       .mockResolvedValueOnce({ rows: [{ remaining: '1', pending: '2' }] });
     const controller = new CampaignsController(
       { query } as unknown as DatabaseService,
       {} as ConfigService,
       {} as DeliveryWorker,
     );
-    const request = { account: { id: 'NV001', role: 'employee' } } as AuthenticatedRequest;
+    const request = {
+      account: { id: 'NV001', role: 'employee' },
+    } as AuthenticatedRequest;
 
-    await expect(controller.resume(1, request)).rejects.toThrow('không đủ hạn mức');
+    await expect(controller.resume(1, request)).rejects.toThrow(
+      'không đủ hạn mức',
+    );
     expect(query).toHaveBeenCalledTimes(2);
   });
 });
