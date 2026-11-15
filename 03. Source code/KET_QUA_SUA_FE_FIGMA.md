@@ -1,6 +1,6 @@
 # Kết quả sửa FE và nối BE theo Figma
 
-Ngày chốt kiểm chứng: 16/11/2026. Phạm vi: mã cục bộ của Nhân viên và Trưởng phòng, đối chiếu bằng cây layer/metadata Figma và mã nguồn. Không sửa Figma, không triển khai public trong lượt này.
+Ngày chốt kiểm chứng: 16/11/2026. Báo cáo này ghi lượt sửa mã cục bộ của Nhân viên và Trưởng phòng, đối chiếu bằng cây layer/metadata Figma và mã nguồn. Không sửa Figma. Kết quả triển khai và hành trình public tiếp theo nằm trong [KIEM_TRA_PUBLIC_2026-11-16.md](KIEM_TRA_PUBLIC_2026-11-16.md).
 
 ## Cách xử lý màn hình trùng
 
@@ -41,6 +41,6 @@ Sáu thanh tiêu đề UC và một bảng trạng thái component không phải
 
 ## Triển khai và giới hạn kiểm chứng
 
-Chưa commit/push/deploy hoặc migrate database public. Cần áp dụng migration `024_figma_workflow_fields.sql` trước khi chạy BE mới trên môi trường thật. Tài khoản gửi cũ được giữ, mã được điền `TK-<id>`.
+Cập nhật lượt tiếp theo ngày 16/11: mã qua commit `996ae72` đã lên main; migration 024 và 025 đã áp dụng vào Neon; FE, SMTP gateway Vercel và BE Render đã triển khai. Hành trình public và giới hạn nằm trong [KIEM_TRA_PUBLIC_2026-11-16.md](KIEM_TRA_PUBLIC_2026-11-16.md). Tài khoản gửi cũ được giữ, mã được điền `TK-<id>`.
 
-Không gửi email thật, đồng bộ hộp thư thật hoặc tiêu credit SerpAPI trong lượt kiểm thử này. Không dùng ảnh để cam kết phần trăm giống giao diện; không tuyên bố đã thao tác độc lập 257/257 trạng thái Figma. Bản public hiện tại chưa phản ánh các sửa cục bộ này.
+Không gửi email thật, đồng bộ hộp thư thật hoặc tiêu credit SerpAPI trong lượt kiểm thử này. Không dùng ảnh để cam kết phần trăm giống giao diện; không tuyên bố đã thao tác độc lập 257/257 trạng thái Figma. Các số liệu phía trên là kiểm chứng cục bộ; xem báo cáo public cập nhật để biết phần đã chạy trên bản triển khai.

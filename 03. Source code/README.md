@@ -169,3 +169,5 @@ Migration bổ sung mã/thời điểm cập nhật tài khoản gửi, tiêu ch
 Luồng tìm kiếm tách kiểm tra tiêu chí, ghi nhận tiêu chí và bắt đầu tìm kiếm. Xem trước email dùng dữ liệu nháp; chỉ nút **Lưu nội dung** ghi nội dung vào chiến dịch. BE kiểm tra bản xem trước tương ứng trước khi lưu từ trình soạn. Tài khoản gửi và lịch đã lưu được dùng lại khi mở sửa; thay đổi chiến dịch tạm dừng trở về bước xác nhận tiếp tục gửi.
 
 Kiểm tra FE: `node --test frontend/tests/*.test.mjs`, `npm --prefix frontend run lint`. Kiểm tra BE: `npm --prefix backend test -- --runInBand`. Bài `test:smoke:local` kiểm tra HTTP với PostgreSQL và vô hiệu hóa gửi thư ra ngoài; chỉ chạy bằng database kiểm thử. Báo cáo lượt sửa: [KET_QUA_SUA_FE_FIGMA.md](KET_QUA_SUA_FE_FIGMA.md).
+
+Migration `025_followup_result_time.sql` bổ sung thời điểm worker xác định kết quả Follow-up, tách khỏi thời điểm nhân viên hoàn tất công việc. Chạy migration trước khi triển khai worker mới. Bản ghi đã có kết quả trước migration giữ mốc kết quả trống, không suy đoán giờ cập nhật từ giờ hoàn tất. Kiểm chứng triển khai và hành trình Brave: [KIEM_TRA_PUBLIC_2026-11-16.md](KIEM_TRA_PUBLIC_2026-11-16.md).
