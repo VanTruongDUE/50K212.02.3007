@@ -29,6 +29,14 @@
 .mgr-delete-actions .mgr-primary { margin-left: 0; }
 .mgr-actions button { min-width: 136px; min-height: 44px; padding: 8px 18px; color: #edf5ff; background: #172f4e; border: 1px solid #54759d; border-radius: 6px; cursor: pointer; font: 700 16px/24px Arial, sans-serif; transition: filter 150ms ease, transform 100ms ease; }
 .mgr-actions .mgr-primary { background: #2d6cdf; border-color: #2d6cdf; }
+.mgr-sender-list-actions > .next-button:first-child { min-width: 220px; }
+.mgr-sender-list-actions > .next-button:nth-child(2) { min-width: 160px; }
+.mgr-sender-list-actions > .next-button.primary { min-width: 270px; margin-left: auto; }
+@media (max-width: 600px) {
+  .mgr-sender-list-actions > .next-button:first-child,
+  .mgr-sender-list-actions > .next-button:nth-child(2),
+  .mgr-sender-list-actions > .next-button.primary { min-width: 0; flex: 1 1 100%; }
+}
 .manager-account-result .next-title p { margin-top: 8px; }
 .manager-account-result > .mgr-panel { margin-top: 40px; }
 .manager-account-result .mgr-panel h2 { font-size: 24px; line-height: 32px; }

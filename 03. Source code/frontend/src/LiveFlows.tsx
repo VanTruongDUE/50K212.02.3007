@@ -2755,9 +2755,9 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             <Table
               heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Hạn mức 3 ngày", "Trạng thái"]}
               selectedRow={Math.max(0, senders.findIndex(item => item.id === selected))}
-              onSelect={index => choose(senders[index].id, manager ? "manager-account-detail" : "sender-detail")}
+              onSelect={index => manager ? setSelected(senders[index].id) : choose(senders[index].id, "sender-detail")}
               rows={senders.map(item => [
-                <button className="next-text-link" key={item.id} type="button" onClick={() => choose(item.id, manager ? "manager-account-detail" : "sender-detail")}>{item.name}</button>,
+                manager ? item.name : <button className="next-text-link" key={item.id} type="button" onClick={() => choose(item.id, "sender-detail")}>{item.name}</button>,
                 item.code || `TK-${item.id}`,
                 item.email,
                 `${n(item.used_3_days)} / ${n(item.quota_3_days)}`,
@@ -2766,8 +2766,9 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             />
             <p className="mgr-callout">Thêm hoặc cập nhật email của V5 dùng gửi thư cho đối tác, khách hàng tiềm năng.</p>
           </Card>}
-          {manager && <div className="next-actions-bar">
+          {manager && <div className="mgr-actions mgr-sender-list-actions">
             <Button disabled={busy || !sender} onClick={() => { if (sender) choose(sender.id, "manager-account-edit"); }}>Cập nhật tài khoản</Button>
+            <Button disabled={busy} onClick={() => go("manager-account-check")}>Quay lại</Button>
               <Button
                 primary
                 onClick={() => {

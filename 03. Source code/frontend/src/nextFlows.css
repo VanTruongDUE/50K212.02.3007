@@ -458,7 +458,7 @@
 .next-editor-block img { max-width: 100%; max-height: 320px; height: auto; object-fit: contain; }
 .next-validity { margin: 0 0 12px; color: #8fbdff; font-weight: 700; }
 .next-field-error { color: #ffa8ae; }
-.next-table tr.selected { background: #203f64; }
+.next-table tbody tr.selected { background: #203f64; }
 .app-shell:has(.sidebar-manager) .next-card h2 { font-size: 24px; line-height: 32px; }
 .app-shell:has(.sidebar-manager) .next-table th { font-size: 16px; line-height: 24px; }
 .next-state-actions, .next-actions-bar { gap: 16px; }
