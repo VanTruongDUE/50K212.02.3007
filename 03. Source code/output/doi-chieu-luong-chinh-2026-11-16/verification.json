@@ -1,0 +1,307 @@
+{
+  "health": {
+    "url": "https://v5-marketing-api.onrender.com/health",
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "database": "up"
+    }
+  },
+  "campaign": {
+    "id": "15",
+    "name": "Đối chiếu luồng giao diện 16 tháng 11",
+    "description": "Đối chiếu giao diện và luồng duyệt. Chưa gửi email tới các địa chỉ trong danh sách.",
+    "owner_id": "NV001",
+    "status": "paused",
+    "manager_comment": null,
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "subject": "Giới thiệu giải pháp hỗ trợ doanh nghiệp",
+    "body": "Kính gửi {{Họ tên}},\n\n\nV5 Marketing xin giới thiệu giải pháp hỗ trợ doanh nghiệp tiếp cận khách hàng B2B. Vui lòng phản hồi nếu quý khách cần thêm thông tin.\n\n\nTrân trọng,\nV5 Marketing",
+    "previewed_at": "2026-11-16T01:03:28.959Z",
+    "sender_account_id": "1",
+    "scheduled_at": "2026-11-20T02:00:00.000Z",
+    "sent_count": 0,
+    "created_at": "2026-11-16T00:55:24.673Z",
+    "updated_at": "2026-11-16T01:03:33.171Z",
+    "send_mode": "scheduled",
+    "paused_at": "2026-11-16T01:03:33.171Z",
+    "pause_reason": "Kết thúc lượt đối chiếu. Giữ chiến dịch tạm dừng, không gửi email tới Contact thu thập.",
+    "sender_name": "V5 Marketing",
+    "needs_reconfirmation": false,
+    "preview_draft_hash": null,
+    "filter_summary": {
+      "valid": 2,
+      "bounce": 0,
+      "recent": 0,
+      "invalid": 0,
+      "excluded": 0,
+      "original": 2,
+      "duplicate": 0,
+      "unsubscribe": 0
+    },
+    "send_rate": 50,
+    "window_start": "08:00:00",
+    "window_end": "17:00:00",
+    "recipient_count": 2,
+    "lists": [
+      {
+        "id": "22",
+        "name": "Google Search 2026-11-16T00:51:04",
+        "reviewed_at": "2026-11-16T00:52:59.259Z",
+        "reviewed_by": "TP001",
+        "manager_review": "approved"
+      }
+    ],
+    "recipients": [
+      {
+        "id": "32",
+        "full_name": null,
+        "email": "hi@mailsuite.com",
+        "status": "pending",
+        "sent_at": null,
+        "error": null
+      },
+      {
+        "id": "33",
+        "full_name": null,
+        "email": "info@pavietnam.vn",
+        "status": "pending",
+        "sent_at": null,
+        "error": null
+      }
+    ]
+  },
+  "response": {
+    "id": "30",
+    "campaign_id": null,
+    "contact_id": "22",
+    "customer_name": "Văn Trường",
+    "email": "vantruongdkrqt@gmail.com",
+    "kind": "other",
+    "status": "replied",
+    "assignee_id": "NV001",
+    "content": "Ghi nhận kiểm tra luồng giao diện và lưu dữ liệu Response ngày 16/11/2026. Đề nghị gửi thông tin kiểm tra vào hộp thư của chủ dự án.",
+    "hidden_at": null,
+    "received_at": "2026-11-16T00:59:36.031Z",
+    "updated_at": "2026-11-16T01:00:56.624Z",
+    "phone": "",
+    "interactions": [
+      {
+        "id": "2",
+        "actor_id": "NV001",
+        "channel": "email",
+        "content": "Đây là thư kiểm tra kỹ thuật từ V5 Marketing tới hộp thư của chủ dự án để kiểm tra gửi email và lịch sử Response. Không phải thư tiếp thị. Mã kiểm tra: V5-CAPTURE-20261116-RSP30.",
+        "created_at": "2026-11-16T01:00:56.624Z"
+      }
+    ],
+    "followups": [
+      {
+        "id": "17",
+        "due_at": "2026-11-18T02:00:00.000Z",
+        "attempt": 1,
+        "status": "done",
+        "note": "Đã kiểm tra giao diện và lưu lịch sử ngày 16/11/2026. Không lập lịch tiếp tự động cho bản ghi kỹ thuật này.",
+        "channel": "email",
+        "goal": "Kiểm tra lưu lịch, ghi nhận kết quả và đồng bộ thư của hộp thư chủ dự án.",
+        "reminder_minutes": 60,
+        "wait_days": 2,
+        "max_attempts": 2,
+        "interval_days": 2,
+        "completed_at": "2026-11-16T01:00:46.202Z"
+      }
+    ],
+    "email_deliveries": [
+      {
+        "id": "2",
+        "state": "sent",
+        "subject": "V5 Marketing kiểm tra luồng giao diện 16/11/2026",
+        "created_at": "2026-11-16T01:00:52.680Z",
+        "sent_at": "2026-11-16T01:00:56.624Z",
+        "error": null
+      }
+    ],
+    "status_history": [
+      {
+        "actor_id": "NV001",
+        "from_status": "new",
+        "to_status": "processing",
+        "note": "Tiếp nhận yêu cầu kiểm tra, bắt đầu xử lý.",
+        "changed_at": "2026-11-16T00:59:40.787Z"
+      },
+      {
+        "actor_id": "NV001",
+        "from_status": "processing",
+        "to_status": "replied",
+        "note": null,
+        "changed_at": "2026-11-16T01:00:56.624Z"
+      }
+    ]
+  },
+  "followup": {
+    "id": "17",
+    "response_id": "30",
+    "assignee_id": "NV001",
+    "due_at": "2026-11-18T02:00:00.000Z",
+    "attempt": 1,
+    "status": "done",
+    "note": "Đã kiểm tra giao diện và lưu lịch sử ngày 16/11/2026. Không lập lịch tiếp tự động cho bản ghi kỹ thuật này.",
+    "created_at": "2026-11-16T01:00:12.044Z",
+    "completed_at": "2026-11-16T01:00:46.202Z",
+    "channel": "email",
+    "goal": "Kiểm tra lưu lịch, ghi nhận kết quả và đồng bộ thư của hộp thư chủ dự án.",
+    "reminder_minutes": 60,
+    "wait_days": 2,
+    "max_attempts": 2,
+    "interval_days": 2,
+    "outcome": "responded",
+    "needs_next": false,
+    "worker_error": null,
+    "worker_error_stage": null,
+    "resolved_at": "2026-11-16T01:01:47.904Z",
+    "customer_name": "Văn Trường",
+    "email": "vantruongdkrqt@gmail.com"
+  },
+  "lists": [
+    {
+      "id": "22",
+      "name": "Google Search 2026-11-16T00:51:04",
+      "owner_id": "NV001",
+      "criteria": {
+        "role": [],
+        "size": [],
+        "email": [],
+        "source": "Google Search/Web",
+        "keyword": "liên hệ",
+        "industry": [],
+        "location": []
+      },
+      "employee_review": "passed",
+      "confirmed_at": "2026-11-16T00:52:43.889Z",
+      "manager_review": "approved",
+      "manager_comment": null,
+      "reviewed_by": "TP001",
+      "reviewed_at": "2026-11-16T00:52:59.259Z",
+      "created_at": "2026-11-16T00:51:03.667Z",
+      "search_id": "4",
+      "search_started_at": "2026-11-16T00:49:51.005Z",
+      "search_finished_at": "2026-11-16T00:51:03.667Z",
+      "search_received": 2,
+      "search_invalid": 0,
+      "search_duplicate": 0,
+      "search_new_count": 2,
+      "contacts": [
+        {
+          "id": "32",
+          "email": "hi@mailsuite.com",
+          "full_name": null,
+          "job_title": null,
+          "company": null,
+          "location": null,
+          "source_url": "https://chromewebstore.google.com/detail/mailtrack%C2%AE-%E2%80%93-email-tracke/ndnaehgpjlnokgebbaldlmgkapkpjkkb?hl=vi",
+          "search_provenance": {
+            "method": "inferred",
+            "evidence": "Trang web Email hi@mailsuite.com",
+            "industry": null,
+            "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+            "sizeMethod": "public-email-count-proxy-v1",
+            "companySize": "1–10 nhân viên",
+            "emailStatus": "source_and_syntax",
+            "publicEmailCount": 1
+          },
+          "unsubscribed_at": null
+        },
+        {
+          "id": "33",
+          "email": "info@pavietnam.vn",
+          "full_name": null,
+          "job_title": null,
+          "company": null,
+          "location": null,
+          "source_url": "https://www.pavietnam.vn/en/",
+          "search_provenance": {
+            "method": "inferred",
+            "evidence": "Email: info@pavietnam.vn | Phone: 028 22317777",
+            "industry": null,
+            "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+            "sizeMethod": "public-email-count-proxy-v1",
+            "companySize": "1–10 nhân viên",
+            "emailStatus": "source_and_syntax",
+            "publicEmailCount": 1
+          },
+          "unsubscribed_at": null
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "name": "Google Search 2026-11-16T00:53:43",
+      "owner_id": "NV001",
+      "criteria": {
+        "role": [],
+        "size": [],
+        "email": [],
+        "source": "Google Search/Web",
+        "keyword": "công ty",
+        "industry": [],
+        "location": []
+      },
+      "employee_review": "passed",
+      "confirmed_at": "2026-11-16T01:04:12.846Z",
+      "manager_review": "approved",
+      "manager_comment": null,
+      "reviewed_by": "TP001",
+      "reviewed_at": "2026-11-16T01:04:14.370Z",
+      "created_at": "2026-11-16T00:53:43.507Z",
+      "search_id": "5",
+      "search_started_at": "2026-11-16T00:52:36.666Z",
+      "search_finished_at": "2026-11-16T00:53:43.507Z",
+      "search_received": 3,
+      "search_invalid": 0,
+      "search_duplicate": 1,
+      "search_new_count": 2,
+      "contacts": [
+        {
+          "id": "34",
+          "email": "briannatechnology32@gmail.com",
+          "full_name": null,
+          "job_title": null,
+          "company": null,
+          "location": null,
+          "source_url": "https://play.google.com/store/apps/details?id=com.allemail.securemail.email&hl=vi",
+          "search_provenance": {
+            "method": "inferred",
+            "evidence": "briannatechnology32@gmail.com",
+            "industry": null,
+            "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+            "sizeMethod": "public-email-count-proxy-v1",
+            "companySize": "1–10 nhân viên",
+            "emailStatus": "source_and_syntax",
+            "publicEmailCount": 1
+          },
+          "unsubscribed_at": null
+        },
+        {
+          "id": "36",
+          "email": "contact@careerlink.vn",
+          "full_name": null,
+          "job_title": null,
+          "company": null,
+          "location": null,
+          "source_url": "https://www.careerlink.vn/",
+          "search_provenance": {
+            "method": "inferred",
+            "evidence": "Tuyển dụng, tìm kiếm việc làm trực tuyến tại CareerLink.vn | Customer Care: (028) 3813 0501 / contact@CareerLink.vn",
+            "industry": null,
+            "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+            "sizeMethod": "public-email-count-proxy-v1",
+            "companySize": "1–10 nhân viên",
+            "emailStatus": "source_and_syntax",
+            "publicEmailCount": 1
+          },
+          "unsubscribed_at": null
+        }
+      ]
+    }
+  ]
+}

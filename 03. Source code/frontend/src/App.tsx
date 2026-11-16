@@ -126,7 +126,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const searchExpanded = screen === 'home' || contactActive || criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   const managerAccountExpanded = screen.startsWith('manager-account')
   const managerAccountCheckActive = screen.startsWith('manager-account-check') || screen.startsWith('manager-account-result')
-  return <main className="app-shell">
+  return <main className={'app-shell' + (manager && screen.startsWith('manager-') && screen !== 'manager-account-detail' ? ' figma-inter' : '')}>
     <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
       <nav aria-label="Menu chính">

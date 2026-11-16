@@ -1,0 +1,1230 @@
+{
+  "origin": "http://127.0.0.1:5176",
+  "ledger": [
+    {
+      "id": "20-nv-da-xac-nhan",
+      "name": "Danh sách Contact đã xác nhận",
+      "role": "Nhân viên",
+      "frameId": "16:496",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=confirmed&listId=22",
+      "time": "2026-11-16T03:18:26.186Z",
+      "image": "fe/20-nv-da-xac-nhan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "21-tp-cho-kiem-tra",
+      "name": "Yêu cầu danh sách chờ kiểm tra",
+      "role": "Trưởng phòng",
+      "frameId": "486:8785",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-review",
+      "time": "2026-11-16T03:18:28.491Z",
+      "image": "fe/21-tp-cho-kiem-tra.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "22-tp-chi-tiet-danh-sach",
+      "name": "Chi tiết danh sách chờ duyệt",
+      "role": "Trưởng phòng",
+      "frameId": "486:8846",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-review-detail&role=manager&listId=22",
+      "time": "2026-11-16T03:18:29.515Z",
+      "image": "fe/22-tp-chi-tiet-danh-sach.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "23-tp-da-duyet",
+      "name": "Kết quả danh sách đã duyệt",
+      "role": "Trưởng phòng",
+      "frameId": "486:8984",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-review-approved&role=manager&listId=22",
+      "time": "2026-11-16T03:18:30.187Z",
+      "image": "fe/23-tp-da-duyet.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "28-nv-toan-bo-contact",
+      "name": "Toàn bộ Contact trong danh sách",
+      "role": "Nhân viên",
+      "frameId": "372:12675",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=all-contacts&listId=22",
+      "time": "2026-11-16T03:18:30.884Z",
+      "image": "fe/28-nv-toan-bo-contact.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "24-nv-xuat-contact",
+      "name": "Xuất danh sách Contact định dạng CSV",
+      "role": "Nhân viên",
+      "frameId": "18:3126",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=export&listId=22",
+      "time": "2026-11-16T03:18:31.551Z",
+      "image": "fe/24-nv-xuat-contact.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "25-nv-xuat-thanh-cong",
+      "name": "Xuất dữ liệu thành công",
+      "role": "Nhân viên",
+      "frameId": "16:750",
+      "note": "CSV đã tải xuống thành công sau khi chọn định dạng.",
+      "url": "http://127.0.0.1:5176/?screen=export-success&listId=22",
+      "time": "2026-11-16T03:18:33.195Z",
+      "image": "fe/25-nv-xuat-thanh-cong.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "87-nv-xuat-xlsx",
+      "name": "Xuất danh sách Contact định dạng XLSX",
+      "role": "Nhân viên",
+      "frameId": "18:3162",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=export&listId=23",
+      "time": "2026-11-16T03:18:34.452Z",
+      "image": "fe/87-nv-xuat-xlsx.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "88-nv-xuat-json",
+      "name": "Xuất danh sách Contact định dạng JSON",
+      "role": "Nhân viên",
+      "frameId": "18:3198",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=export&listId=23",
+      "time": "2026-11-16T03:18:35.380Z",
+      "image": "fe/88-nv-xuat-json.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "89-nv-xuat-xml",
+      "name": "Xuất danh sách Contact định dạng XML",
+      "role": "Nhân viên",
+      "frameId": "18:3234",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=export&listId=23",
+      "time": "2026-11-16T03:18:36.256Z",
+      "image": "fe/89-nv-xuat-xml.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "82-nv-cac-danh-sach-contact",
+      "name": "Danh sách Contact đã lưu",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Màn tổng hợp đã bổ sung theo yêu cầu nghiệp vụ; không tìm thấy frame riêng để ghép trực tiếp.",
+      "url": "http://127.0.0.1:5176/?screen=contact-lists",
+      "time": "2026-11-16T03:18:36.924Z",
+      "image": "fe/82-nv-cac-danh-sach-contact.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "29-nv-chien-dich",
+      "name": "Danh sách chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:241209",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:18:38.301Z",
+      "image": "fe/29-nv-chien-dich.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "30-nv-tao-chien-dich",
+      "name": "Tạo chiến dịch Chọn danh sách Contact",
+      "role": "Nhân viên",
+      "frameId": "327:251508",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-contacts",
+      "time": "2026-11-16T03:18:38.990Z",
+      "image": "fe/30-nv-tao-chien-dich.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "31-nv-chien-dich-da-nhap",
+      "name": "Tạo chiến dịch Đã nhập thông tin",
+      "role": "Nhân viên",
+      "frameId": "327:251653",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-contacts",
+      "time": "2026-11-16T03:18:39.880Z",
+      "image": "fe/31-nv-chien-dich-da-nhap.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "32-nv-ket-qua-loc",
+      "name": "Kết quả lọc người nhận chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:252065",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-filtered&campaignId=15",
+      "time": "2026-11-16T03:18:40.599Z",
+      "image": "fe/32-nv-ket-qua-loc.png",
+      "height": 1092,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1098
+      },
+      "captureHeight": 1098
+    },
+    {
+      "id": "33-nv-nguoi-nhan-da-luu",
+      "name": "Danh sách người nhận đã xác nhận",
+      "role": "Nhân viên",
+      "frameId": "327:252598",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-pending&campaignId=15",
+      "time": "2026-11-16T03:18:41.280Z",
+      "image": "fe/33-nv-nguoi-nhan-da-luu.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "34-nv-thu-vien-email",
+      "name": "Thư viện mẫu email",
+      "role": "Nhân viên",
+      "frameId": "327:253992",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-email&campaignId=15",
+      "time": "2026-11-16T03:18:41.970Z",
+      "image": "fe/34-nv-thu-vien-email.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "35-nv-bo-cuc-email",
+      "name": "Chọn bố cục email",
+      "role": "Nhân viên",
+      "frameId": "327:254169",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-layouts&campaignId=15",
+      "time": "2026-11-16T03:18:42.660Z",
+      "image": "fe/35-nv-bo-cuc-email.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "36-nv-soan-email",
+      "name": "Trình soạn thảo email",
+      "role": "Nhân viên",
+      "frameId": "327:254324",
+      "note": "Đang chuẩn bị nội dung; chưa gửi thư tới Contact tìm được.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15",
+      "time": "2026-11-16T03:18:44.091Z",
+      "image": "fe/36-nv-soan-email.png",
+      "height": 1490,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1430
+      },
+      "captureHeight": 1590
+    },
+    {
+      "id": "37-nv-xem-truoc-may-tinh",
+      "name": "Xem trước email trên máy tính",
+      "role": "Nhân viên",
+      "frameId": "327:255883",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-preview&campaignId=15",
+      "time": "2026-11-16T03:18:44.799Z",
+      "image": "fe/37-nv-xem-truoc-may-tinh.png",
+      "height": 1024,
+      "mode": "Bản xem trước dựng cô lập từ nội dung chiến dịch đã lưu",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "38-nv-xem-truoc-dien-thoai",
+      "name": "Xem trước email trên điện thoại",
+      "role": "Nhân viên",
+      "frameId": "327:255996",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-preview&campaignId=15",
+      "time": "2026-11-16T03:18:45.691Z",
+      "image": "fe/38-nv-xem-truoc-dien-thoai.png",
+      "height": 1074,
+      "mode": "Bản xem trước dựng cô lập từ nội dung chiến dịch đã lưu",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1074
+    },
+    {
+      "id": "39-nv-da-xem-truoc",
+      "name": "Trình soạn email Đã xem trước",
+      "role": "Nhân viên",
+      "frameId": "327:254579",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15",
+      "time": "2026-11-16T03:18:47.023Z",
+      "image": "fe/39-nv-da-xem-truoc.png",
+      "height": 1558,
+      "mode": "Bản xem trước dựng cô lập, không lưu nội dung",
+      "viewport": {
+        "width": 1440,
+        "height": 1430
+      },
+      "captureHeight": 1590
+    },
+    {
+      "id": "40-nv-chon-tai-khoan",
+      "name": "Chọn tài khoản gửi chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:256420",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-sender&campaignId=15",
+      "time": "2026-11-16T03:18:47.733Z",
+      "image": "fe/40-nv-chon-tai-khoan.png",
+      "height": 1061,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1181
+    },
+    {
+      "id": "41-nv-tai-khoan-hop-le",
+      "name": "Tài khoản gửi đủ điều kiện",
+      "role": "Nhân viên",
+      "frameId": "327:256587",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-sender&campaignId=15",
+      "time": "2026-11-16T03:18:48.433Z",
+      "image": "fe/41-nv-tai-khoan-hop-le.png",
+      "height": 1061,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1478
+      },
+      "captureHeight": 1478
+    },
+    {
+      "id": "42-nv-thiet-lap-lich",
+      "name": "Thiết lập lịch gửi chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:257674",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15",
+      "time": "2026-11-16T03:18:49.165Z",
+      "image": "fe/42-nv-thiet-lap-lich.png",
+      "height": 1034,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1030
+      },
+      "captureHeight": 1280
+    },
+    {
+      "id": "43-nv-gui-ngay",
+      "name": "Thiết lập gửi ngay",
+      "role": "Nhân viên",
+      "frameId": "327:258111",
+      "note": "Chỉ mở lựa chọn; chưa xác nhận gửi.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15",
+      "time": "2026-11-16T03:18:49.945Z",
+      "image": "fe/43-nv-gui-ngay.png",
+      "height": 1129,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1240
+      },
+      "captureHeight": 1278
+    },
+    {
+      "id": "44-nv-lich-du-kien",
+      "name": "Lịch gửi dự kiến",
+      "role": "Nhân viên",
+      "frameId": "327:257885",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15",
+      "time": "2026-11-16T03:18:50.910Z",
+      "image": "fe/44-nv-lich-du-kien.png",
+      "height": 1131,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1240
+      },
+      "captureHeight": 1280
+    },
+    {
+      "id": "45-nv-xac-nhan-chien-dich",
+      "name": "Xác nhận chiến dịch Chưa xem nội dung",
+      "role": "Nhân viên",
+      "frameId": "327:258992",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15",
+      "time": "2026-11-16T03:18:51.661Z",
+      "image": "fe/45-nv-xac-nhan-chien-dich.png",
+      "height": 1162,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1202
+      },
+      "captureHeight": 1230
+    },
+    {
+      "id": "46-nv-xem-noi-dung",
+      "name": "Xem lại nội dung trước khi xác nhận",
+      "role": "Nhân viên",
+      "frameId": "327:259215",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15",
+      "time": "2026-11-16T03:18:52.696Z",
+      "image": "fe/46-nv-xem-noi-dung.png",
+      "height": 1162,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1202
+      },
+      "captureHeight": 1230
+    },
+    {
+      "id": "47-nv-bon-phan-hop-le",
+      "name": "Xác nhận chiến dịch Bốn phần hợp lệ",
+      "role": "Nhân viên",
+      "frameId": "327:259467",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15",
+      "time": "2026-11-16T03:18:53.733Z",
+      "image": "fe/47-nv-bon-phan-hop-le.png",
+      "height": 1162,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1202
+      },
+      "captureHeight": 1230
+    },
+    {
+      "id": "48-nv-hop-xac-nhan-cuoi",
+      "name": "Hộp thoại xác nhận chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:259690",
+      "note": "Chỉ mở hộp thoại rồi Hủy; chiến dịch 15 không được đưa vào hàng đợi gửi.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15",
+      "time": "2026-11-16T03:18:54.817Z",
+      "image": "fe/48-nv-hop-xac-nhan-cuoi.png",
+      "height": 1162,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1202
+      },
+      "captureHeight": 1230
+    },
+    {
+      "id": "72-nv-chien-dich-da-len-lich",
+      "name": "Chiến dịch xác nhận và lên lịch thành công",
+      "role": "Nhân viên",
+      "frameId": "327:262437",
+      "note": "Lịch 20/11/2026 lúc 09:00 GMT+7, được tạm dừng ngay trong lượt kiểm tra; chưa gửi email.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:18:56.221Z",
+      "image": "fe/72-nv-chien-dich-da-len-lich.png",
+      "height": 1024,
+      "mode": "Xác nhận giả lập trong trình duyệt; không tạo lịch gửi thật",
+      "viewport": {
+        "width": 1440,
+        "height": 1494
+      },
+      "captureHeight": 1494
+    },
+    {
+      "id": "73-nv-hop-tam-dung",
+      "name": "Hộp thoại tạm dừng chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:243452",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:18:57.217Z",
+      "image": "fe/73-nv-hop-tam-dung.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "74-nv-da-tam-dung",
+      "name": "Tạm dừng chiến dịch thành công",
+      "role": "Nhân viên",
+      "frameId": "327:244574",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:18:59.000Z",
+      "image": "fe/74-nv-da-tam-dung.png",
+      "height": 1024,
+      "mode": "Tạm dừng giả lập; không đổi chiến dịch public",
+      "viewport": {
+        "width": 1440,
+        "height": 1417
+      },
+      "captureHeight": 1417
+    },
+    {
+      "id": "75-nv-tong-quat-tam-dung",
+      "name": "Thông tin tổng quát chiến dịch tạm dừng",
+      "role": "Nhân viên",
+      "frameId": "327:242358",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:19:00.005Z",
+      "image": "fe/75-nv-tong-quat-tam-dung.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "76-nv-chon-muc-sua",
+      "name": "Chọn mục chỉnh sửa chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:247194",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list&campaignId=15",
+      "time": "2026-11-16T03:19:00.980Z",
+      "image": "fe/76-nv-chon-muc-sua.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "77-nv-sua-thong-tin-chung",
+      "name": "Chỉnh sửa thông tin chung chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:247782",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list&campaignId=15",
+      "time": "2026-11-16T03:19:02.283Z",
+      "image": "fe/77-nv-sua-thong-tin-chung.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "78-nv-tiep-tuc-chien-dich",
+      "name": "Tiếp tục gửi Xem lại chiến dịch",
+      "role": "Nhân viên",
+      "frameId": "327:249944",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15",
+      "time": "2026-11-16T03:19:03.039Z",
+      "image": "fe/78-nv-tiep-tuc-chien-dich.png",
+      "height": 1420,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1362
+      },
+      "captureHeight": 1432
+    },
+    {
+      "id": "79-nv-tiep-tuc-xem-email",
+      "name": "Tiếp tục gửi Xem nội dung email",
+      "role": "Nhân viên",
+      "frameId": "327:250110",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15",
+      "time": "2026-11-16T03:19:04.048Z",
+      "image": "fe/79-nv-tiep-tuc-xem-email.png",
+      "height": 1420,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1362
+      },
+      "captureHeight": 1432
+    },
+    {
+      "id": "80-nv-tiep-tuc-da-xem",
+      "name": "Tiếp tục gửi Đã xem nội dung",
+      "role": "Nhân viên",
+      "frameId": "327:250305",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15",
+      "time": "2026-11-16T03:19:05.022Z",
+      "image": "fe/80-nv-tiep-tuc-da-xem.png",
+      "height": 1420,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1362
+      },
+      "captureHeight": 1432
+    },
+    {
+      "id": "81-nv-tiep-tuc-thanh-cong",
+      "name": "Tiếp tục chiến dịch thành công",
+      "role": "Nhân viên",
+      "frameId": "327:250992",
+      "note": "Kiểm tra chuyển lại Đã lên lịch; sẽ tạm dừng lại ngay, trước ngày gửi 20/11.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:19:06.425Z",
+      "image": "fe/81-nv-tiep-tuc-thanh-cong.png",
+      "height": 1024,
+      "mode": "Tiếp tục gửi giả lập; không gửi email thật",
+      "viewport": {
+        "width": 1440,
+        "height": 1321
+      },
+      "captureHeight": 1321
+    },
+    {
+      "id": "91-nv-thu-vien-da-luu",
+      "name": "Thư viện email có mẫu đã lưu",
+      "role": "Nhân viên",
+      "frameId": "327:253992",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=campaign-email&campaignId=15",
+      "time": "2026-11-16T03:19:07.128Z",
+      "image": "fe/91-nv-thu-vien-da-luu.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "92-nv-chien-dich-da-gui",
+      "name": "Thông tin chiến dịch đã gửi thành công",
+      "role": "Nhân viên",
+      "frameId": "327:241792",
+      "note": "Mở chiến dịch 13 đã gửi thành công từ lượt kiểm tra trước; không gửi lại trong lượt chụp này.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-list",
+      "time": "2026-11-16T03:19:08.085Z",
+      "image": "fe/92-nv-chien-dich-da-gui.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1267
+      },
+      "captureHeight": 1267
+    },
+    {
+      "id": "49-nv-danh-sach-response",
+      "name": "Danh sách Response",
+      "role": "Nhân viên",
+      "frameId": "43:6174",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=response-list",
+      "time": "2026-11-16T03:19:09.224Z",
+      "image": "fe/49-nv-danh-sach-response.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "50-nv-chi-tiet-response",
+      "name": "Chi tiết Response",
+      "role": "Nhân viên",
+      "frameId": "43:6303",
+      "note": "Response 26 là thư kỹ thuật đã có của hộp thư được phép; không phải phản hồi từ Contact vừa tìm được.",
+      "url": "http://127.0.0.1:5176/?screen=response-detail&responseId=26",
+      "time": "2026-11-16T03:19:10.288Z",
+      "image": "fe/50-nv-chi-tiet-response.png",
+      "height": 1130,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "53-nv-them-response",
+      "name": "Thêm Response thủ công",
+      "role": "Nhân viên",
+      "frameId": "43:6301",
+      "note": "Nhập thủ công để kiểm tra; dùng hộp thư của chủ dự án.",
+      "url": "http://127.0.0.1:5176/?screen=response-add",
+      "time": "2026-11-16T03:19:11.032Z",
+      "image": "fe/53-nv-them-response.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "54-nv-cap-nhat-response",
+      "name": "Cập nhật thông tin Response",
+      "role": "Nhân viên",
+      "frameId": "60:6324",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=response-edit&responseId=26",
+      "time": "2026-11-16T03:19:11.753Z",
+      "image": "fe/54-nv-cap-nhat-response.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "55-nv-trang-thai-response",
+      "name": "Cập nhật trạng thái Response",
+      "role": "Nhân viên",
+      "frameId": "43:6297",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=response-status&responseId=30",
+      "time": "2026-11-16T03:19:12.870Z",
+      "image": "fe/55-nv-trang-thai-response.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "63-nv-soan-phan-hoi",
+      "name": "Soạn phản hồi Email",
+      "role": "Nhân viên",
+      "frameId": "43:6300",
+      "note": "Người nhận là vantruongdkrqt@gmail.com của chủ dự án, không phải Contact vừa tìm được.",
+      "url": "http://127.0.0.1:5176/?screen=response-reply&responseId=30",
+      "time": "2026-11-16T03:19:13.603Z",
+      "image": "fe/63-nv-soan-phan-hoi.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "64-nv-da-gui-phan-hoi",
+      "name": "Response sau khi gửi phản hồi",
+      "role": "Nhân viên",
+      "frameId": "43:6303",
+      "note": "Đã gửi một thư kỹ thuật vào chính hộp thư được phép và lưu tương tác.",
+      "url": "http://127.0.0.1:5176/?screen=response-detail&responseId=30",
+      "time": "2026-11-16T03:19:14.301Z",
+      "image": "fe/64-nv-da-gui-phan-hoi.png",
+      "height": 1130,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "65-nv-lich-su-phan-hoi",
+      "name": "Lịch sử phản hồi đã gửi",
+      "role": "Nhân viên",
+      "frameId": "47:7604",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=response-history&responseId=30",
+      "time": "2026-11-16T03:19:15.008Z",
+      "image": "fe/65-nv-lich-su-phan-hoi.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "66-nv-lich-su-trang-thai",
+      "name": "Lịch sử trạng thái Response",
+      "role": "Nhân viên",
+      "frameId": "47:7735",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=response-status-history&responseId=30",
+      "time": "2026-11-16T03:19:15.702Z",
+      "image": "fe/66-nv-lich-su-trang-thai.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "56-nv-tao-followup",
+      "name": "Tạo lịch Follow-up",
+      "role": "Nhân viên",
+      "frameId": "43:6299",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=followup-create&responseId=31",
+      "time": "2026-11-16T03:19:16.770Z",
+      "image": "fe/56-nv-tao-followup.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "58-nv-danh-sach-followup",
+      "name": "Quản lý lịch Follow-up",
+      "role": "Nhân viên",
+      "frameId": "43:6302",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=followup-list",
+      "time": "2026-11-16T03:19:18.191Z",
+      "image": "fe/58-nv-danh-sach-followup.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "62-nv-ghi-chu-followup",
+      "name": "Ghi chú kết quả Follow-up",
+      "role": "Nhân viên",
+      "frameId": "43:6304",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=followup-note&followupId=17",
+      "time": "2026-11-16T03:19:20.968Z",
+      "image": "fe/62-nv-ghi-chu-followup.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "71-nv-followup-co-phan-hoi",
+      "name": "Kết quả Follow-up Có phản hồi",
+      "role": "Nhân viên",
+      "frameId": "43:6298",
+      "note": "IMAP nhận thư kỹ thuật gửi vào cùng hộp thư, worker tự xác định responded. Không phải khách hàng độc lập trả lời.",
+      "url": "http://127.0.0.1:5176/?screen=followup-result&followupId=17",
+      "time": "2026-11-16T03:19:21.690Z",
+      "image": "fe/71-nv-followup-co-phan-hoi.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1026
+    },
+    {
+      "id": "07-tp-danh-sach-tai-khoan",
+      "name": "Danh sách tài khoản gửi",
+      "role": "Trưởng phòng",
+      "frameId": "486:9371",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-list",
+      "time": "2026-11-16T03:19:22.811Z",
+      "image": "fe/07-tp-danh-sach-tai-khoan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "08-tp-cap-nhat-tai-khoan",
+      "name": "Cập nhật tài khoản gửi",
+      "role": "Trưởng phòng",
+      "frameId": "486:9491",
+      "note": "Mở tài khoản đang chọn; không thay đổi thông tin đăng nhập Google.",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-edit&role=manager&senderId=1",
+      "time": "2026-11-16T03:19:23.529Z",
+      "image": "fe/08-tp-cap-nhat-tai-khoan.png",
+      "height": 1388,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "14-tp-kiem-tra-tai-khoan",
+      "name": "Kiểm tra tình trạng tài khoản gửi",
+      "role": "Trưởng phòng",
+      "frameId": "486:9094",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-check",
+      "time": "2026-11-16T03:19:24.214Z",
+      "image": "fe/14-tp-kiem-tra-tai-khoan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "15-tp-ket-qua-tai-khoan",
+      "name": "Kết quả kiểm tra tài khoản Kết nối tốt",
+      "role": "Trưởng phòng",
+      "frameId": "486:9161",
+      "note": "SMTP kiểm tra thật; hạn mức 100 email trong 3 ngày theo yêu cầu đã chốt.",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-result-good&role=manager&senderId=1",
+      "time": "2026-11-16T03:19:25.801Z",
+      "image": "fe/15-tp-ket-qua-tai-khoan.png",
+      "height": 1024,
+      "mode": "Kết quả SMTP giả lập để kiểm tra cách hiển thị; không xác thực Gmail lại",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "16-tp-luu-tai-khoan",
+      "name": "Cập nhật tài khoản thành công",
+      "role": "Trưởng phòng",
+      "frameId": "486:9677",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-saved&role=manager&senderId=1",
+      "time": "2026-11-16T03:19:27.416Z",
+      "image": "fe/16-tp-luu-tai-khoan.png",
+      "height": 1024,
+      "mode": "Lưu cập nhật giả lập; không sửa tài khoản public",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "51-tp-them-tai-khoan",
+      "name": "Thêm tài khoản gửi",
+      "role": "Trưởng phòng",
+      "frameId": "486:9432",
+      "note": "Mở và chụp form; không tạo tài khoản SMTP giả hoặc thay đổi kết nối Gmail đang sử dụng.",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-add",
+      "time": "2026-11-16T03:19:28.171Z",
+      "image": "fe/51-tp-them-tai-khoan.png",
+      "height": 1162,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "52-tp-chi-tiet-tai-khoan",
+      "name": "Chi tiết tài khoản gửi",
+      "role": "Trưởng phòng",
+      "frameId": "229:33584",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-detail&senderId=1",
+      "time": "2026-11-16T03:19:28.856Z",
+      "image": "fe/52-tp-chi-tiet-tai-khoan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "68-nv-tai-khoan-gui",
+      "name": "Tài khoản gửi Nhân viên",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Không gán nhầm frame danh sách của Trưởng phòng.",
+      "url": "http://127.0.0.1:5176/?screen=sender-list",
+      "time": "2026-11-16T03:19:30.513Z",
+      "image": "fe/68-nv-tai-khoan-gui.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "69-nv-chi-tiet-tai-khoan",
+      "name": "Chi tiết tài khoản gửi Nhân viên",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Màn tài khoản Nhân viên; thiết kế quản lý tài khoản của Trưởng phòng được đối chiếu riêng.",
+      "url": "http://127.0.0.1:5176/?screen=sender-detail&senderId=1",
+      "time": "2026-11-16T03:19:31.255Z",
+      "image": "fe/69-nv-chi-tiet-tai-khoan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "83-nv-menu-tai-khoan",
+      "name": "Thông tin tài khoản Nhân viên",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Thành phần bổ sung theo yêu cầu người dùng; không có frame đối chiếu riêng.",
+      "url": "http://127.0.0.1:5176/?screen=profile",
+      "time": "2026-11-16T03:19:31.929Z",
+      "image": "fe/83-nv-menu-tai-khoan.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "90-nv-luu-mau-email",
+      "name": "Lưu mẫu email dùng lại",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Chức năng lưu mẫu trên màn soạn email; không có frame popup riêng trong Figma.",
+      "url": "http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15",
+      "time": "2026-11-16T03:19:32.727Z",
+      "image": "fe/90-nv-luu-mau-email.png",
+      "height": 1710,
+      "mode": "Dữ liệu API thật, chỉ đọc",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1742
+    },
+    {
+      "id": "57-nv-followup-da-tao",
+      "name": "Tạo lịch Follow-up thành công",
+      "role": "Nhân viên",
+      "frameId": "99:32139",
+      "note": "",
+      "url": "http://127.0.0.1:5176/?screen=followup-success&followupId=17",
+      "time": "2026-11-16T03:22:35.691Z",
+      "image": "fe/57-nv-followup-da-tao.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "59-nv-followup-cho-thuc-hien",
+      "name": "Chi tiết Follow-up chờ thực hiện",
+      "role": "Nhân viên",
+      "frameId": "43:6298",
+      "note": "Biến thể Chờ thực hiện dùng cùng cấu trúc kết quả; không so trạng thái như frame Có phản hồi.",
+      "url": "http://127.0.0.1:5176/?screen=followup-result&followupId=17",
+      "time": "2026-11-16T03:22:36.396Z",
+      "image": "fe/59-nv-followup-cho-thuc-hien.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "60-nv-ghi-nhan-ket-qua",
+      "name": "Ghi nhận kết quả thực hiện Follow-up",
+      "role": "Nhân viên",
+      "frameId": null,
+      "note": "Màn nghiệp vụ thật; chưa tìm thấy frame tương đương riêng trong danh mục Figma, không ghép nhầm frame.",
+      "url": "http://127.0.0.1:5176/?screen=followup-detail&followupId=17",
+      "time": "2026-11-16T03:22:37.089Z",
+      "image": "fe/60-nv-ghi-nhan-ket-qua.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "61-nv-followup-cho-phan-hoi",
+      "name": "Kết quả Follow-up Đang chờ phản hồi",
+      "role": "Nhân viên",
+      "frameId": "43:6298",
+      "note": "Trạng thái thực tế sau ghi nhận; chưa được coi là Có phản hồi.",
+      "url": "http://127.0.0.1:5176/?screen=followup-result&followupId=17",
+      "time": "2026-11-16T03:22:37.755Z",
+      "image": "fe/61-nv-followup-cho-phan-hoi.png",
+      "height": 1024,
+      "mode": "Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1024
+    },
+    {
+      "id": "70-tp-dong-bo-imap",
+      "name": "Kiểm tra kết nối Gmail IMAP",
+      "role": "Trưởng phòng",
+      "frameId": "229:33584",
+      "note": "Kiểm tra IMAP thật; màn này bổ sung chức năng Google so với frame gốc.",
+      "url": "http://127.0.0.1:5176/?screen=manager-account-detail&senderId=1",
+      "time": "2026-11-16T03:22:39.584Z",
+      "image": "fe/70-tp-dong-bo-imap.png",
+      "height": 1024,
+      "mode": "Kết quả IMAP giả lập; không đồng bộ hộp thư",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "captureHeight": 1287
+    }
+  ],
+  "errors": []
+}

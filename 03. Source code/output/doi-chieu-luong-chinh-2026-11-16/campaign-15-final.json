@@ -1,0 +1,65 @@
+{
+  "id": "15",
+  "name": "Đối chiếu luồng giao diện 16 tháng 11",
+  "description": "Đối chiếu giao diện và luồng duyệt. Chưa gửi email tới các địa chỉ trong danh sách.",
+  "owner_id": "NV001",
+  "status": "paused",
+  "manager_comment": null,
+  "reviewed_by": null,
+  "reviewed_at": null,
+  "subject": "Giới thiệu giải pháp hỗ trợ doanh nghiệp",
+  "body": "Kính gửi {{Họ tên}},\n\n\nV5 Marketing xin giới thiệu giải pháp hỗ trợ doanh nghiệp tiếp cận khách hàng B2B. Vui lòng phản hồi nếu quý khách cần thêm thông tin.\n\n\nTrân trọng,\nV5 Marketing",
+  "previewed_at": "2026-11-16T01:03:28.959Z",
+  "sender_account_id": "1",
+  "scheduled_at": "2026-11-20T02:00:00.000Z",
+  "sent_count": 0,
+  "created_at": "2026-11-16T00:55:24.673Z",
+  "updated_at": "2026-11-16T01:03:33.171Z",
+  "send_mode": "scheduled",
+  "paused_at": "2026-11-16T01:03:33.171Z",
+  "pause_reason": "Kết thúc lượt đối chiếu. Giữ chiến dịch tạm dừng, không gửi email tới Contact thu thập.",
+  "sender_name": "V5 Marketing",
+  "needs_reconfirmation": false,
+  "preview_draft_hash": null,
+  "filter_summary": {
+    "valid": 2,
+    "bounce": 0,
+    "recent": 0,
+    "invalid": 0,
+    "excluded": 0,
+    "original": 2,
+    "duplicate": 0,
+    "unsubscribe": 0
+  },
+  "send_rate": 50,
+  "window_start": "08:00:00",
+  "window_end": "17:00:00",
+  "recipient_count": 2,
+  "lists": [
+    {
+      "id": "22",
+      "name": "Google Search 2026-11-16T00:51:04",
+      "reviewed_at": "2026-11-16T00:52:59.259Z",
+      "reviewed_by": "TP001",
+      "manager_review": "approved"
+    }
+  ],
+  "recipients": [
+    {
+      "id": "32",
+      "full_name": null,
+      "email": "hi@mailsuite.com",
+      "status": "pending",
+      "sent_at": null,
+      "error": null
+    },
+    {
+      "id": "33",
+      "full_name": null,
+      "email": "info@pavietnam.vn",
+      "status": "pending",
+      "sent_at": null,
+      "error": null
+    }
+  ]
+}

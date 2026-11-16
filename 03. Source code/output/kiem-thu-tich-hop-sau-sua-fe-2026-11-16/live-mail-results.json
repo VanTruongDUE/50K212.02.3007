@@ -1,0 +1,24 @@
+{
+  "origin": "https://v5-marketing.vercel.app",
+  "checks": [
+    {
+      "action": "verify",
+      "status": 201,
+      "verified": true,
+      "message": null
+    },
+    {
+      "action": "verify-inbox",
+      "status": 201,
+      "verified": true,
+      "message": null
+    }
+  ],
+  "health": {
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "database": "up"
+    }
+  }
+}

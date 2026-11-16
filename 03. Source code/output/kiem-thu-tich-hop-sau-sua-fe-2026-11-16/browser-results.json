@@ -1,0 +1,1048 @@
+{
+  "checks": [
+    "search-to-database-2-contacts",
+    "03-manager-review",
+    "04-manager-sender-list",
+    "05-manager-sender-saved",
+    "06-campaign-recipients",
+    "15-campaign-info-popup",
+    "16-response-list",
+    "17-response-detail",
+    "21-response-history",
+    "24-followup-detail",
+    "25-followup-exhausted",
+    "no-extra-followup-after-final-attempt",
+    "30-followup-exhausted-2-of-2",
+    "28-followup-responded",
+    "reload-preserves-responseId",
+    "reload-preserves-followupId",
+    "reload-preserves-senderId",
+    "role-boundaries-pass",
+    "29-response-mobile"
+  ],
+  "state": {
+    "search": "1",
+    "list": "1",
+    "sender": "1",
+    "campaign": "1",
+    "response": "1",
+    "responseChecked": true,
+    "replied": true,
+    "followup": "1",
+    "uiApprovedList": "2",
+    "respondedResponse": "2",
+    "respondedFollowup": "2",
+    "exhausted2": "4"
+  },
+  "http": [
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/contact-lists/1",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "PATCH",
+      "path": "/api/sender-accounts/1",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns/1",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses/1",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses/1",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "PATCH",
+      "path": "/api/followups/4/complete",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses/1",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses/1",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/followups",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts/google/status",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "manager",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/campaigns",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/email-templates",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/sender-accounts",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/contact-lists/customers",
+      "status": 200
+    },
+    {
+      "role": "employee",
+      "method": "GET",
+      "path": "/api/responses/1",
+      "status": 200
+    }
+  ],
+  "errors": []
+}

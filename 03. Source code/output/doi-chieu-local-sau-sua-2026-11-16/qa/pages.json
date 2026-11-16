@@ -1,0 +1,602 @@
+[
+  {
+    "page": 1,
+    "images": 0,
+    "chars": 1755,
+    "text": "Đối chiếu FE local và Figma  |  1 \nĐối chiếu giao diện local sau ch ỉnh sửa \nTừ mục 20 đ ến h ết b ản Word trư ớc \nBộ ảnh mới để kiểm tra cách hiển thị của hai vai trò Nhân viên và Trưởng phòng. Mỗi mục đặt ảnh FE local và ảnh \nFigma theo thứ tự trên–dưới, hoặc ở hai trang liên tiếp khi ảnh dài. \nPhạm vi và nguồn ảnh \n72 mục màn hình theo đúng thứ tự phần còn lại của bản Word; 66 mục có ảnh Figma, tương ứng 61 frame khác nhau. \nSáu màn chưa có frame riêng được ghi rõ, không ghép với frame khác để kết luận là đã khớp. \nFE được chụp mới tại http://127.0.0.1:5176, rộng 1440 px. Chiều cao viewport theo frame khi frame dài hơn 1024 px; \nảnh giữ toàn bộ nội dung trang, không cắt trường hoặc nút. \nẢnh Figma được xuất lại trực tiếp qua Figma MCP local ngày 16/11/2026 từ các trang Trường, Đức + Huy và Nhi + \nThảo. \nDữ liệu nền được đọc từ API public để giữ cùng các bản ghi đang đối chiếu. Các trạng thái cần ghi dữ liệu được dựng \ncô lập trong trình duyệt và có ghi chú ở từng mục. Ảnh này dùng kiểm tra FE, không chứng minh giao dịch BE hoặc \ngửi thư thật. \nServer BE local và PostgreSQL đã khởi động, /health trả status ok và database up. Tác vụ gửi thư và đồng bộ nền \nđược tắt trong phiên xem giao diện để tránh tự gửi hoặc xử lý hộp thư. \nKhông commit, không deploy public và không thay bản Word cũ trong lượt này. \nCách đọc nhận xét \nNhận xét phân biệt ba loại: sai khác về cách hiển thị còn nhìn thấy; sai khác do dữ liệu hoặc trạng thái; phần mở rộng \nđã có để kết nối API thật. Không đánh giá độ giống bằng tỷ lệ pixel. \nCác quyết định nghiệp vụ được giữ: hạn mức 100 email trong 3 ngày; lý do tạm dừng không bắt buộc, tối đa 250 ký \ntự; hai mục con tài khoản gửi của Trưởng phòng. Vì vậy một số chữ và cột khác dữ liệu minh họa trong Figma. "
+  },
+  {
+    "page": 2,
+    "images": 2,
+    "chars": 338,
+    "text": "Đối chiếu FE local và Figma  |  2 \n20 Danh sách Contact đã xác nhận \nNhân viên  |  http://127.0.0.1:5176/?screen=confirmed&listId=22 \nĐối chiếu: Giữ thống kê, bảng và nút xuất. Tên, số lượng và thông tin Contact lấy từ API; không gán tên hoặc chức vụ \nmẫu trong Figma. \nFE local sau sửa  |  2026-11-16 03:18:26 UTC \n \nFigma  |  16:496 \n \n"
+  },
+  {
+    "page": 3,
+    "images": 2,
+    "chars": 371,
+    "text": "Đối chiếu FE local và Figma  |  3 \n21 Yêu cầu danh sách chờ kiểm tra \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-review \nĐối chiếu: Hiện không có yêu cầu chờ duyệt trong dữ liệu API. Ảnh ghi nhận trạng thái trống; chưa chứng minh cách \nhiển thị bảng nhiều yêu cầu giống frame có dữ liệu. \nFE local sau sửa  |  2026-11-16 03:18:28 UTC \n \nFigma  |  486:8785 \n \n"
+  },
+  {
+    "page": 4,
+    "images": 2,
+    "chars": 389,
+    "text": "Đối chiếu FE local và Figma  |  4 \n22 Chi tiết danh sách chờ duyệt \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-review-detail&role=manager&listId=22 \nĐối chiếu: Đã có thống kê, bảng người nhận và dãy nút duyệt. Danh sách đang chọn đã được duyệt nên nút Duyệt \nkhông còn hoạt động; số dòng khác dữ liệu mẫu. \nFE local sau sửa  |  2026-11-16 03:18:29 UTC \n \nFigma  |  486:8846 \n \n"
+  },
+  {
+    "page": 5,
+    "images": 2,
+    "chars": 343,
+    "text": "Đối chiếu FE local và Figma  |  5 \n23 Kết quả danh sách đã duyệt \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-review-approved&role=manager&listId=22 \nĐối chiếu: Có bảng kết quả và thông báo đã duyệt. Tên danh sách, người duyệt và thời điểm lấy từ dữ liệu thật. \nFE local sau sửa  |  2026-11-16 03:18:30 UTC \n \nFigma  |  486:8984 \n \n"
+  },
+  {
+    "page": 6,
+    "images": 2,
+    "chars": 352,
+    "text": "Đối chiếu FE local và Figma  |  6 \n28 Toàn bộ Contact trong danh sách \nNhân viên  |  http://127.0.0.1:5176/?screen=all-contacts&listId=22 \nĐối chiếu: Giữ bảng Contact và phân trang. Dữ liệu hiện ít hơn frame; thông tin nguồn được mở rộng khi cần, không \ntrộn vào chức vụ cá nhân. \nFE local sau sửa  |  2026-11-16 03:18:30 UTC \n \nFigma  |  372:12675 \n \n"
+  },
+  {
+    "page": 7,
+    "images": 2,
+    "chars": 361,
+    "text": "Đối chiếu FE local và Figma  |  7 \n24 Xuất danh sách Contact định dạng CSV \nNhân viên  |  http://127.0.0.1:5176/?screen=export&listId=22 \nĐối chiếu: Ảnh chưa chọn định dạng; nút Xuất tệp chưa hoạt động. Figma đang chọn CSV. Đây là khác trạng thái lựa \nchọn, không phải thiếu chức năng xuất. \nFE local sau sửa  |  2026-11-16 03:18:31 UTC \n \nFigma  |  18:3126 \n \n"
+  },
+  {
+    "page": 8,
+    "images": 2,
+    "chars": 351,
+    "text": "Đối chiếu FE local và Figma  |  8 \n25 Xuất dữ liệu thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=export-success&listId=22 \nĐối chiếu: Có thông báo thành công, liên kết tệp và nút quay lại. FE còn hiện thêm thông báo cập nhật ở góc phải; \nframe không có thông báo phụ này. \nFE local sau sửa  |  2026-11-16 03:18:33 UTC \n \nFigma  |  16:750 \n \n"
+  },
+  {
+    "page": 9,
+    "images": 2,
+    "chars": 295,
+    "text": "Đối chiếu FE local và Figma  |  9 \n87 Xuất danh sách Contact định dạng XLSX \nNhân viên  |  http://127.0.0.1:5176/?screen=export&listId=23 \nĐối chiếu: Đã chọn XLSX và nút xuất tương ứng. Khác tên/số Contact theo dữ liệu thật. \nFE local sau sửa  |  2026-11-16 03:18:34 UTC \n \nFigma  |  18:3162 \n \n"
+  },
+  {
+    "page": 10,
+    "images": 2,
+    "chars": 296,
+    "text": "Đối chiếu FE local và Figma  |  10 \n88 Xuất danh sách Contact định dạng JSON \nNhân viên  |  http://127.0.0.1:5176/?screen=export&listId=23 \nĐối chiếu: Đã chọn JSON và nút xuất tương ứng. Khác tên/số Contact theo dữ liệu thật. \nFE local sau sửa  |  2026-11-16 03:18:35 UTC \n \nFigma  |  18:3198 \n \n"
+  },
+  {
+    "page": 11,
+    "images": 2,
+    "chars": 294,
+    "text": "Đối chiếu FE local và Figma  |  11 \n89 Xuất danh sách Contact định dạng XML \nNhân viên  |  http://127.0.0.1:5176/?screen=export&listId=23 \nĐối chiếu: Đã chọn XML và nút xuất tương ứng. Khác tên/số Contact theo dữ liệu thật. \nFE local sau sửa  |  2026-11-16 03:18:36 UTC \n \nFigma  |  18:3234 \n \n"
+  },
+  {
+    "page": 12,
+    "images": 1,
+    "chars": 323,
+    "text": "Đối chiếu FE local và Figma  |  12 \n82 Danh sách Contact đã lưu \nNhân viên  |  http://127.0.0.1:5176/?screen=contact-lists \nĐối chiếu: Danh sách Contact đã lưu là màn bổ sung, chưa có frame Figma riêng. \nFE local sau sửa  |  2026-11-16 03:18:36 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  },
+  {
+    "page": 13,
+    "images": 1,
+    "chars": 345,
+    "text": "Đối chiếu FE local và Figma  |  13 \n29 Danh sách chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Còn khác cách trình bày một số nút trong cột thao tác và một số nhãn trạng thái. Số chiến dịch và trạng thái \nhiện tại khác dữ liệu mẫu. Bố cục bảng chính được giữ. \nFE local sau sửa  |  2026-11-16 03:18:38 UTC \n \n"
+  },
+  {
+    "page": 14,
+    "images": 1,
+    "chars": 91,
+    "text": "Đối chiếu FE local và Figma  |  14 \n29 Danh sách chiến dịch Figma \nFigma  |  327:241209 \n \n"
+  },
+  {
+    "page": 15,
+    "images": 2,
+    "chars": 369,
+    "text": "Đối chiếu FE local và Figma  |  15 \n30 Tạo chiến dịch Chọn danh sách Contact \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-contacts \nĐối chiếu: Còn khác vị trí nút Áp dụng: FE có thanh nút riêng phía dưới hai cột, frame đặt nút trong cột chọn danh \nsách. FE có thêm mô tả ngắn ở tiêu đề. \nFE local sau sửa  |  2026-11-16 03:18:38 UTC \n \nFigma  |  327:251508 \n \n"
+  },
+  {
+    "page": 16,
+    "images": 2,
+    "chars": 350,
+    "text": "Đối chiếu FE local và Figma  |  16 \n31 Tạo chiến dịch Đã nhập thông tin \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-contacts \nĐối chiếu: Cùng khác biệt bố cục nút Áp dụng như mục 30. Nội dung nhập và danh sách được chọn chỉ phục vụ ảnh \nso sánh, chưa tạo chiến dịch. \nFE local sau sửa  |  2026-11-16 03:18:39 UTC \n \nFigma  |  327:251653 \n \n"
+  },
+  {
+    "page": 17,
+    "images": 1,
+    "chars": 330,
+    "text": "Đối chiếu FE local và Figma  |  17 \n32 Kết quả lọc người nhận chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-filtered&campaignId=15 \nĐối chiếu: Có hai cột thông tin và phần kết quả lọc. Giá trị được lấy từ chiến dịch thật; không thay bằng 915/115/800 \ncủa frame. \nFE local sau sửa  |  2026-11-16 03:18:40 UTC \n \n"
+  },
+  {
+    "page": 18,
+    "images": 1,
+    "chars": 104,
+    "text": "Đối chiếu FE local và Figma  |  18 \n32 Kết quả lọc người nhận chiến dịch Figma \nFigma  |  327:252065 \n \n"
+  },
+  {
+    "page": 19,
+    "images": 2,
+    "chars": 383,
+    "text": "Đối chiếu FE local và Figma  |  19 \n33 Danh sách người nhận đã xác nhận \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-pending&campaignId=15 \nĐối chiếu: Giữ thông báo thành công và tóm tắt người nhận. Trạng thái nghiệp vụ trong FE diễn đạt danh sách đã \nđược Trưởng phòng duyệt theo quy trình hiện tại. \nFE local sau sửa  |  2026-11-16 03:18:41 UTC \n \nFigma  |  327:252598 \n \n"
+  },
+  {
+    "page": 20,
+    "images": 2,
+    "chars": 299,
+    "text": "Đối chiếu FE local và Figma  |  20 \n34 Thư viện mẫu email \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-email&campaignId=15 \nĐối chiếu: Giữ thư viện, bảng và nút soạn email mới. Cơ sở dữ liệu hiện có ít mẫu hơn Figma. \nFE local sau sửa  |  2026-11-16 03:18:41 UTC \n \nFigma  |  327:253992 \n \n"
+  },
+  {
+    "page": 21,
+    "images": 2,
+    "chars": 314,
+    "text": "Đối chiếu FE local và Figma  |  21 \n35 Chọn bố cục email \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-layouts&campaignId=15 \nĐối chiếu: Giữ ba thẻ bố cục với khung ảnh, tên và nút chọn. Chiều cao thẻ còn có thể chênh nhẹ với frame. \nFE local sau sửa  |  2026-11-16 03:18:42 UTC \n \nFigma  |  327:254169 \n \n"
+  },
+  {
+    "page": 22,
+    "images": 1,
+    "chars": 363,
+    "text": "Đối chiếu FE local và Figma  |  22 \n36 Trình soạn thảo email \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15 \nĐối chiếu: Còn lệch ở toolbar/biểu tượng, thứ tự khối kéo thả và nút Xem trước đang cùng nhóm bên phải thay vì tách \ntrái như frame. Các chức năng chọn ảnh, logo, PDF được giữ. \nFE local sau sửa  |  2026-11-16 03:18:44 UTC \n \n"
+  },
+  {
+    "page": 23,
+    "images": 1,
+    "chars": 92,
+    "text": "Đối chiếu FE local và Figma  |  23 \n36 Trình soạn thảo email Figma \nFigma  |  327:254324 \n \n"
+  },
+  {
+    "page": 24,
+    "images": 2,
+    "chars": 479,
+    "text": "Đối chiếu FE local và Figma  |  24 \n37 Xem trước email trên máy tính \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-preview&campaignId=15 \nĐối chiếu: Giữ khung xem trước máy tính. Logo, nội dung, nút và tệp đính kèm phụ thuộc nội dung chiến dịch đã lưu; \nvị trí/cách hiển thị nút chọn thiết bị còn khác icon trong frame. \nCách tạo trạng thái: Bản xem trước dựng cô lập từ nội dung chiến dịch đã lưu \nFE local sau sửa  |  2026-11-16 03:18:44 UTC \n \nFigma  |  327:255883 \n \n"
+  },
+  {
+    "page": 25,
+    "images": 1,
+    "chars": 413,
+    "text": "Đối chiếu FE local và Figma  |  25 \n38 Xem trước email trên điện thoại \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-preview&campaignId=15 \nĐối chiếu: Giữ khung xem trước điện thoại. Chiều cao email phụ thuộc nội dung thật, không gán brochure hoặc nút \nđăng ký mẫu khi chưa có. \nCách tạo trạng thái: Bản xem trước dựng cô lập từ nội dung chiến dịch đã lưu \nFE local sau sửa  |  2026-11-16 03:18:45 UTC \n \n"
+  },
+  {
+    "page": 26,
+    "images": 1,
+    "chars": 102,
+    "text": "Đối chiếu FE local và Figma  |  26 \n38 Xem trước email trên điện thoại Figma \nFigma  |  327:255996 \n \n"
+  },
+  {
+    "page": 27,
+    "images": 1,
+    "chars": 405,
+    "text": "Đối chiếu FE local và Figma  |  27 \n39 Trình soạn email Đã xem trước \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15 \nĐối chiếu: Giữ trạng thái đã xem trước và cho phép lưu nội dung. Dãy nút và toolbar còn lệch như mục 36; có phần \nLưu thành mẫu email mở rộng. \nCách tạo trạng thái: Bản xem trước dựng cô lập, không lưu nội dung \nFE local sau sửa  |  2026-11-16 03:18:47 UTC \n \n"
+  },
+  {
+    "page": 28,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  28 \n39 Trình soạn email Đã xem trước Figma \nFigma  |  327:254579 \n \n"
+  },
+  {
+    "page": 29,
+    "images": 1,
+    "chars": 354,
+    "text": "Đối chiếu FE local và Figma  |  29 \n40 Chọn tài khoản gửi chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-sender&campaignId=15 \nĐối chiếu: FE mặc định chọn tài khoản đủ điều kiện đầu tiên theo yêu cầu đã chốt; frame này chưa chọn. Hạn mức \ndùng 3 ngày, không dùng hạn mức ngày của frame. \nFE local sau sửa  |  2026-11-16 03:18:47 UTC \n \n"
+  },
+  {
+    "page": 30,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  30 \n40 Chọn tài khoản gửi chiến dịch Figma \nFigma  |  327:256420 \n \n"
+  },
+  {
+    "page": 31,
+    "images": 1,
+    "chars": 331,
+    "text": "Đối chiếu FE local và Figma  |  31 \n41 Tài khoản gửi đủ điều kiện \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-sender&campaignId=15 \nĐối chiếu: Có bảng, thông báo đủ điều kiện, thông tin người gửi và nút xác nhận. Số tài khoản, hạn mức 3 ngày và cỡ \nbảng khác dữ liệu mẫu. \nFE local sau sửa  |  2026-11-16 03:18:48 UTC \n \n"
+  },
+  {
+    "page": 32,
+    "images": 1,
+    "chars": 97,
+    "text": "Đối chiếu FE local và Figma  |  32 \n41 Tài khoản gửi đủ điều kiện Figma \nFigma  |  327:256587 \n \n"
+  },
+  {
+    "page": 33,
+    "images": 1,
+    "chars": 339,
+    "text": "Đối chiếu FE local và Figma  |  33 \n42 Thiết lập lịch gửi chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15 \nĐối chiếu: Chiến dịch thật đã có lịch nên FE hiện thêm Lịch dự kiến; frame đang ở bước chưa tính lịch. Không xóa lịch \nđã lưu chỉ để chụp ảnh. \nFE local sau sửa  |  2026-11-16 03:18:49 UTC \n \n"
+  },
+  {
+    "page": 34,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  34 \n42 Thiết lập lịch gửi chiến dịch Figma \nFigma  |  327:257674 \n \n"
+  },
+  {
+    "page": 35,
+    "images": 1,
+    "chars": 309,
+    "text": "Đối chiếu FE local và Figma  |  35 \n43 Thiết lập gửi ngay \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15 \nĐối chiếu: Giữ lựa chọn Gửi ngay và lịch dự kiến. Mốc bắt đầu là ngay sau xác nhận; số liệu thời gian phụ thuộc ngày \nchụp. \nFE local sau sửa  |  2026-11-16 03:18:49 UTC \n \n"
+  },
+  {
+    "page": 36,
+    "images": 1,
+    "chars": 89,
+    "text": "Đối chiếu FE local và Figma  |  36 \n43 Thiết lập gửi ngay Figma \nFigma  |  327:258111 \n \n"
+  },
+  {
+    "page": 37,
+    "images": 1,
+    "chars": 317,
+    "text": "Đối chiếu FE local và Figma  |  37 \n44 Lịch gửi dự kiến \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-schedule&campaignId=15 \nĐối chiếu: Lịch dự kiến đã được tách thành khối riêng và có Điều chỉnh/Lưu lịch gửi. Nội dung hạn mức và giờ gửi \ntheo cấu hình thật. \nFE local sau sửa  |  2026-11-16 03:18:50 UTC \n \n"
+  },
+  {
+    "page": 38,
+    "images": 1,
+    "chars": 87,
+    "text": "Đối chiếu FE local và Figma  |  38 \n44 Lịch gửi dự kiến Figma \nFigma  |  327:257885 \n \n"
+  },
+  {
+    "page": 39,
+    "images": 1,
+    "chars": 438,
+    "text": "Đối chiếu FE local và Figma  |  39 \n45 Xác nhận chiến dịch Chưa xem nội dung \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15 \nĐối chiếu: Giữ bốn khối xác nhận và nút chưa cho gửi khi chưa xem nội dung. Nội dung email, danh sách và hạn mức \nkhông bằng dữ liệu mẫu. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:18:51 UTC \n \n"
+  },
+  {
+    "page": 40,
+    "images": 1,
+    "chars": 108,
+    "text": "Đối chiếu FE local và Figma  |  40 \n45 Xác nhận chiến dịch Chưa xem nội dung Figma \nFigma  |  327:258992 \n \n"
+  },
+  {
+    "page": 41,
+    "images": 1,
+    "chars": 443,
+    "text": "Đối chiếu FE local và Figma  |  41 \n46 Xem lại nội dung trước khi xác nhận \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15 \nĐối chiếu: Có hộp xem nội dung trên nền tối. Nội dung email thật và logo làm hộp cao hơn ví dụ trong Figma; không \ncắt nội dung để ép chiều cao. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:18:52 UTC \n \n"
+  },
+  {
+    "page": 42,
+    "images": 1,
+    "chars": 106,
+    "text": "Đối chiếu FE local và Figma  |  42 \n46 Xem lại nội dung trước khi xác nhận Figma \nFigma  |  327:259215 \n \n"
+  },
+  {
+    "page": 43,
+    "images": 1,
+    "chars": 421,
+    "text": "Đối chiếu FE local và Figma  |  43 \n47 Xác nhận chiến dịch Bốn phần hợp lệ \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15 \nĐối chiếu: Đóng xem nội dung thì nút xác nhận hoạt động. Giữ bốn khối hợp lệ; khác giá trị dữ liệu và kiểu icon trên \nnút. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:18:53 UTC \n \n"
+  },
+  {
+    "page": 44,
+    "images": 1,
+    "chars": 106,
+    "text": "Đối chiếu FE local và Figma  |  44 \n47 Xác nhận chiến dịch Bốn phần hợp lệ Figma \nFigma  |  327:259467 \n \n"
+  },
+  {
+    "page": 45,
+    "images": 1,
+    "chars": 423,
+    "text": "Đối chiếu FE local và Figma  |  45 \n48 Hộp thoại xác nhận chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-confirm&campaignId=15 \nĐối chiếu: Có hộp xác nhận với các mốc gửi và nút Hủy/Đồng ý. Các giá trị được dựng từ chiến dịch đang đối chiếu, \nkhông gửi thật. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:18:54 UTC \n \n"
+  },
+  {
+    "page": 46,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  46 \n48 Hộp thoại xác nhận chiến dịch Figma \nFigma  |  327:259690 \n \n"
+  },
+  {
+    "page": 47,
+    "images": 1,
+    "chars": 415,
+    "text": "Đối chiếu FE local và Figma  |  47 \n72 Chiến dịch xác nhận và lên lịch thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Có thông báo xác nhận thành công trên danh sách. Dữ liệu cập nhật trong ảnh được cô lập ở trình duyệt, \nkhông tạo lịch gửi public. \nCách tạo trạng thái: Xác nhận giả lập trong trình duyệt; không tạo lịch gửi thật \nFE local sau sửa  |  2026-11-16 03:18:56 UTC \n \n"
+  },
+  {
+    "page": 48,
+    "images": 1,
+    "chars": 113,
+    "text": "Đối chiếu FE local và Figma  |  48 \n72 Chiến dịch xác nhận và lên lịch thành công Figma \nFigma  |  327:262437 \n \n"
+  },
+  {
+    "page": 49,
+    "images": 1,
+    "chars": 404,
+    "text": "Đối chiếu FE local và Figma  |  49 \n73 Hộp thoại tạm dừng chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Có hộp tạm dừng và lý do. Cho phép bỏ trống, tối đa 250 ký tự theo quyết định đã chốt thay chữ bắt buộc \ntrong frame. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:18:57 UTC \n \n"
+  },
+  {
+    "page": 50,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  50 \n73 Hộp thoại tạm dừng chiến dịch Figma \nFigma  |  327:243452 \n \n"
+  },
+  {
+    "page": 51,
+    "images": 1,
+    "chars": 351,
+    "text": "Đối chiếu FE local và Figma  |  51 \n74 Tạm dừng chiến dịch thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Có thông báo tạm dừng thành công trên danh sách. Không thực hiện tạm dừng chiến dịch public. \nCách tạo trạng thái: Tạm dừng giả lập; không đổi chiến dịch public \nFE local sau sửa  |  2026-11-16 03:18:59 UTC \n \n"
+  },
+  {
+    "page": 52,
+    "images": 1,
+    "chars": 101,
+    "text": "Đối chiếu FE local và Figma  |  52 \n74 Tạm dừng chiến dịch thành công Figma \nFigma  |  327:244574 \n \n"
+  },
+  {
+    "page": 53,
+    "images": 1,
+    "chars": 379,
+    "text": "Đối chiếu FE local và Figma  |  53 \n75 Thông tin tổng quát chiến dịch tạm dừng \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Giữ hộp thông tin chiến dịch tạm dừng. Lý do dài hoặc tên dài làm hộp cao hơn mẫu. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:00 UTC \n \n"
+  },
+  {
+    "page": 54,
+    "images": 1,
+    "chars": 110,
+    "text": "Đối chiếu FE local và Figma  |  54 \n75 Thông tin tổng quát chiến dịch tạm dừng Figma \nFigma  |  327:242358 \n \n"
+  },
+  {
+    "page": 55,
+    "images": 1,
+    "chars": 386,
+    "text": "Đối chiếu FE local và Figma  |  55 \n76 Chọn mục chỉnh sửa chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list&campaignId=15 \nĐối chiếu: Có hộp chọn bốn phần chỉnh sửa. FE còn thiếu một số biểu tượng trên nút so với frame. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:00 UTC \n \n"
+  },
+  {
+    "page": 56,
+    "images": 1,
+    "chars": 100,
+    "text": "Đối chiếu FE local và Figma  |  56 \n76 Chọn mục chỉnh sửa chiến dịch Figma \nFigma  |  327:247194 \n \n"
+  },
+  {
+    "page": 57,
+    "images": 1,
+    "chars": 404,
+    "text": "Đối chiếu FE local và Figma  |  57 \n77 Chỉnh sửa thông tin chung chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list&campaignId=15 \nĐối chiếu: Giữ form thông tin chung và hai nút. Còn khác khoảng đệm, chiều rộng hộp và biểu tượng trên nút. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:02 UTC \n \n"
+  },
+  {
+    "page": 58,
+    "images": 1,
+    "chars": 107,
+    "text": "Đối chiếu FE local và Figma  |  58 \n77 Chỉnh sửa thông tin chung chiến dịch Figma \nFigma  |  327:247782 \n \n"
+  },
+  {
+    "page": 59,
+    "images": 1,
+    "chars": 420,
+    "text": "Đối chiếu FE local và Figma  |  59 \n78 Tiếp tục gửi Xem lại chiến dịch \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15 \nĐối chiếu: Giữ tình trạng tạm dừng và bốn khối thông tin. FE có thêm Sửa email trong thanh nút; frame dùng nhóm nút \nngắn hơn. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:03 UTC \n \n"
+  },
+  {
+    "page": 60,
+    "images": 1,
+    "chars": 102,
+    "text": "Đối chiếu FE local và Figma  |  60 \n78 Tiếp tục gửi Xem lại chiến dịch Figma \nFigma  |  327:249944 \n \n"
+  },
+  {
+    "page": 61,
+    "images": 1,
+    "chars": 398,
+    "text": "Đối chiếu FE local và Figma  |  61 \n79 Tiếp tục gửi Xem nội dung email \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15 \nĐối chiếu: Có hộp nội dung trên nền tối. Nội dung thật dài hơn mẫu nên hộp cao hơn; không cắt bớt email. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:04 UTC \n \n"
+  },
+  {
+    "page": 62,
+    "images": 1,
+    "chars": 102,
+    "text": "Đối chiếu FE local và Figma  |  62 \n79 Tiếp tục gửi Xem nội dung email Figma \nFigma  |  327:250110 \n \n"
+  },
+  {
+    "page": 63,
+    "images": 1,
+    "chars": 400,
+    "text": "Đối chiếu FE local và Figma  |  63 \n80 Tiếp tục gửi Đã xem nội dung \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-resume&campaignId=15 \nĐối chiếu: Nút Tiếp tục gửi hoạt động sau khi đóng xem nội dung. FE có thêm Sửa email so với thanh nút frame. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:05 UTC \n \n"
+  },
+  {
+    "page": 64,
+    "images": 1,
+    "chars": 99,
+    "text": "Đối chiếu FE local và Figma  |  64 \n80 Tiếp tục gửi Đã xem nội dung Figma \nFigma  |  327:250305 \n \n"
+  },
+  {
+    "page": 65,
+    "images": 1,
+    "chars": 358,
+    "text": "Đối chiếu FE local và Figma  |  65 \n81 Tiếp tục chiến dịch thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Có thông báo tiếp tục thành công. Chỉ dựng trạng thái trong trình duyệt, không kích hoạt gửi thư thật. \nCách tạo trạng thái: Tiếp tục gửi giả lập; không gửi email thật \nFE local sau sửa  |  2026-11-16 03:19:06 UTC \n \n"
+  },
+  {
+    "page": 66,
+    "images": 1,
+    "chars": 101,
+    "text": "Đối chiếu FE local và Figma  |  66 \n81 Tiếp tục chiến dịch thành công Figma \nFigma  |  327:250992 \n \n"
+  },
+  {
+    "page": 67,
+    "images": 2,
+    "chars": 342,
+    "text": "Đối chiếu FE local và Figma  |  67 \n91 Thư viện email có mẫu đã lưu \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-email&campaignId=15 \nĐối chiếu: Thư viện đã có mẫu được lưu. Số mẫu và nội dung theo cơ sở dữ liệu hiện tại, không thêm các mẫu chỉ để \ngiống ảnh. \nFE local sau sửa  |  2026-11-16 03:19:07 UTC \n \nFigma  |  327:253992 \n \n"
+  },
+  {
+    "page": 68,
+    "images": 1,
+    "chars": 475,
+    "text": "Đối chiếu FE local và Figma  |  68 \n92 Thông tin chiến dịch đã gửi thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-list \nĐối chiếu: Ảnh thông tin chiến dịch hoàn thành được dựng cô lập từ dữ liệu nền. Frame tham khảo có trạng thái đang \ngửi nên khác một số chữ; không dùng để kết luận hai trạng thái giống nhau. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái chiến dịch được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:19:08 UTC \n \n"
+  },
+  {
+    "page": 69,
+    "images": 1,
+    "chars": 109,
+    "text": "Đối chiếu FE local và Figma  |  69 \n92 Thông tin chiến dịch đã gửi thành công Figma \nFigma  |  327:241792 \n \n"
+  },
+  {
+    "page": 70,
+    "images": 2,
+    "chars": 344,
+    "text": "Đối chiếu FE local và Figma  |  70 \n49 Danh sách Response \nNhân viên  |  http://127.0.0.1:5176/?screen=response-list \nĐối chiếu: Còn khác thanh thao tác: Ẩn ở trái và Thêm ở phải theo yêu cầu trước; frame gom hai nút bên phải. \nBreadcrumb một cấp cũng theo yêu cầu đã chốt. \nFE local sau sửa  |  2026-11-16 03:19:09 UTC \n \nFigma  |  43:6174 \n \n"
+  },
+  {
+    "page": 71,
+    "images": 2,
+    "chars": 351,
+    "text": "Đối chiếu FE local và Figma  |  71 \n50 Chi tiết Response \nNhân viên  |  http://127.0.0.1:5176/?screen=response-detail&responseId=26 \nĐối chiếu: Giữ thông tin Response, lịch sử liên quan và dãy nút. Nhãn Tạo lịch Follow-up/Xem lịch Follow-up phụ \nthuộc bản ghi đã có lịch hay chưa. \nFE local sau sửa  |  2026-11-16 03:19:10 UTC \n \nFigma  |  43:6303 \n \n"
+  },
+  {
+    "page": 72,
+    "images": 2,
+    "chars": 352,
+    "text": "Đối chiếu FE local và Figma  |  72 \n53 Thêm Response thủ công \nNhân viên  |  http://127.0.0.1:5176/?screen=response-add \nĐối chiếu: Còn khác kiểu trường Khách hàng: FE nhập văn bản, frame là ô chọn. FE bố trí Email cạnh Khách hàng; \nframe đặt Số điện thoại trước Nội dung phản hồi. \nFE local sau sửa  |  2026-11-16 03:19:11 UTC \n \nFigma  |  43:6301 \n \n"
+  },
+  {
+    "page": 73,
+    "images": 2,
+    "chars": 349,
+    "text": "Đối chiếu FE local và Figma  |  73 \n54 Cập nhật thông tin Response \nNhân viên  |  http://127.0.0.1:5176/?screen=response-edit&responseId=26 \nĐối chiếu: Còn khác kiểu trường Khách hàng: FE dùng ô nhập, frame là ô chọn. Nhóm thông tin và hàng nút đã có; \ngiá trị khác dữ liệu mẫu. \nFE local sau sửa  |  2026-11-16 03:19:11 UTC \n \nFigma  |  60:6324 \n \n"
+  },
+  {
+    "page": 74,
+    "images": 2,
+    "chars": 333,
+    "text": "Đối chiếu FE local và Figma  |  74 \n55 Cập nhật trạng thái Response \nNhân viên  |  http://127.0.0.1:5176/?screen=response-status&responseId=30 \nĐối chiếu: Giữ hai trạng thái, lý do và hàng nút. Trạng thái hiện tại lấy từ Response thật, không ép về Mới như ví dụ. \nFE local sau sửa  |  2026-11-16 03:19:12 UTC \n \nFigma  |  43:6297 \n \n"
+  },
+  {
+    "page": 75,
+    "images": 2,
+    "chars": 355,
+    "text": "Đối chiếu FE local và Figma  |  75 \n63 Soạn phản hồi Email \nNhân viên  |  http://127.0.0.1:5176/?screen=response-reply&responseId=30 \nĐối chiếu: FE thêm tài khoản gửi và tiêu đề để gửi email qua BE thật; vì vậy form dài hơn Figma. Giữ nội dung và nút \nGửi/Hủy; không gửi thư khi chụp. \nFE local sau sửa  |  2026-11-16 03:19:13 UTC \n \nFigma  |  43:6300 \n \n"
+  },
+  {
+    "page": 76,
+    "images": 2,
+    "chars": 329,
+    "text": "Đối chiếu FE local và Figma  |  76 \n64 Response sau khi gửi phản hồi \nNhân viên  |  http://127.0.0.1:5176/?screen=response-detail&responseId=30 \nĐối chiếu: Response đã có lịch sử gửi trong dữ liệu. Ảnh chỉ đọc bản ghi; không gửi thêm email để tạo trạng thái. \nFE local sau sửa  |  2026-11-16 03:19:14 UTC \n \nFigma  |  43:6303 \n \n"
+  },
+  {
+    "page": 77,
+    "images": 2,
+    "chars": 307,
+    "text": "Đối chiếu FE local và Figma  |  77 \n65 Lịch sử phản hồi đã gửi \nNhân viên  |  http://127.0.0.1:5176/?screen=response-history&responseId=30 \nĐối chiếu: Giữ bảng lịch sử phản hồi; nội dung thư dài và số lượt có thể làm bảng cao hơn Figma. \nFE local sau sửa  |  2026-11-16 03:19:15 UTC \n \nFigma  |  47:7604 \n \n"
+  },
+  {
+    "page": 78,
+    "images": 2,
+    "chars": 307,
+    "text": "Đối chiếu FE local và Figma  |  78 \n66 Lịch sử trạng thái Response \nNhân viên  |  http://127.0.0.1:5176/?screen=response-status-history&responseId=30 \nĐối chiếu: Giữ bảng lịch sử trạng thái; người cập nhật và thời gian theo dữ liệu API. \nFE local sau sửa  |  2026-11-16 03:19:15 UTC \n \nFigma  |  47:7735 \n \n"
+  },
+  {
+    "page": 79,
+    "images": 2,
+    "chars": 354,
+    "text": "Đối chiếu FE local và Figma  |  79 \n56 Tạo lịch Follow-up \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-create&responseId=31 \nĐối chiếu: Có các trường lịch, hình thức, mục tiêu và số lượt. Dữ liệu cần cho BE được giữ; các tham số thời gian chờ \ncó thể làm form dài hơn ví dụ. \nFE local sau sửa  |  2026-11-16 03:19:16 UTC \n \nFigma  |  43:6299 \n \n"
+  },
+  {
+    "page": 80,
+    "images": 2,
+    "chars": 451,
+    "text": "Đối chiếu FE local và Figma  |  80 \n57 Tạo lịch Follow-up thành công \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-success&followupId=17 \nĐối chiếu: Có trạng thái lưu thành công và nút mở chi tiết/về danh sách. Dùng cùng bản ghi với trạng thái cô lập để \nkhông tạo lịch thật. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:22:35 UTC \n \nFigma  |  99:32139 \n \n"
+  },
+  {
+    "page": 81,
+    "images": 2,
+    "chars": 293,
+    "text": "Đối chiếu FE local và Figma  |  81 \n58 Quản lý lịch Follow-up \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-list \nĐối chiếu: Giữ bảng lịch và thao tác tương ứng. Giá trị, số lượt và trạng thái theo dữ liệu đang có. \nFE local sau sửa  |  2026-11-16 03:19:18 UTC \n \nFigma  |  43:6302 \n \n"
+  },
+  {
+    "page": 82,
+    "images": 2,
+    "chars": 466,
+    "text": "Đối chiếu FE local và Figma  |  82 \n59 Chi tiết Follow-up chờ thực hiện \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-result&followupId=17 \nĐối chiếu: Trạng thái chờ thực hiện được dựng cô lập từ bản ghi thật. Màn chi tiết phải khác màn kết quả đã có phản \nhồi; không ghi nhận hoàn tất thật. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:22:36 UTC \n \nFigma  |  43:6298 \n \n"
+  },
+  {
+    "page": 83,
+    "images": 1,
+    "chars": 503,
+    "text": "Đối chiếu FE local và Figma  |  83 \n60 Ghi nhận kết quả thực hiện Follow-up \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-detail&followupId=17 \nĐối chiếu: Màn ghi nhận kết quả bổ sung của FE, chưa có frame Figma riêng để đối chiếu độc lập. Không coi là khớp \nframe kết quả khác. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:22:37 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  },
+  {
+    "page": 84,
+    "images": 2,
+    "chars": 441,
+    "text": "Đối chiếu FE local và Figma  |  84 \n61 Kết quả Follow-up Đang chờ phản hồi \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-result&followupId=17 \nĐối chiếu: Có trạng thái đang chờ phản hồi. Đây chưa phải kết luận không phản hồi/hết lượt; giữ riêng điều kiện \nnghiệp vụ. \nCách tạo trạng thái: Dữ liệu API thật; trạng thái Follow-up được dựng cô lập để chụp giao diện \nFE local sau sửa  |  2026-11-16 03:22:37 UTC \n \nFigma  |  43:6298 \n \n"
+  },
+  {
+    "page": 85,
+    "images": 2,
+    "chars": 319,
+    "text": "Đối chiếu FE local và Figma  |  85 \n62 Ghi chú kết quả Follow-up \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-note&followupId=17 \nĐối chiếu: Ghi chú đang lưu được điền lại khi mở màn. Bố cục form ghi chú và nút được so với frame tương ứng. \nFE local sau sửa  |  2026-11-16 03:19:20 UTC \n \nFigma  |  43:6304 \n \n"
+  },
+  {
+    "page": 86,
+    "images": 1,
+    "chars": 336,
+    "text": "Đối chiếu FE local và Figma  |  86 \n71 Kết quả Follow-up Có phản hồi \nNhân viên  |  http://127.0.0.1:5176/?screen=followup-result&followupId=17 \nĐối chiếu: Có kết quả phản hồi và lịch sử. Giá trị, kênh và thời gian theo Follow-up đang có; không phải trạng thái hết \nlượt không phản hồi. \nFE local sau sửa  |  2026-11-16 03:19:21 UTC \n \n"
+  },
+  {
+    "page": 87,
+    "images": 1,
+    "chars": 97,
+    "text": "Đối chiếu FE local và Figma  |  87 \n71 Kết quả Follow-up Có phản hồi Figma \nFigma  |  43:6298 \n \n"
+  },
+  {
+    "page": 88,
+    "images": 2,
+    "chars": 339,
+    "text": "Đối chiếu FE local và Figma  |  88 \n07 Danh sách tài khoản gửi \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-list \nĐối chiếu: Giữ bảng chọn dòng và các nút Cập nhật/Quay lại/Thêm. Cột Hạn mức 3 ngày và hai mục con sidebar là \nphần đã được chốt thêm. \nFE local sau sửa  |  2026-11-16 03:19:22 UTC \n \nFigma  |  486:9371 \n \n"
+  },
+  {
+    "page": 89,
+    "images": 2,
+    "chars": 374,
+    "text": "Đối chiếu FE local và Figma  |  89 \n08 Cập nhật tài khoản gửi \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-edit&role=manager&senderId=1 \nĐối chiếu: Form đã nhóm lại hai cột, Hủy trái/Lưu phải. Hạn mức dùng 3 ngày; cấu hình Gmail/SMTP/IMAP nằm trong \nphần mở rộng để giữ kết nối thật. \nFE local sau sửa  |  2026-11-16 03:19:23 UTC \n \nFigma  |  486:9491 \n \n"
+  },
+  {
+    "page": 90,
+    "images": 2,
+    "chars": 333,
+    "text": "Đối chiếu FE local và Figma  |  90 \n14 Kiểm tra tình trạng tài khoản gửi \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-check \nĐối chiếu: Giữ danh sách tài khoản và nút kiểm tra. Số liệu hạn mức theo 3 ngày thay dữ liệu ngày trong thiết kế mẫu. \nFE local sau sửa  |  2026-11-16 03:19:24 UTC \n \nFigma  |  486:9094 \n \n"
+  },
+  {
+    "page": 91,
+    "images": 2,
+    "chars": 495,
+    "text": "Đối chiếu FE local và Figma  |  91 \n15 Kết quả kiểm tra tài khoản Kết nối tốt \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-result-good&role=manager&senderId=1 \nĐối chiếu: Giữ bảng Kết nối tốt, cảnh báo và dãy nút như frame. Kết quả kết nối trong ảnh được giả lập; không kết \nluận Gmail vừa được xác thực thật. \nCách tạo trạng thái: Kết quả SMTP giả lập để kiểm tra cách hiển thị; không xác thực Gmail lại \nFE local sau sửa  |  2026-11-16 03:19:25 UTC \n \nFigma  |  486:9161 \n \n"
+  },
+  {
+    "page": 92,
+    "images": 2,
+    "chars": 429,
+    "text": "Đối chiếu FE local và Figma  |  92 \n16 Cập nhật tài khoản thành công \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-saved&role=manager&senderId=1 \nĐối chiếu: Giữ màn cập nhật thành công. Chụp sau phản hồi lưu giả lập; tài khoản public không bị cập nhật trong lượt \nnày. \nCách tạo trạng thái: Lưu cập nhật giả lập; không sửa tài khoản public \nFE local sau sửa  |  2026-11-16 03:19:27 UTC \n \nFigma  |  486:9677 \n \n"
+  },
+  {
+    "page": 93,
+    "images": 2,
+    "chars": 334,
+    "text": "Đối chiếu FE local và Figma  |  93 \n51 Thêm tài khoản gửi \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-add \nĐối chiếu: Giữ form chính hai cột và Hủy/Lưu thông tin. Các trường kết nối thật nằm trong phần mở rộng, không bị \nxóa khi làm gọn form. \nFE local sau sửa  |  2026-11-16 03:19:28 UTC \n \nFigma  |  486:9432 \n \n"
+  },
+  {
+    "page": 94,
+    "images": 2,
+    "chars": 334,
+    "text": "Đối chiếu FE local và Figma  |  94 \n52 Chi tiết tài khoản gửi \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-detail&senderId=1 \nĐối chiếu: Giữ lưới thông tin hai cột. Hạn mức dùng 3 ngày; OAuth và các thao tác tài khoản nằm trong phần mở \nrộng. \nFE local sau sửa  |  2026-11-16 03:19:28 UTC \n \nFigma  |  229:33584 \n \n"
+  },
+  {
+    "page": 95,
+    "images": 1,
+    "chars": 428,
+    "text": "Đối chiếu FE local và Figma  |  95 \n70 Kiểm tra kết nối Gmail IMAP \nTrưởng phòng  |  http://127.0.0.1:5176/?screen=manager-account-detail&senderId=1 \nĐối chiếu: Ảnh dùng cùng frame chi tiết tài khoản để tham khảo bố cục, không có frame riêng cho kết quả IMAP. \nNhóm cấu hình được mở để kiểm tra thao tác bổ sung. \nCách tạo trạng thái: Kết quả IMAP giả lập; không đồng bộ hộp thư \nFE local sau sửa  |  2026-11-16 03:22:39 UTC \n \n"
+  },
+  {
+    "page": 96,
+    "images": 1,
+    "chars": 97,
+    "text": "Đối chiếu FE local và Figma  |  96 \n70 Kiểm tra kết nối Gmail IMAP Figma \nFigma  |  229:33584 \n \n"
+  },
+  {
+    "page": 97,
+    "images": 1,
+    "chars": 393,
+    "text": "Đối chiếu FE local và Figma  |  97 \n68 Tài khoản gửi Nhân viên \nNhân viên  |  http://127.0.0.1:5176/?screen=sender-list \nĐối chiếu: Danh sách tài khoản gửi của Nhân viên chưa có frame riêng; chỉ kiểm tra cách hiển thị hiện tại, không kết \nluận khớp một frame Trưởng phòng. \nFE local sau sửa  |  2026-11-16 03:19:30 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  },
+  {
+    "page": 98,
+    "images": 1,
+    "chars": 377,
+    "text": "Đối chiếu FE local và Figma  |  98 \n69 Chi tiết tài khoản gửi Nhân viên \nNhân viên  |  http://127.0.0.1:5176/?screen=sender-detail&senderId=1 \nĐối chiếu: Chi tiết tài khoản gửi của Nhân viên chưa có frame riêng. Không có thao tác quản trị của Trưởng phòng. \nFE local sau sửa  |  2026-11-16 03:19:31 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  },
+  {
+    "page": 99,
+    "images": 1,
+    "chars": 325,
+    "text": "Đối chiếu FE local và Figma  |  99 \n83 Thông tin tài khoản Nhân viên \nNhân viên  |  http://127.0.0.1:5176/?screen=profile \nĐối chiếu: Thông tin tài khoản cá nhân là màn bổ sung, chưa có frame Figma riêng. \nFE local sau sửa  |  2026-11-16 03:19:31 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  },
+  {
+    "page": 100,
+    "images": 1,
+    "chars": 381,
+    "text": "Đối chiếu FE local và Figma  |  100 \n90 Lưu mẫu email dùng lại \nNhân viên  |  http://127.0.0.1:5176/?screen=campaign-editor&campaignId=15 \nĐối chiếu: Mở nhóm Lưu thành mẫu email trong trình soạn thảo. Chưa có frame riêng; không lưu thêm mẫu vào cơ sở \ndữ liệu. \nFE local sau sửa  |  2026-11-16 03:19:32 UTC \n \nKhông có ảnh frame riêng để ghép cặp. Không dùng frame khác thay thế. \n"
+  }
+]

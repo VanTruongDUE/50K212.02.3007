@@ -1,0 +1,433 @@
+{
+  "screens": 91,
+  "paired": 85,
+  "additional": 6,
+  "splitPairs": 24,
+  "pairs": [
+    {
+      "id": "84-dang-nhap-ban-dau",
+      "frameId": "156:31985",
+      "long": false
+    },
+    {
+      "id": "85-dang-nhap-nhan-vien",
+      "frameId": "156:32011",
+      "long": false
+    },
+    {
+      "id": "86-dang-nhap-truong-phong",
+      "frameId": "156:32406",
+      "long": false
+    },
+    {
+      "id": "01-nv-trang-chinh",
+      "frameId": "156:32271",
+      "long": false
+    },
+    {
+      "id": "02-tp-trang-chinh",
+      "frameId": "156:32370",
+      "long": false
+    },
+    {
+      "id": "03-nv-tieu-chi",
+      "frameId": "16:188",
+      "long": false
+    },
+    {
+      "id": "04-nv-kiem-tra-tieu-chi",
+      "frameId": "16:373",
+      "long": false
+    },
+    {
+      "id": "05-nv-xac-nhan-tieu-chi",
+      "frameId": "54:7968",
+      "long": false
+    },
+    {
+      "id": "06-nv-dang-tim",
+      "frameId": "16:626",
+      "long": false
+    },
+    {
+      "id": "10-nv-tao-template",
+      "frameId": "16:271",
+      "long": false
+    },
+    {
+      "id": "11-nv-template-da-tao",
+      "frameId": "54:8258",
+      "long": false
+    },
+    {
+      "id": "12-nv-danh-sach-template",
+      "frameId": "16:241",
+      "long": false
+    },
+    {
+      "id": "13-nv-cap-nhat-template",
+      "frameId": "16:322",
+      "long": false
+    },
+    {
+      "id": "26-nv-lich-su-tim",
+      "frameId": "16:560",
+      "long": false
+    },
+    {
+      "id": "27-nv-chi-tiet-lan-tim",
+      "frameId": "16:589",
+      "long": true
+    },
+    {
+      "id": "67-nv-tieu-chi-cong-nghe",
+      "frameId": "16:188",
+      "long": false
+    },
+    {
+      "id": "17-nv-ket-qua-tim",
+      "frameId": "16:403",
+      "long": true
+    },
+    {
+      "id": "18-nv-kiem-tra-contact",
+      "frameId": "16:436",
+      "long": false
+    },
+    {
+      "id": "19-nv-xac-nhan-contact",
+      "frameId": "16:472",
+      "long": false
+    },
+    {
+      "id": "20-nv-da-xac-nhan",
+      "frameId": "16:496",
+      "long": false
+    },
+    {
+      "id": "21-tp-cho-kiem-tra",
+      "frameId": "486:8785",
+      "long": false
+    },
+    {
+      "id": "22-tp-chi-tiet-danh-sach",
+      "frameId": "486:8846",
+      "long": false
+    },
+    {
+      "id": "23-tp-da-duyet",
+      "frameId": "486:8984",
+      "long": false
+    },
+    {
+      "id": "28-nv-toan-bo-contact",
+      "frameId": "372:12675",
+      "long": false
+    },
+    {
+      "id": "24-nv-xuat-contact",
+      "frameId": "18:3126",
+      "long": false
+    },
+    {
+      "id": "25-nv-xuat-thanh-cong",
+      "frameId": "16:750",
+      "long": false
+    },
+    {
+      "id": "87-nv-xuat-xlsx",
+      "frameId": "18:3162",
+      "long": false
+    },
+    {
+      "id": "88-nv-xuat-json",
+      "frameId": "18:3198",
+      "long": false
+    },
+    {
+      "id": "89-nv-xuat-xml",
+      "frameId": "18:3234",
+      "long": false
+    },
+    {
+      "id": "29-nv-chien-dich",
+      "frameId": "327:241209",
+      "long": true
+    },
+    {
+      "id": "30-nv-tao-chien-dich",
+      "frameId": "327:251508",
+      "long": false
+    },
+    {
+      "id": "31-nv-chien-dich-da-nhap",
+      "frameId": "327:251653",
+      "long": false
+    },
+    {
+      "id": "32-nv-ket-qua-loc",
+      "frameId": "327:252065",
+      "long": false
+    },
+    {
+      "id": "33-nv-nguoi-nhan-da-luu",
+      "frameId": "327:252598",
+      "long": false
+    },
+    {
+      "id": "34-nv-thu-vien-email",
+      "frameId": "327:253992",
+      "long": false
+    },
+    {
+      "id": "35-nv-bo-cuc-email",
+      "frameId": "327:254169",
+      "long": false
+    },
+    {
+      "id": "36-nv-soan-email",
+      "frameId": "327:254324",
+      "long": true
+    },
+    {
+      "id": "37-nv-xem-truoc-may-tinh",
+      "frameId": "327:255883",
+      "long": false
+    },
+    {
+      "id": "38-nv-xem-truoc-dien-thoai",
+      "frameId": "327:255996",
+      "long": false
+    },
+    {
+      "id": "39-nv-da-xem-truoc",
+      "frameId": "327:254579",
+      "long": true
+    },
+    {
+      "id": "40-nv-chon-tai-khoan",
+      "frameId": "327:256420",
+      "long": false
+    },
+    {
+      "id": "41-nv-tai-khoan-hop-le",
+      "frameId": "327:256587",
+      "long": true
+    },
+    {
+      "id": "42-nv-thiet-lap-lich",
+      "frameId": "327:257674",
+      "long": false
+    },
+    {
+      "id": "43-nv-gui-ngay",
+      "frameId": "327:258111",
+      "long": true
+    },
+    {
+      "id": "44-nv-lich-du-kien",
+      "frameId": "327:257885",
+      "long": true
+    },
+    {
+      "id": "45-nv-xac-nhan-chien-dich",
+      "frameId": "327:258992",
+      "long": true
+    },
+    {
+      "id": "46-nv-xem-noi-dung",
+      "frameId": "327:259215",
+      "long": true
+    },
+    {
+      "id": "47-nv-bon-phan-hop-le",
+      "frameId": "327:259467",
+      "long": true
+    },
+    {
+      "id": "48-nv-hop-xac-nhan-cuoi",
+      "frameId": "327:259690",
+      "long": true
+    },
+    {
+      "id": "72-nv-chien-dich-da-len-lich",
+      "frameId": "327:262437",
+      "long": true
+    },
+    {
+      "id": "73-nv-hop-tam-dung",
+      "frameId": "327:243452",
+      "long": true
+    },
+    {
+      "id": "74-nv-da-tam-dung",
+      "frameId": "327:244574",
+      "long": true
+    },
+    {
+      "id": "75-nv-tong-quat-tam-dung",
+      "frameId": "327:242358",
+      "long": true
+    },
+    {
+      "id": "76-nv-chon-muc-sua",
+      "frameId": "327:247194",
+      "long": true
+    },
+    {
+      "id": "77-nv-sua-thong-tin-chung",
+      "frameId": "327:247782",
+      "long": true
+    },
+    {
+      "id": "78-nv-tiep-tuc-chien-dich",
+      "frameId": "327:249944",
+      "long": true
+    },
+    {
+      "id": "79-nv-tiep-tuc-xem-email",
+      "frameId": "327:250110",
+      "long": true
+    },
+    {
+      "id": "80-nv-tiep-tuc-da-xem",
+      "frameId": "327:250305",
+      "long": true
+    },
+    {
+      "id": "81-nv-tiep-tuc-thanh-cong",
+      "frameId": "327:250992",
+      "long": true
+    },
+    {
+      "id": "91-nv-thu-vien-da-luu",
+      "frameId": "327:253992",
+      "long": false
+    },
+    {
+      "id": "92-nv-chien-dich-da-gui",
+      "frameId": "327:241792",
+      "long": true
+    },
+    {
+      "id": "49-nv-danh-sach-response",
+      "frameId": "43:6174",
+      "long": false
+    },
+    {
+      "id": "50-nv-chi-tiet-response",
+      "frameId": "43:6303",
+      "long": false
+    },
+    {
+      "id": "53-nv-them-response",
+      "frameId": "43:6301",
+      "long": false
+    },
+    {
+      "id": "54-nv-cap-nhat-response",
+      "frameId": "60:6324",
+      "long": false
+    },
+    {
+      "id": "55-nv-trang-thai-response",
+      "frameId": "43:6297",
+      "long": false
+    },
+    {
+      "id": "63-nv-soan-phan-hoi",
+      "frameId": "43:6300",
+      "long": false
+    },
+    {
+      "id": "64-nv-da-gui-phan-hoi",
+      "frameId": "43:6303",
+      "long": false
+    },
+    {
+      "id": "65-nv-lich-su-phan-hoi",
+      "frameId": "47:7604",
+      "long": false
+    },
+    {
+      "id": "66-nv-lich-su-trang-thai",
+      "frameId": "47:7735",
+      "long": false
+    },
+    {
+      "id": "56-nv-tao-followup",
+      "frameId": "43:6299",
+      "long": false
+    },
+    {
+      "id": "57-nv-followup-da-tao",
+      "frameId": "99:32139",
+      "long": false
+    },
+    {
+      "id": "58-nv-danh-sach-followup",
+      "frameId": "43:6302",
+      "long": false
+    },
+    {
+      "id": "59-nv-followup-cho-thuc-hien",
+      "frameId": "43:6298",
+      "long": false
+    },
+    {
+      "id": "61-nv-followup-cho-phan-hoi",
+      "frameId": "43:6298",
+      "long": false
+    },
+    {
+      "id": "62-nv-ghi-chu-followup",
+      "frameId": "43:6304",
+      "long": false
+    },
+    {
+      "id": "71-nv-followup-co-phan-hoi",
+      "frameId": "43:6298",
+      "long": false
+    },
+    {
+      "id": "07-tp-danh-sach-tai-khoan",
+      "frameId": "486:9371",
+      "long": false
+    },
+    {
+      "id": "08-tp-cap-nhat-tai-khoan",
+      "frameId": "486:9491",
+      "long": true
+    },
+    {
+      "id": "14-tp-kiem-tra-tai-khoan",
+      "frameId": "486:9094",
+      "long": false
+    },
+    {
+      "id": "15-tp-ket-qua-tai-khoan",
+      "frameId": "486:9161",
+      "long": false
+    },
+    {
+      "id": "16-tp-luu-tai-khoan",
+      "frameId": "486:9677",
+      "long": false
+    },
+    {
+      "id": "51-tp-them-tai-khoan",
+      "frameId": "486:9432",
+      "long": false
+    },
+    {
+      "id": "52-tp-chi-tiet-tai-khoan",
+      "frameId": "229:33584",
+      "long": false
+    },
+    {
+      "id": "70-tp-dong-bo-imap",
+      "frameId": "229:33584",
+      "long": false
+    }
+  ]
+}

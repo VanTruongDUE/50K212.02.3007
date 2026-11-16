@@ -189,7 +189,7 @@ const campaignStatuses: Record<string, string> = {
   approved: "Đang chuẩn bị",
   scheduled: "Đã lên lịch",
   sending: "Đang gửi",
-  paused: "Tạm dừng",
+  paused: "Đã tạm dừng",
   completed: "Hoàn thành",
 };
 const date = (value?: string | null) =>
@@ -387,7 +387,7 @@ function Field({
     <div className="next-field">
       <label htmlFor={id}>
         {label}
-        {required && " *"}
+        {required && <span className="next-required-marker" aria-hidden="true"> *</span>}
       </label>
       {rows ? (
         <textarea
@@ -1128,7 +1128,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         </div><div><Button primary disabled={!active} onClick={() => { if (!active) return; sessionStorage.setItem("v5-applied-filter", JSON.stringify(active.criteria)); go("criteria"); }}>Xem / áp dụng tiêu chí</Button></div></div>
       </Page>
     ) : (
-      <Page section="Tìm kiếm Contact" title={edit ? "Cập nhật Filter Template" : "Tạo Filter Template"} className="next-template-figma" go={go}>
+      <Page section="Tìm kiếm Contact" title={edit ? "Cập nhật Filter Template" : "Tạo Filter Template"} className={"next-template-figma" + (edit ? " is-editing" : "")} go={go}>
         {feedback}
         <form noValidate onSubmit={(event) => {
           event.preventDefault();
@@ -1479,7 +1479,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
               {item.status === "approved" && <button onClick={() => choose(item.id, !item.subject ? "campaign-email" : !item.sender_account_id ? "campaign-sender" : !item.scheduled_at ? "campaign-schedule" : "campaign-confirm")}>Mở</button>}
               {["approved", "scheduled", "paused"].includes(item.status) && <button onClick={() => { if (item.status === "scheduled" && item.scheduled_at && Date.parse(item.scheduled_at) < Date.now() + 15 * 60000) { setFailureDialog({ title: "Không thể chỉnh sửa chiến dịch", message: "Không thể chỉnh sửa chiến dịch trước giờ gửi dưới 15 phút." }); return; } setSelected(item.id); if (item.status === "scheduled") openCampaignEdit(item); else setShowCampaignEditChoice(true); }}>Chỉnh sửa</button>}
               {item.status === "paused" && <button onClick={() => openCampaignEmail(item)}>Sửa email</button>}
-              {item.status === "paused" && <button onClick={() => choose(item.id, "campaign-resume")}>Tiếp tục gửi</button>}
+              {item.status === "paused" && <button className="next-resume-action" onClick={() => choose(item.id, "campaign-resume")}>Tiếp tục gửi</button>}
               {["scheduled", "sending"].includes(item.status) && <button onClick={() => openCampaignPause(item)}>Tạm dừng</button>}
               {item.sent_count === 0 && ["draft", "approved", "scheduled", "paused"].includes(item.status) && <button className="danger-link" onClick={() => { setSelected(item.id); ask("Ẩn chiến dịch", `Chiến dịch “${item.name}” đã Ẩn sẽ không thể khôi phục.`, () => void run(() => api(`campaigns/${item.id}`, "DELETE"), `Đã ẩn chiến dịch “${item.name}”.`)); }}>Ẩn chiến dịch</button>}
             </div></td>

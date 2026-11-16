@@ -1,0 +1,84 @@
+{
+  "id": "5",
+  "criteria": {
+    "role": [],
+    "size": [],
+    "email": [],
+    "source": "Google Search/Web",
+    "keyword": "công ty",
+    "industry": [],
+    "location": []
+  },
+  "status": "succeeded",
+  "stage": "done",
+  "attempts": 1,
+  "processed": 20,
+  "received": 3,
+  "invalid": 0,
+  "duplicate": 1,
+  "new_count": 2,
+  "results": [
+    {
+      "id": "34",
+      "email": "briannatechnology32@gmail.com",
+      "company": null,
+      "location": null,
+      "full_name": null,
+      "job_title": null,
+      "bounced_at": null,
+      "created_at": "2026-11-16T00:53:43.507Z",
+      "source_url": "https://play.google.com/store/apps/details?id=com.allemail.securemail.email&hl=vi",
+      "unsubscribed_at": null,
+      "search_provenance": {
+        "method": "inferred",
+        "evidence": "briannatechnology32@gmail.com",
+        "industry": null,
+        "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+        "sizeMethod": "public-email-count-proxy-v1",
+        "companySize": "1–10 nhân viên",
+        "emailStatus": "source_and_syntax",
+        "publicEmailCount": 1
+      },
+      "unsubscribe_token": "745d78f8-8061-456c-9969-a1c229754099"
+    },
+    {
+      "id": "36",
+      "email": "contact@careerlink.vn",
+      "company": null,
+      "location": null,
+      "full_name": null,
+      "job_title": null,
+      "bounced_at": null,
+      "created_at": "2026-11-16T00:53:43.507Z",
+      "source_url": "https://www.careerlink.vn/",
+      "unsubscribed_at": null,
+      "search_provenance": {
+        "method": "inferred",
+        "evidence": "Tuyển dụng, tìm kiếm việc làm trực tuyến tại CareerLink.vn | Customer Care: (028) 3813 0501 / contact@CareerLink.vn",
+        "industry": null,
+        "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+        "sizeMethod": "public-email-count-proxy-v1",
+        "companySize": "1–10 nhân viên",
+        "emailStatus": "source_and_syntax",
+        "publicEmailCount": 1
+      },
+      "unsubscribe_token": "51750b20-fd96-4e65-aa85-ebff6ba8aebd"
+    }
+  ],
+  "warnings": [
+    "Không đọc được URL: https://mail.google.com/",
+    "Không đọc được URL: https://support.google.com/accounts/thread/277459503/t%C3%B4i-qu%C3%AAn-m%E1%BA%ADt-kh%E1%BA%A9u-v%C3%A0-kh%C3%B4ng-c%C3%B2n-email-kh%C3%B4i-ph%E1%BB%A5c-ch%E1%BB%89-c%C3%B2n-s%E1%BB%91-%C4%91i%E1%BB%87n-tho%E1%BA%A1i?hl=vi",
+    "Không đọc được URL: https://www.linkedin.com/",
+    "Không đọc được URL: https://mail.nepal.gov.np/",
+    "Không đọc được URL: https://help.openai.com/",
+    "Không đọc được URL: https://business.gov.vn/",
+    "Không đọc được URL: https://www.topcv.vn/",
+    "Không đọc được URL: https://thuvienphapluat.vn/",
+    "Không đọc được URL: https://doanhnghiep.biz/",
+    "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+  ],
+  "list_id": "23",
+  "error": null,
+  "created_at": "2026-11-16T00:52:36.666Z",
+  "finished_at": "2026-11-16T00:53:43.507Z"
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "role": "employee",
+    "width": 1440,
+    "style": {
+      "font": "Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Arial",
+        "postScriptName": "Arial-BoldMT",
+        "isCustomFont": false,
+        "glyphCount": 17
+      }
+    ]
+  },
+  {
+    "role": "employee",
+    "width": 1024,
+    "style": {
+      "font": "Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Arial",
+        "postScriptName": "Arial-BoldMT",
+        "isCustomFont": false,
+        "glyphCount": 17
+      }
+    ]
+  },
+  {
+    "role": "employee",
+    "width": 390,
+    "style": {
+      "font": "Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Arial",
+        "postScriptName": "Arial-BoldMT",
+        "isCustomFont": false,
+        "glyphCount": 17
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "width": 1440,
+    "style": {
+      "font": "Inter, Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Inter Variable",
+        "postScriptName": "InterVariable-Display-Bold",
+        "isCustomFont": true,
+        "glyphCount": 28
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "width": 1024,
+    "style": {
+      "font": "Inter, Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Inter Variable",
+        "postScriptName": "InterVariable-Display-Bold",
+        "isCustomFont": true,
+        "glyphCount": 28
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "width": 390,
+    "style": {
+      "font": "Inter, Arial, sans-serif",
+      "size": "24px",
+      "weight": "700",
+      "line": "32px",
+      "color": "rgb(237, 245, 255)",
+      "overflow": false
+    },
+    "fonts": [
+      {
+        "familyName": "Inter Variable",
+        "postScriptName": "InterVariable-Display-Bold",
+        "isCustomFont": true,
+        "glyphCount": 28
+      }
+    ]
+  }
+]

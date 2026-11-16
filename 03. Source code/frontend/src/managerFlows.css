@@ -1,4 +1,4 @@
-.mgr-page { max-width: 1440px; margin: 0 auto; padding: 24px 32px; color: #edf5ff; font: 16px/1.5 Arial, sans-serif; }
+.mgr-page { max-width: 1440px; margin: 0 auto; padding: 24px 32px; color: #edf5ff; font: 16px/1.5 var(--ui-font); }
 .manager-account-list.mgr-page { padding-bottom: 16px; }
 .mgr-crumb { display: flex; align-items: center; gap: 12px; min-height: 24px; margin-bottom: 16px; color: #b4c7e2; font-size: 14px; }
 .mgr-crumb button { padding: 0; border: 0; color: #8fbdff; background: none; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
@@ -7,7 +7,7 @@
 .mgr-header h1 { margin: 0; font-size: 24px; line-height: 32px; }
 .mgr-header p { margin: 8px 0 0; color: #b4c7e2; }
 .mgr-panel { padding: 23px 24px; }
-.mgr-panel h2 { margin: 0 0 32px; font-size: 20px; line-height: 28px; }
+.mgr-panel h2 { margin: 0 0 32px; font-size: 24px; line-height: 32px; }
 .mgr-panel h2:not(:first-child) { margin-top: 20px; }
 .mgr-table-wrap { width: 100%; overflow-x: auto; }
 .mgr-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 15px; }
@@ -27,7 +27,7 @@
 .mgr-actions .mgr-primary { margin-left: auto; }
 .mgr-delete-actions > :nth-child(2) { margin-left: auto; }
 .mgr-delete-actions .mgr-primary { margin-left: 0; }
-.mgr-actions button { min-width: 136px; min-height: 44px; padding: 8px 18px; color: #edf5ff; background: #172f4e; border: 1px solid #54759d; border-radius: 6px; cursor: pointer; font: 700 16px/24px Arial, sans-serif; transition: filter 150ms ease, transform 100ms ease; }
+.mgr-actions button { min-width: 136px; min-height: 44px; padding: 8px 18px; color: #edf5ff; background: #172f4e; border: 1px solid #54759d; border-radius: 6px; cursor: pointer; font: 700 16px/24px var(--ui-font); transition: filter 150ms ease, transform 100ms ease; }
 .mgr-actions .mgr-primary { background: #2d6cdf; border-color: #2d6cdf; }
 .mgr-sender-list-actions > .next-button:first-child { min-width: 220px; }
 .mgr-sender-list-actions > .next-button:nth-child(2) { min-width: 160px; }

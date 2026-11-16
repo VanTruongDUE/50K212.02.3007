@@ -1,0 +1,112 @@
+{
+  "databaseType": "isolated PostgreSQL",
+  "search": [
+    {
+      "id": "1",
+      "status": "succeeded",
+      "received": 2,
+      "new_count": 2,
+      "list_id": "1"
+    }
+  ],
+  "list": [
+    {
+      "id": "1",
+      "employee_review": "passed",
+      "manager_review": "approved",
+      "confirmed": true
+    }
+  ],
+  "sender": [
+    {
+      "id": "1",
+      "name": "QA Marketing cập nhật",
+      "code": "QA01",
+      "status": "active",
+      "quota_3_days": 100,
+      "encrypted_secret_saved": true
+    }
+  ],
+  "campaign": [
+    {
+      "id": "1",
+      "status": "completed",
+      "subject": "Kiểm tra nghiệp vụ sau sửa giao diện",
+      "sender_account_id": "1",
+      "send_mode": "now"
+    }
+  ],
+  "delivery": [
+    {
+      "state": "sent",
+      "count": 2
+    }
+  ],
+  "response": [
+    {
+      "id": "1",
+      "status": "replied",
+      "kind": "need_info",
+      "content": "Khách hàng cần nhận thông tin chi tiết và báo giá.",
+      "phone": "0900000031",
+      "campaign_id": "1"
+    }
+  ],
+  "history": [
+    {
+      "from_status": "new",
+      "to_status": "processing",
+      "note": "Đã tiếp nhận nhu cầu"
+    },
+    {
+      "from_status": "processing",
+      "to_status": "replied",
+      "note": null
+    }
+  ],
+  "reply": [
+    {
+      "state": "sent",
+      "count": 1
+    }
+  ],
+  "followups": [
+    {
+      "id": "1",
+      "response_id": "1",
+      "status": "done",
+      "outcome": "no_response",
+      "attempt": 1,
+      "max_attempts": 1
+    },
+    {
+      "id": "2",
+      "response_id": "2",
+      "status": "done",
+      "outcome": "responded",
+      "attempt": 1,
+      "max_attempts": 2
+    },
+    {
+      "id": "3",
+      "response_id": "4",
+      "status": "done",
+      "outcome": "no_response",
+      "attempt": 1,
+      "max_attempts": 2
+    },
+    {
+      "id": "4",
+      "response_id": "4",
+      "status": "done",
+      "outcome": "no_response",
+      "attempt": 2,
+      "max_attempts": 2
+    }
+  ],
+  "duplicateImport": [
+    {
+      "count": 1
+    }
+  ]
+}

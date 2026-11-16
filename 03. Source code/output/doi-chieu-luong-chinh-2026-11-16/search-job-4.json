@@ -1,0 +1,83 @@
+{
+  "id": "4",
+  "criteria": {
+    "role": [],
+    "size": [],
+    "email": [],
+    "source": "Google Search/Web",
+    "keyword": "liên hệ",
+    "industry": [],
+    "location": []
+  },
+  "status": "succeeded",
+  "stage": "done",
+  "attempts": 1,
+  "processed": 20,
+  "received": 2,
+  "invalid": 0,
+  "duplicate": 0,
+  "new_count": 2,
+  "results": [
+    {
+      "id": "32",
+      "email": "hi@mailsuite.com",
+      "company": null,
+      "location": null,
+      "full_name": null,
+      "job_title": null,
+      "bounced_at": null,
+      "created_at": "2026-11-16T00:51:03.667Z",
+      "source_url": "https://chromewebstore.google.com/detail/mailtrack%C2%AE-%E2%80%93-email-tracke/ndnaehgpjlnokgebbaldlmgkapkpjkkb?hl=vi",
+      "unsubscribed_at": null,
+      "search_provenance": {
+        "method": "inferred",
+        "evidence": "Trang web Email hi@mailsuite.com",
+        "industry": null,
+        "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+        "sizeMethod": "public-email-count-proxy-v1",
+        "companySize": "1–10 nhân viên",
+        "emailStatus": "source_and_syntax",
+        "publicEmailCount": 1
+      },
+      "unsubscribe_token": "de2c382c-2e2d-4b55-a0bb-132d4bd6c816"
+    },
+    {
+      "id": "33",
+      "email": "info@pavietnam.vn",
+      "company": null,
+      "location": null,
+      "full_name": null,
+      "job_title": null,
+      "bounced_at": null,
+      "created_at": "2026-11-16T00:51:03.667Z",
+      "source_url": "https://www.pavietnam.vn/en/",
+      "unsubscribed_at": null,
+      "search_provenance": {
+        "method": "inferred",
+        "evidence": "Email: info@pavietnam.vn | Phone: 028 22317777",
+        "industry": null,
+        "sizeNote": "Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.",
+        "sizeMethod": "public-email-count-proxy-v1",
+        "companySize": "1–10 nhân viên",
+        "emailStatus": "source_and_syntax",
+        "publicEmailCount": 1
+      },
+      "unsubscribe_token": "0beca6ea-0e9d-4a20-86b2-ebdad1e15b7f"
+    }
+  ],
+  "warnings": [
+    "Không đọc được URL: https://congquocha.com/",
+    "Không đọc được URL: https://dichvucong.gov.vn/",
+    "Không đọc được URL: https://mail.nepal.gov.np/",
+    "Không đọc được URL: https://www.linkedin.com/",
+    "Không đọc được URL: https://support.google.com/accounts/thread/456979660/google-g%E1%BB%ADi-m%C3%A3-x%C3%A1c-minh-cho-email-t%C3%B4i-%C4%91ang-c%E1%BB%91-kh%C3%B4i-ph%E1%BB%A5c?hl=vi",
+    "Không đọc được URL: https://vi.hinative.com/",
+    "Không đọc được URL: https://quizlet.com/",
+    "Không đọc được URL: https://lt.linguee.com/",
+    "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+  ],
+  "list_id": "22",
+  "error": null,
+  "created_at": "2026-11-16T00:49:51.005Z",
+  "finished_at": "2026-11-16T00:51:03.667Z"
+}
