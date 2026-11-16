@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { navigationParams, recordContext, recordKey, recordRequired, selectedRecord } from '../src/recordNavigation.ts';
 
+test('status-result account list keeps sender context while allowing a direct collection URL', () => {
+  assert.equal(recordRequired('manager-account-switch'), false);
+  const params = navigationParams('manager-account-switch', new URLSearchParams('screen=manager-account-result-good&senderId=7'));
+  assert.equal(params.get('senderId'), '7');
+  const edit = navigationParams('manager-account-edit', params, { key: 'senderId', id: '9' });
+  assert.equal(edit.get('senderId'), '9');
+});
+
 test('new campaign recipient form opens without inheriting an existing campaign identity', () => {
   assert.equal(recordRequired('campaign-contacts'), false);
   const params = navigationParams('campaign-contacts', new URLSearchParams('screen=campaign-detail&campaignId=9'));

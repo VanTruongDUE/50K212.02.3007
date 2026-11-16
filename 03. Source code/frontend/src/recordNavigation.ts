@@ -18,7 +18,7 @@ export function recordContext(screen: string, search: string): RecordContext {
 }
 
 export function recordRequired(screen: string): boolean {
-  return !!recordKey(screen) && !entryScreens.includes(screen) && screen !== 'followup-create';
+  return !!recordKey(screen) && !entryScreens.includes(screen) && !['followup-create', 'manager-account-switch'].includes(screen);
 }
 
 export function navigationParams(next: string, current: URLSearchParams, context?: RecordContext): URLSearchParams {

@@ -127,8 +127,8 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const searchExpanded = screen === 'home' || contactActive || criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   const managerAccountExpanded = screen.startsWith('manager-account')
   const senderMenuOpen = senderMenu.screen === screen ? senderMenu.open : managerAccountExpanded
-  const thaoSenderScreen = managerAccountExpanded && !/^manager-account-(check|result)/.test(screen)
-  return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result)/.test(screen)) ? ' figma-inter' : '') + (thaoSenderScreen ? ' thao-sender-shell' : '')}>
+  const thaoSenderScreen = managerAccountExpanded && !/^manager-account-(check|result|switch)/.test(screen)
+  return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result|switch)/.test(screen)) ? ' figma-inter' : '') + (thaoSenderScreen ? ' thao-sender-shell' : '')}>
     <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
       <nav aria-label="Menu chính">

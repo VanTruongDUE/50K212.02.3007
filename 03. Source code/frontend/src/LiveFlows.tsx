@@ -497,7 +497,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
       const url = new URL(location.href);
       if (id) url.searchParams.set(scope, id);
       else url.searchParams.delete(scope);
-      history.replaceState(null, "", url);
+      history.replaceState(history.state, "", url);
     }
   }
 
@@ -2768,7 +2768,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
               : `Kiểm tra không làm thay đổi trạng thái ${status} của tài khoản.`}</p>
           </> : <p role="status">Chọn tài khoản và kiểm tra tình trạng để xem kết quả.</p>}
         </section>
-        <div className="mgr-actions"><button type="button" onClick={() => go("manager-account-check")}>Quay lại</button><button className="mgr-primary" type="button" onClick={() => go("manager-account-list")}>Thêm hoặc đổi tài khoản</button></div>
+        <div className="mgr-actions"><button type="button" onClick={() => go("manager-account-check")}>Quay lại</button><button className="mgr-primary" type="button" onClick={() => go("manager-account-switch")}>Thêm hoặc đổi tài khoản</button></div>
       </Page>;
     }
     const senderStatus = (value: string) => value === "active" ? "Hoạt động" : value === "blocked" ? "Bị khóa" : "Ngừng hoạt động";
@@ -2782,6 +2782,20 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
       setSenderForm({ name: "", code: "", email: "", quotaDaily: "", quotaHourly: "", smtpHost: "smtp.gmail.com", smtpPort: "465", smtpUser: "", smtpPassword: "", status: "inactive", inboundEnabled: false });
       go("manager-account-add");
     };
+    if (manager && screen === "manager-account-switch") return <Page section="Tài khoản gửi" title="Tài khoản gửi" description="Email của V5 dùng để gửi thư cho đối tác và khách hàng tiềm năng." crumbLabel="Danh sách tài khoản" backTo="manager-account-check" className="manager-account-switch" go={go}>
+      {feedback}
+      <Card title="Danh sách tài khoản">
+        <Table heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Trạng thái"]}
+          rowKeys={senders.map(item => item.id)} selectedRow={senders.findIndex(item => item.id === selected)} onSelect={index => setSelected(senders[index].id)}
+          rows={senders.map(item => [item.name, item.code || `TK-${item.id}`, item.email, senderStatus(item.status)])} />
+        <p className="mgr-callout">Thêm hoặc cập nhật email của V5 dùng gửi thư cho đối tác, khách hàng tiềm năng.</p>
+      </Card>
+      <div className="next-actions-bar">
+        <Button disabled={busy || !senders.some(item => item.id === selected)} onClick={() => choose(selected, "manager-account-edit")}>Cập nhật tài khoản</Button>
+        <Button onClick={() => { if (history.state?.previousScreen?.startsWith("manager-account-result")) history.back(); else go("manager-account-check"); }}>Quay lại</Button>
+        <Button primary onClick={openAddSender}>Thêm tài khoản gửi mới</Button>
+      </div>
+    </Page>;
     if (screen === "manager-account-home") return <Page section="Tài khoản gửi" title="Tài khoản gửi" className="thao-sender-home" go={go}>
       <div className="thao-sender-menu">
         <button onClick={() => go("manager-account-list")}>Xem tài khoản gửi</button>

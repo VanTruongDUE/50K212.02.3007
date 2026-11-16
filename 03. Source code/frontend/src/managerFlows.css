@@ -143,6 +143,21 @@
 @media (prefers-reduced-motion: reduce) { .mgr-page *, .mgr-page *::before, .mgr-page *::after { scroll-behavior: auto !important; } .mgr-dialog-backdrop, .mgr-dialog, .mgr-toast { animation: none; } .mgr-table td { transition: none; } }
 
 /* Sender account screens — Thảo frames 229:33515–231:33735. */
+.manager-account-switch > .next-card { margin-top: 40px; }
+.manager-account-switch .next-table-wrap { border: 0; border-radius: 0; }
+.manager-account-switch .next-table { table-layout: fixed; }
+.manager-account-switch .next-table th { color: #b4c7e2; }
+.manager-account-switch .next-table th:nth-child(1) { width: 21%; }
+.manager-account-switch .next-table th:nth-child(2) { width: 13%; }
+.manager-account-switch .next-table th:nth-child(3) { width: 39%; }
+.manager-account-switch .next-table th:nth-child(4) { width: 27%; }
+.manager-account-switch .next-table td { overflow-wrap: anywhere; border-top: 0; border-bottom: 1px solid #294567; }
+.manager-account-switch .next-table tbody tr:nth-child(odd):not(.selected):not(:hover) { background: #10223a; }
+.manager-account-switch .next-card > .mgr-callout { margin: 20px 0 0; }
+.next-page.manager-account-switch > .next-actions-bar { justify-content: flex-start; gap: 12px; margin-top: 16px; }
+.manager-account-switch > .next-actions-bar > .next-button { background: #142b47; min-width: 160px; }
+.manager-account-switch > .next-actions-bar > .next-button:first-child { min-width: 220px; }
+.next-page.manager-account-switch > .next-actions-bar > .next-button.primary:last-child { margin-left: auto; min-width: 260px; background: #2d6cdf; }
 .thao-sender-home > .next-title, .thao-sender-delete-page > .next-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .thao-sender-menu { display: grid; gap: 64px; margin-top: 52px; width: 531px; max-width: 100%; }
 .thao-sender-menu > button { min-height: 96px; padding: 24px; border: 1px solid #294567; border-radius: 8px; background: #0d1d33; color: #edf5ff; text-align: left; font: 700 24px/32px Inter, Arial, sans-serif; cursor: pointer; }
