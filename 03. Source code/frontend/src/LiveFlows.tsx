@@ -1269,10 +1269,11 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     if (screen === "manager-review" || screen === "manager-review-empty") {
       const pending = lists.filter(item => item.manager_review === "pending" && item.confirmed_at);
       const active = pending.find(item => item.id === selected) || pending[0];
-      return <Page section="Kiểm tra danh sách" title="Kiểm tra danh sách" go={go}>
+      return <Page section="Kiểm tra danh sách" title="Kiểm tra danh sách" className="manager-review-list" go={go}>
         {feedback}
         <Card title={pending.length ? "Danh sách chờ kiểm tra" : "Không có yêu cầu nào"}>
           <Table heads={["Danh sách", "Nhân viên kiểm tra", "Thời điểm gửi", "Contact"]}
+            rowKeys={pending.map(item => item.id)} selectedRow={pending.findIndex(item => item.id === active?.id)} onSelect={index => setSelected(pending[index].id)}
             rows={pending.map(item => [
               <button key={item.id} type="button" className="next-followup-select" aria-pressed={active?.id === item.id} onClick={() => setSelected(item.id)}>{item.name}</button>,
               item.owner_name || item.owner_id || "—",

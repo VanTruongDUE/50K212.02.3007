@@ -258,4 +258,6 @@
 }
 
 .next-manager-review-result .next-table { table-layout: fixed; }
+.manager-review-list .next-table tbody tr { cursor: pointer; }
+.manager-review-list .next-table tbody tr:hover, .manager-review-list .next-table tbody tr.selected { background: #203f64; }
 .next-manager-review-result .next-table th:first-child { width: 352px; }
