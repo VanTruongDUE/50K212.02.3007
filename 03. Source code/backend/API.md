@@ -65,12 +65,14 @@ Response mới giữ trạng thái `new` và nhân viên phụ trách chiến d�
 | Method | URL | Vai trò | Nội dung |
 | --- | --- | --- | --- |
 | GET | `/api/campaigns`, `/api/campaigns/:id` | Cả hai | Danh sách và chi tiết theo phạm vi |
-| POST | `/api/campaigns` | Nhân viên | `{ "name": "...", "listIds": [1, 2] }`; chỉ nhận danh sách đã được duyệt, lọc trùng/đã từ chối/bounce/đã gửi trong 7 ngày |
+| POST | `/api/campaigns/recipients/filter` | Nhân viên | `{ "name": "...", "listIds": [1, 2] }`; chỉ đọc danh sách đã xác nhận, lọc trùng/email sai/đã từ chối; không lưu chiến dịch, trả `filter_summary` và `recipients` |
+| POST | `/api/campaigns` | Nhân viên | Cùng dữ liệu lọc; xác nhận lưu người nhận và tạo yêu cầu UC12 ở `pending_approval`. Gửi thêm `campaignId` để chọn lại cho chiến dịch `rejected` |
 | PATCH | `/api/campaigns/:id` | Chủ chiến dịch | Sửa `name`, `description` khi đang chuẩn bị, đã lên lịch hoặc tạm dừng; cả hai trường bắt buộc |
 | PATCH | `/api/campaigns/:id/content` | Chủ chiến dịch | `{ "subject": "...", "body": "..." }`; hỗ trợ `{{Họ tên}}`, `{{Tên doanh nghiệp}}`, khối ảnh `[[Hình ảnh:ID]]`, nút `[[Nút:Tên|https://...]]` và `[[Đường phân cách]]`; cho phép sửa khi chuẩn bị hoặc tạm dừng |
 | POST | `/api/campaigns/:id/preview` | Chủ chiến dịch | `{ "contactId": 1 }` hoặc `{}` để xem Contact đầu tiên; cần xem lại sau mỗi lần sửa nội dung, kể cả trước khi tiếp tục chiến dịch tạm dừng |
 | GET/POST | `/api/campaigns/:id/assets` | Cả hai / Chủ chiến dịch | Xem danh sách hoặc tải multipart `kind=logo|pdf|image`, trường tệp `file`; ảnh nội dung PNG/JPG tối đa 2 MB, logo PNG/JPG/SVG tối đa 2 MB, tối đa 3 PDF mỗi tệp 10 MB; cho phép sửa khi chuẩn bị hoặc tạm dừng |
 | GET/DELETE | `/api/campaigns/:id/assets/:assetId` | Cả hai / Chủ chiến dịch | Tải về hoặc Ẩn khi chiến dịch đang chuẩn bị hoặc tạm dừng |
+| POST | `/api/campaigns/:id/sender-check` | Chủ chiến dịch | `{ "senderAccountId": 1 }`; thử SMTP thực tế, kiểm tra dưới 80% và đủ hạn mức ngày; không lưu lựa chọn |
 | PATCH | `/api/campaigns/:id/sender` | Chủ chiến dịch | `{ "senderAccountId": 1 }` |
 | PATCH | `/api/campaigns/:id/schedule` | Chủ chiến dịch | `{ "scheduledAt": "2026-11-12T02:00:00.000Z" }` để hẹn trước ít nhất 15 phút, hoặc `{ "sendNow": true }` để bắt đầu ngay sau xác nhận |
 | POST | `/api/campaigns/:id/confirm` | Chủ chiến dịch | Xác nhận lịch gửi sau khi hoàn tất các bước |
@@ -137,3 +139,7 @@ Thiết kế ban đầu ở tasks/ chỉ là đề xuất; các endpoint thực 
 ### Hạn mức ngày
 
 Hạn mức được đặt lại lúc 00:00 theo `Asia/Ho_Chi_Minh`. Số đã dùng cộng cả chiến dịch và phản hồi email, gồm thư đã gửi trong ngày và các lượt đang gửi chưa xác định kết quả (kể cả bắt đầu trước 00:00); thư lỗi không chiếm hạn mức. Dữ liệu đọc dùng `quota_daily`, `used_today`, `quota_warning`; ghi dùng `quotaDaily` (1–100). Cột lưu trữ `quota_3_days`, thuộc tính cũ `used_3_days` và tham số `quota3Days` được giữ để tương thích phiên bản cũ, nhưng cùng mang ý nghĩa hạn mức ngày. Không cần đổi giá trị cấu hình hiện có hay chạy migration.
+
+
+Duyệt danh sách người nhận chiến dịch dùng lại `/api/contact-lists/:id/approval` với danh sách snapshot `campaigns.review_list_id`. Kết quả cập nhật danh sách và chiến dịch trong cùng câu lệnh: `approved` hoặc `rejected`, lưu nhận xét/người duyệt/thời điểm. Snapshot không xuất hiện trong danh sách Contact của nhân viên để tránh dùng lại làm đầu vào.
+Bản xem trước trả thêm `variable_errors`, giữ nguyên biến chưa có giá trị. Tiếp tục chiến dịch luôn lên lịch mới sau 15 phút và chỉ gửi người nhận `pending`. Xóa bị chặn khi đã có lần gửi; các giới hạn worker khi gửi vẫn áp dụng.

@@ -125,11 +125,26 @@ export class AssetsController {
     try {
       await client.query('BEGIN');
       const campaign = await client.query<
-        { owner_id: string; status: string } & QueryResultRow
-      >('SELECT owner_id,status FROM campaigns WHERE id=$1 FOR UPDATE', [id]);
+        {
+          owner_id: string;
+          status: string;
+          scheduled_at: Date | null;
+        } & QueryResultRow
+      >(
+        'SELECT owner_id,status,scheduled_at FROM campaigns WHERE id=$1 FOR UPDATE',
+        [id],
+      );
       if (!campaign.rows[0] || campaign.rows[0].owner_id !== request.account.id)
         throw new NotFoundException();
-      if (!['approved', 'paused'].includes(campaign.rows[0].status))
+      if (
+        !['approved', 'paused'].includes(campaign.rows[0].status) &&
+        !(
+          campaign.rows[0].status === 'scheduled' &&
+          campaign.rows[0].scheduled_at &&
+          new Date(campaign.rows[0].scheduled_at).getTime() >=
+            Date.now() + 15 * 60000
+        )
+      )
         throw new ConflictException(
           'Chỉ sửa tệp khi chiến dịch đang chuẩn bị hoặc tạm dừng.',
         );
@@ -152,7 +167,7 @@ export class AssetsController {
         [id, kind, name, contentType, bytes, file.size],
       );
       await client.query(
-        'UPDATE campaigns SET previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1',
+        "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1",
         [id],
       );
       await client.query('COMMIT');
@@ -174,7 +189,14 @@ export class AssetsController {
   ) {
     const campaign = await this.campaign(id, request);
     if (campaign.owner_id !== request.account.id) throw new NotFoundException();
-    if (!['approved', 'paused'].includes(campaign.status))
+    if (
+      !['approved', 'paused'].includes(campaign.status) &&
+      !(
+        campaign.status === 'scheduled' &&
+        campaign.scheduled_at &&
+        new Date(campaign.scheduled_at).getTime() >= Date.now() + 15 * 60000
+      )
+    )
       throw new ConflictException('Chiến dịch đã xác nhận không thể sửa tệp.');
     const asset = await this.database.query<
       { kind: string; body: string | null } & QueryResultRow
@@ -195,7 +217,7 @@ export class AssetsController {
     );
     if (!result.rowCount) throw new NotFoundException();
     await this.database.query(
-      'UPDATE campaigns SET previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1',
+      "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,previewed_at=NULL,preview_draft_hash=NULL,updated_at=now() WHERE id=$1",
       [id],
     );
     return { deleted: true };
@@ -203,9 +225,13 @@ export class AssetsController {
 
   private async campaign(id: number, request: AuthenticatedRequest) {
     const result = await this.database.query<
-      { owner_id: string; status: string } & QueryResultRow
+      {
+        owner_id: string;
+        status: string;
+        scheduled_at: Date | null;
+      } & QueryResultRow
     >(
-      "SELECT owner_id,status FROM campaigns WHERE id=$1 AND ($2='manager' OR owner_id=$3)",
+      "SELECT owner_id,status,scheduled_at FROM campaigns WHERE id=$1 AND ($2='manager' OR owner_id=$3)",
       [id, request.account.role, request.account.id],
     );
     if (!result.rows[0]) throw new NotFoundException();

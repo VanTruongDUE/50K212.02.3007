@@ -23,6 +23,8 @@ import type { AuthenticatedRequest } from '../auth/session.guard';
 import { DatabaseService } from '../database/database.service';
 import { DeliveryWorker } from './delivery.worker';
 import { parseCampaignBody } from './content-blocks';
+import { SmtpService, type SmtpAccount } from '../senders/smtp.service';
+import type { PoolClient } from 'pg';
 
 const variables = ['{{Họ tên}}', '{{Tên doanh nghiệp}}'];
 function inSendWindow(start: Date, from: string, to: string) {
@@ -35,12 +37,13 @@ export function fill(
   company: string | null,
 ): string {
   return value
-    .replaceAll(variables[0], name || '')
-    .replaceAll(variables[1], company || '');
+    .replaceAll(variables[0], name?.trim() || variables[0])
+    .replaceAll(variables[1], company?.trim() || variables[1]);
 }
 
 type Campaign = QueryResultRow & {
   id: string;
+  review_list_id: string | null;
   owner_id: string;
   name: string;
   status: string;
@@ -51,7 +54,12 @@ type Campaign = QueryResultRow & {
   scheduled_at: Date | null;
   send_mode: string;
 };
-type CreateInput = { name?: unknown; description?: unknown; listIds?: unknown };
+type CreateInput = {
+  name?: unknown;
+  description?: unknown;
+  listIds?: unknown;
+  campaignId?: unknown;
+};
 type ContentInput = {
   subject?: unknown;
   body?: unknown;
@@ -65,13 +73,15 @@ export class CampaignsController {
     private readonly database: DatabaseService,
     private readonly config: ConfigService,
     private readonly delivery: DeliveryWorker,
+    private readonly smtp: SmtpService,
   ) {}
 
   @Get()
   async list(@Req() request: AuthenticatedRequest) {
     const result = await this.database.query(
-      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.sender_name,c.needs_reconfirmation,c.filter_summary,c.scheduled_at,c.send_mode,c.send_rate,c.window_start,c.window_end,c.sent_count,c.paused_at,c.pause_reason,c.created_at,
-       (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id) AS recipient_count
+      `SELECT c.id,c.name,c.description,c.subject,c.body,c.status,c.owner_id,c.sender_account_id,c.sender_name,c.needs_reconfirmation,c.filter_summary,c.scheduled_at,c.send_mode,c.send_rate,c.window_start,c.window_end,c.sent_count,c.paused_at,c.pause_reason,c.created_at,c.manager_comment,c.reviewed_at,c.reviewed_by,
+       (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id) AS recipient_count,
+       (SELECT count(*)::int FROM campaign_recipients r WHERE r.campaign_id=c.id AND r.status='pending') AS pending_count
        FROM campaigns c WHERE $1='manager' OR c.owner_id=$2 ORDER BY c.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
     );
@@ -97,113 +107,108 @@ export class CampaignsController {
     return { ...campaign, lists: lists.rows, recipients: recipients.rows };
   }
 
+  @Post('recipients/filter')
+  @Roles('employee')
+  async filterRecipients(
+    @Body() body: CreateInput,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const client = await this.database.connect();
+    try {
+      return await this.filteredRecipients(client, body, request);
+    } finally {
+      client.release();
+    }
+  }
+
   @Post()
   @Roles('employee')
   async create(
     @Body() body: CreateInput,
     @Req() request: AuthenticatedRequest,
   ) {
-    const name = typeof body?.name === 'string' ? body.name.trim() : '';
-    const listIds = body?.listIds;
-    if (
-      !name ||
-      name.length > 100 ||
-      !Array.isArray(listIds) ||
-      !listIds.length ||
-      listIds.length > 20 ||
-      !listIds.every((id) => Number.isSafeInteger(id) && id > 0) ||
-      new Set(listIds).size !== listIds.length
-    )
-      throw new BadRequestException(
-        'Tên chiến dịch hoặc danh sách Contact không hợp lệ.',
-      );
-    const description =
-      body.description === undefined ? null : body.description;
-    if (
-      description !== null &&
-      (typeof description !== 'string' || description.length > 2000)
-    )
-      throw new BadRequestException('Mô tả không hợp lệ.');
     const client = await this.database.connect();
     try {
       await client.query('BEGIN');
-      const approved = await client.query(
-        `SELECT id FROM contact_lists WHERE id = ANY($1::bigint[]) AND owner_id=$2 AND confirmed_at IS NOT NULL AND manager_review='approved' FOR SHARE`,
-        [listIds, request.account.id],
-      );
-      if (approved.rowCount !== listIds.length)
-        throw new ConflictException(
-          'Chỉ chọn danh sách đã xác nhận và được Trưởng phòng duyệt.',
-        );
-      const created = await client.query<Campaign>(
-        "INSERT INTO campaigns(name,description,owner_id,status) VALUES($1,$2,$3,'approved') RETURNING *",
-        [name, description, request.account.id],
-      );
-      const id = created.rows[0].id;
-      await client.query(
-        'INSERT INTO campaign_lists(campaign_id,list_id) SELECT $1::bigint, unnest($2::bigint[])',
-        [id, listIds],
-      );
-      await client.query(
-        `INSERT INTO campaign_recipients(campaign_id,contact_id)
-         SELECT DISTINCT $1::bigint,c.id FROM contacts c JOIN contact_list_items i ON i.contact_id=c.id
-         WHERE i.list_id=ANY($2::bigint[]) AND c.unsubscribed_at IS NULL AND c.bounced_at IS NULL
-         AND NOT EXISTS (SELECT 1 FROM email_suppressions x WHERE x.email=lower(c.email))
-         AND c.email ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
-         AND NOT EXISTS (SELECT 1 FROM email_deliveries d WHERE d.contact_id=c.id AND d.state='sent' AND d.sent_at > now()-interval '7 days')`,
-        [id, listIds],
-      );
-      const count = await client.query<{ count: string }>(
-        'SELECT count(*) FROM campaign_recipients WHERE campaign_id=$1',
-        [id],
-      );
-      const totals = await client.query<{
-        original: number;
-        duplicate: number;
-        invalid: number;
-        unsubscribe: number;
-        bounce: number;
-        recent: number;
-      }>(
-        `WITH candidates AS (
-        SELECT c.*, row_number() OVER(PARTITION BY c.id ORDER BY i.list_id) AS occurrence,
-          EXISTS(SELECT 1 FROM email_suppressions x WHERE x.email=lower(c.email)) AS suppressed,
-          EXISTS(SELECT 1 FROM email_deliveries d WHERE d.contact_id=c.id AND d.state='sent' AND d.sent_at>now()-interval '7 days') AS recent
-        FROM contacts c JOIN contact_list_items i ON i.contact_id=c.id WHERE i.list_id=ANY($1::bigint[])
-      ), classified AS (SELECT CASE WHEN occurrence>1 THEN 'duplicate'
-        WHEN email !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' THEN 'invalid'
-        WHEN unsubscribed_at IS NOT NULL OR suppressed THEN 'unsubscribe'
-        WHEN bounced_at IS NOT NULL THEN 'bounce' WHEN recent THEN 'recent' ELSE 'valid' END AS reason FROM candidates)
-        SELECT count(*)::int AS original,
-          count(*) FILTER(WHERE reason='duplicate')::int AS duplicate,
-          count(*) FILTER(WHERE reason='invalid')::int AS invalid,
-          count(*) FILTER(WHERE reason='unsubscribe')::int AS unsubscribe,
-          count(*) FILTER(WHERE reason='bounce')::int AS bounce,
-          count(*) FILTER(WHERE reason='recent')::int AS recent FROM classified`,
-        [listIds],
-      );
-      const original = Number(totals.rows[0].original),
-        valid = Number(count.rows[0].count);
-      const filter = {
-        ...totals.rows[0],
-        original,
-        valid,
-        excluded: original - valid,
-      };
-      if (valid === 0)
+      const filtered = await this.filteredRecipients(client, body, request);
+      if (!filtered.filter_summary.valid)
         throw new ConflictException({
           message: 'Không còn người nhận hợp lệ sau khi lọc.',
-          filter,
+          filter: filtered.filter_summary,
         });
-      await client.query('UPDATE campaigns SET filter_summary=$2 WHERE id=$1', [
-        id,
-        filter,
-      ]);
+      let campaign: Campaign;
+      if (body.campaignId !== undefined) {
+        if (
+          !Number.isSafeInteger(body.campaignId) ||
+          Number(body.campaignId) < 1
+        )
+          throw new BadRequestException('Chiến dịch không hợp lệ.');
+        const existing = await client.query<Campaign>(
+          "SELECT * FROM campaigns WHERE id=$1 AND owner_id=$2 AND status='rejected' FOR UPDATE",
+          [body.campaignId, request.account.id],
+        );
+        if (!existing.rows[0])
+          throw new ConflictException(
+            'Chỉ chọn lại người nhận cho chiến dịch có danh sách không đạt.',
+          );
+        campaign = existing.rows[0];
+        await client.query(
+          'DELETE FROM campaign_recipients WHERE campaign_id=$1',
+          [campaign.id],
+        );
+        await client.query('DELETE FROM campaign_lists WHERE campaign_id=$1', [
+          campaign.id,
+        ]);
+        await client.query('DELETE FROM contact_list_items WHERE list_id=$1', [
+          campaign.review_list_id,
+        ]);
+        await client.query(
+          "UPDATE contact_lists SET name=$2,manager_review='pending',manager_comment=NULL,reviewed_at=NULL,reviewed_by=NULL,confirmed_at=now() WHERE id=$1",
+          [campaign.review_list_id, filtered.name],
+        );
+      } else {
+        const created = await client.query<Campaign>(
+          "INSERT INTO campaigns(name,description,owner_id,status) VALUES($1,$2,$3,'pending_approval') RETURNING *",
+          [filtered.name, filtered.description, request.account.id],
+        );
+        campaign = created.rows[0];
+      }
+      let reviewListId = campaign.review_list_id;
+      if (!reviewListId) {
+        const review = await client.query<{ id: string }>(
+          "INSERT INTO contact_lists(name,owner_id,employee_review,confirmed_at) VALUES($1,$2,'passed',now()) RETURNING id",
+          [filtered.name, request.account.id],
+        );
+        reviewListId = review.rows[0].id;
+      }
+      await client.query(
+        'INSERT INTO campaign_lists(campaign_id,list_id) SELECT $1::bigint,unnest($2::bigint[])',
+        [campaign.id, body.listIds],
+      );
+      const contactIds = filtered.recipients.map((contact) => contact.id);
+      await client.query(
+        'INSERT INTO campaign_recipients(campaign_id,contact_id) SELECT $1::bigint,unnest($2::bigint[])',
+        [campaign.id, contactIds],
+      );
+      await client.query(
+        'INSERT INTO contact_list_items(list_id,contact_id) SELECT $1::bigint,unnest($2::bigint[])',
+        [reviewListId, contactIds],
+      );
+      const saved = await client.query<Campaign>(
+        "UPDATE campaigns SET name=$2,description=$3,status='pending_approval',review_list_id=$4,filter_summary=$5,manager_comment=NULL,reviewed_at=NULL,reviewed_by=NULL,updated_at=now() WHERE id=$1 RETURNING *",
+        [
+          campaign.id,
+          filtered.name,
+          filtered.description,
+          reviewListId,
+          filtered.filter_summary,
+        ],
+      );
       await client.query('COMMIT');
       return {
-        ...created.rows[0],
-        recipient_count: Number(count.rows[0].count),
-        filter_summary: filter,
+        ...saved.rows[0],
+        recipient_count: contactIds.length,
+        pending_count: contactIds.length,
       };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -220,6 +225,90 @@ export class CampaignsController {
     }
   }
 
+  private async filteredRecipients(
+    client: Pick<PoolClient, 'query'>,
+    body: CreateInput,
+    request: AuthenticatedRequest,
+  ) {
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    const description = body?.description ?? null;
+    const listIds = body?.listIds;
+    if (
+      !name ||
+      name.length > 100 ||
+      (description !== null &&
+        (typeof description !== 'string' || description.length > 2000)) ||
+      !Array.isArray(listIds) ||
+      !listIds.length ||
+      listIds.length > 20 ||
+      !listIds.every((id) => Number.isSafeInteger(id) && id > 0) ||
+      new Set(listIds).size !== listIds.length
+    )
+      throw new BadRequestException(
+        'Tên chiến dịch hoặc danh sách Contact không hợp lệ.',
+      );
+    const lists = await client.query(
+      `SELECT l.id,l.name FROM contact_lists l WHERE l.id=ANY($1::bigint[]) AND l.owner_id=$2 AND l.confirmed_at IS NOT NULL
+       AND NOT EXISTS(SELECT 1 FROM campaigns c WHERE c.review_list_id=l.id) FOR SHARE`,
+      [listIds, request.account.id],
+    );
+    if (lists.rowCount !== listIds.length)
+      throw new ConflictException(
+        'Chỉ chọn danh sách đã được nhân viên xác nhận.',
+      );
+    const result = await client.query<{
+      id: string;
+      email: string;
+      full_name: string | null;
+      company: string | null;
+      unsubscribed_at: Date | null;
+      suppressed: boolean;
+    }>(
+      `SELECT c.id,c.email,c.full_name,c.company,c.unsubscribed_at,
+        EXISTS(SELECT 1 FROM email_suppressions s WHERE s.email=lower(c.email)) AS suppressed
+       FROM contacts c JOIN contact_list_items i ON i.contact_id=c.id WHERE i.list_id=ANY($1::bigint[]) ORDER BY i.list_id,c.id`,
+      [listIds],
+    );
+    const seen = new Set<string>();
+    const filter = {
+      original: result.rows.length,
+      duplicate: 0,
+      invalid: 0,
+      unsubscribe: 0,
+      valid: 0,
+      excluded: 0,
+    };
+    const recipients = result.rows.filter((contact) => {
+      const email = String(contact.email || '')
+        .trim()
+        .toLowerCase();
+      if (seen.has(email)) {
+        filter.duplicate++;
+        return false;
+      }
+      seen.add(email);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        filter.invalid++;
+        return false;
+      }
+      if (contact.unsubscribed_at || contact.suppressed) {
+        filter.unsubscribe++;
+        return false;
+      }
+      return true;
+    });
+    filter.valid = recipients.length;
+    filter.excluded = filter.original - filter.valid;
+    return {
+      name,
+      description,
+      lists: lists.rows,
+      recipients,
+      recipient_count: recipients.length,
+      filter_summary: filter,
+    };
+  }
+
   @Post(':id/recipients/confirm')
   @Roles('employee')
   async confirmRecipients(
@@ -227,16 +316,9 @@ export class CampaignsController {
     @Req() request: AuthenticatedRequest,
   ) {
     const campaign = await this.owned(id, request);
-    this.editable(campaign);
-    const saved = await this.database.query(
-      "UPDATE campaigns SET updated_at=now() WHERE id=$1 AND status='approved' AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1) AND NOT EXISTS(SELECT 1 FROM campaign_lists cl JOIN contact_lists l ON l.id=cl.list_id WHERE cl.campaign_id=$1 AND l.manager_review<>'approved') RETURNING *",
-      [id],
-    );
-    if (!saved.rows[0])
-      throw new ConflictException(
-        'Danh sách người nhận không còn hợp lệ. Chọn lại danh sách đã duyệt.',
-      );
-    return saved.rows[0];
+    if (campaign.status !== 'pending_approval')
+      throw new ConflictException('Danh sách không ở trạng thái chờ kiểm tra.');
+    return campaign;
   }
 
   @Patch(':id')
@@ -300,7 +382,7 @@ export class CampaignsController {
       throw new BadRequestException('Thông tin xem trước không hợp lệ.');
     const { subject, content } = await this.checkedContent(id, body);
     const result = await this.database.query(
-      "UPDATE campaigns SET subject=$2,body=$3,previewed_at=CASE WHEN preview_draft_hash=$4 THEN now() ELSE NULL END,preview_draft_hash=NULL,needs_reconfirmation=(status='paused'),updated_at=now() WHERE id=$1 AND status IN ('approved','paused') AND (NOT $5::boolean OR preview_draft_hash=$4) RETURNING *",
+      "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,subject=$2,body=$3,previewed_at=CASE WHEN preview_draft_hash=$4 THEN now() ELSE NULL END,preview_draft_hash=NULL,needs_reconfirmation=(status='paused'),updated_at=now() WHERE id=$1 AND status IN ('approved','paused','scheduled') AND (NOT $5::boolean OR preview_draft_hash=$4) RETURNING *",
       [
         id,
         subject,
@@ -327,9 +409,14 @@ export class CampaignsController {
   ) {
     const campaign = await this.owned(id, request);
     this.editable(campaign, true);
+    if (
+      body?.contactId !== undefined &&
+      (!Number.isSafeInteger(body.contactId) || Number(body.contactId) < 1)
+    )
+      throw new BadRequestException('Contact xem trước không hợp lệ.');
     const draft = body?.subject !== undefined || body?.body !== undefined;
     const value = draft
-      ? await this.checkedContent(id, body)
+      ? await this.checkedContent(id, body, true)
       : { subject: campaign.subject, content: campaign.body };
     if (!value.subject || !value.content)
       throw new ConflictException('Chưa có nội dung email.');
@@ -346,7 +433,25 @@ export class CampaignsController {
     );
     if (!contact.rows[0])
       throw new NotFoundException('Không tìm thấy Contact xem trước.');
-    if (draft)
+    const variableErrors = [
+      ...new Set(
+        (value.subject + '\n' + value.content).match(
+          /\{\{[^{}]*\}\}|\{\{[^}\n]*|[^{}\n]*\}\}/g,
+        ) || [],
+      ),
+    ].filter(
+      (token) =>
+        !variables.includes(token) ||
+        (token === variables[0]
+          ? !contact.rows[0].full_name?.trim()
+          : !contact.rows[0].company?.trim()),
+    );
+    if (variableErrors.length)
+      await this.database.query(
+        'UPDATE campaigns SET preview_draft_hash=NULL,previewed_at=NULL WHERE id=$1',
+        [id],
+      );
+    if (draft && !variableErrors.length)
       await this.database.query(
         'UPDATE campaigns SET preview_draft_hash=$2 WHERE id=$1',
         [
@@ -356,7 +461,7 @@ export class CampaignsController {
             .digest('hex'),
         ],
       );
-    else
+    else if (!draft && !variableErrors.length)
       await this.database.query(
         "UPDATE campaigns SET previewed_at=now() WHERE id=$1 AND status IN ('approved','paused')",
         [id],
@@ -366,6 +471,7 @@ export class CampaignsController {
       [id],
     );
     return {
+      variable_errors: variableErrors,
       contact_id: contact.rows[0].id,
       assets: assets.rows,
       subject: fill(
@@ -379,6 +485,41 @@ export class CampaignsController {
         contact.rows[0].company,
       ),
     };
+  }
+
+  @Post(':id/sender-check')
+  @Roles('employee')
+  async checkSender(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { senderAccountId?: unknown },
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const campaign = await this.owned(id, request);
+    this.editable(campaign, true);
+    if (
+      !Number.isSafeInteger(body?.senderAccountId) ||
+      Number(body.senderAccountId) < 1
+    )
+      throw new BadRequestException('Tài khoản gửi không hợp lệ.');
+    await this.ensureSenderCapacity(Number(body.senderAccountId), id);
+    await this.verifySender(Number(body.senderAccountId));
+    return { connected: true };
+  }
+
+  private async verifySender(id: number) {
+    const result = await this.database.query<SmtpAccount & QueryResultRow>(
+      "SELECT * FROM sender_accounts WHERE id=$1 AND status='active'",
+      [id],
+    );
+    if (!result.rows[0])
+      throw new ConflictException('Tài khoản gửi không còn hoạt động.');
+    try {
+      await this.smtp.verify(result.rows[0]);
+    } catch {
+      throw new ConflictException(
+        'Không kết nối được máy chủ email. Kiểm tra tài khoản gửi và thử lại.',
+      );
+    }
   }
 
   @Patch(':id/sender')
@@ -414,8 +555,9 @@ export class CampaignsController {
         'Tài khoản gửi chưa hoạt động hoặc chưa cấu hình SMTP.',
       );
     await this.ensureSenderCapacity(Number(body.senderAccountId), id);
+    await this.verifySender(Number(body.senderAccountId));
     const result = await this.database.query(
-      "UPDATE campaigns SET sender_account_id=$2,sender_name=COALESCE($3,(SELECT name FROM sender_accounts WHERE id=$2)),needs_reconfirmation=(status='paused'),updated_at=now() WHERE id=$1 AND status IN ('approved','paused') RETURNING *",
+      "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,sender_account_id=$2,sender_name=COALESCE($3,(SELECT name FROM sender_accounts WHERE id=$2)),needs_reconfirmation=(status='paused'),updated_at=now() WHERE id=$1 AND status IN ('approved','paused','scheduled') RETURNING *",
       [
         id,
         body.senderAccountId,
@@ -477,7 +619,7 @@ export class CampaignsController {
         'Giờ bắt đầu phải nằm trong khung giờ gửi.',
       );
     const result = await this.database.query(
-      "UPDATE campaigns SET needs_reconfirmation=(status='paused'),scheduled_at=$2,send_mode=$3,send_rate=$4,window_start=$5,window_end=$6,updated_at=now() WHERE id=$1 AND status IN ('approved','paused') RETURNING *",
+      "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,needs_reconfirmation=(status='paused'),scheduled_at=$2,send_mode=$3,send_rate=$4,window_start=$5,window_end=$6,updated_at=now() WHERE id=$1 AND status IN ('approved','paused','scheduled') RETURNING *",
       [id, date, sendNow ? 'now' : 'scheduled', rate, windowStart, windowEnd],
     );
     if (!result.rows[0])
@@ -587,12 +729,11 @@ export class CampaignsController {
       await this.ensureSenderCapacity(Number(campaign.sender_account_id), id);
     }
     const result = await this.database.query(
-      `UPDATE campaigns SET needs_reconfirmation=false,status='scheduled',scheduled_at=CASE WHEN send_mode='now' THEN now() ELSE GREATEST(scheduled_at,now()+interval '15 minutes') END,updated_at=now() WHERE id=$1 AND status='paused' AND previewed_at IS NOT NULL AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending') AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1 AND state='sending') RETURNING *`,
+      `UPDATE campaigns SET needs_reconfirmation=false,status='scheduled',send_mode='scheduled',scheduled_at=now()+interval '15 minutes',updated_at=now() WHERE id=$1 AND status='paused' AND previewed_at IS NOT NULL AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1 AND status='pending') AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1 AND state='sending') RETURNING *`,
       [id],
     );
     if (!result.rowCount)
       throw new ConflictException('Không còn email chưa gửi để tiếp tục.');
-    if (campaign.send_mode === 'now') void this.delivery.tick();
     return result.rows[0];
   }
 
@@ -604,15 +745,26 @@ export class CampaignsController {
   ) {
     await this.owned(id, request);
     const result = await this.database.query(
-      `DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','approved','scheduled','paused') AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id`,
+      `WITH deleted AS (
+        DELETE FROM campaigns WHERE id=$1 AND status IN ('draft','pending_approval','rejected','approved','scheduled','paused')
+        AND sent_count=0 AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE campaign_id=$1) RETURNING id,review_list_id
+      ), removed_review AS (
+        DELETE FROM contact_lists l USING deleted d WHERE l.id=d.review_list_id RETURNING l.id
+      ) SELECT id FROM deleted`,
       [id],
     );
     if (!result.rowCount)
-      throw new ConflictException('Chỉ Ẩn chiến dịch chưa gửi.');
+      throw new ConflictException(
+        'Không thể xóa chiến dịch đã gửi email hoặc đang gửi.',
+      );
     return { deleted: true };
   }
 
-  private async checkedContent(id: number, body: ContentInput) {
+  private async checkedContent(
+    id: number,
+    body: ContentInput,
+    preview = false,
+  ) {
     const subject =
       typeof body?.subject === 'string' ? body.subject.trim() : '';
     const content = typeof body?.body === 'string' ? body.body.trim() : '';
@@ -630,9 +782,12 @@ export class CampaignsController {
     const unsupported = (subject + content)
       .match(/\{\{[^{}]*\}\}/g)
       ?.filter((item) => !variables.includes(item));
-    if (unsupported?.length)
+    if (!preview && unsupported?.length)
       throw new BadRequestException('Biến cá nhân hóa không được hỗ trợ.');
-    if (/\{\{|\}\}/.test((subject + content).replace(/\{\{[^{}]*\}\}/g, '')))
+    if (
+      !preview &&
+      /\{\{|\}\}/.test((subject + content).replace(/\{\{[^{}]*\}\}/g, ''))
+    )
       throw new BadRequestException('Biến cá nhân hóa sai cú pháp.');
     const imageIds = [
       ...new Set(
@@ -659,7 +814,7 @@ export class CampaignsController {
     request: AuthenticatedRequest,
   ): Promise<Campaign> {
     const result = await this.database.query<Campaign>(
-      "SELECT campaigns.*,(SELECT count(*)::int FROM campaign_recipients WHERE campaign_id=campaigns.id) AS recipient_count FROM campaigns WHERE id=$1 AND ($2='manager' OR owner_id=$3)",
+      "SELECT campaigns.*,(SELECT count(*)::int FROM campaign_recipients WHERE campaign_id=campaigns.id) AS recipient_count,(SELECT count(*)::int FROM campaign_recipients WHERE campaign_id=campaigns.id AND status='pending') AS pending_count FROM campaigns WHERE id=$1 AND ($2='manager' OR owner_id=$3)",
       [id, request.account.role, request.account.id],
     );
     if (!result.rows[0]) throw new NotFoundException();
@@ -679,8 +834,9 @@ export class CampaignsController {
     const result = await this.database.query<{
       remaining: string;
       pending: string;
+      quota: number;
     }>(
-      `SELECT s.quota_3_days
+      `SELECT s.quota_3_days AS quota,s.quota_3_days
         - (SELECT count(*) FROM email_deliveries d WHERE d.sender_account_id=s.id AND d.state IN ('sent','sending') AND (d.state='sending' OR COALESCE(d.sent_at,d.created_at)>=${dailyQuotaStartSql}))
         - (SELECT count(*) FROM response_email_deliveries r WHERE r.sender_account_id=s.id AND r.state IN ('sent','sending') AND (r.state='sending' OR COALESCE(r.sent_at,r.created_at)>=${dailyQuotaStartSql})) AS remaining,
         (SELECT count(*) FROM campaign_recipients WHERE campaign_id=$2 AND status='pending') AS pending
@@ -689,6 +845,8 @@ export class CampaignsController {
     );
     if (!result.rows[0])
       throw new ConflictException('Tài khoản gửi không còn hoạt động.');
+    if (Number(result.rows[0].remaining) <= Number(result.rows[0].quota) * 0.2)
+      throw new ConflictException('Tài khoản đã dùng từ 80% hạn mức ngày.');
     if (Number(result.rows[0].remaining) < Number(result.rows[0].pending))
       throw new ConflictException(
         'Tài khoản gửi không đủ hạn mức cho số email còn lại.',
@@ -698,7 +856,14 @@ export class CampaignsController {
   private editable(campaign: Campaign, allowPaused = false) {
     if (
       campaign.status !== 'approved' &&
-      !(allowPaused && campaign.status === 'paused')
+      !(
+        allowPaused &&
+        (campaign.status === 'paused' ||
+          (campaign.status === 'scheduled' &&
+            campaign.scheduled_at &&
+            new Date(campaign.scheduled_at).getTime() >=
+              Date.now() + 15 * 60000))
+      )
     )
       throw new ConflictException('Chiến dịch không ở bước chuẩn bị.');
   }

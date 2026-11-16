@@ -56,7 +56,7 @@ export class ContactsController {
          FROM contact_search_jobs j WHERE j.list_id=l.id AND j.owner_id=l.owner_id
          ORDER BY j.id DESC LIMIT 1
        ) search ON true
-       WHERE $1 = 'manager' OR l.owner_id = $2
+       WHERE $1 = 'manager' OR (l.owner_id = $2 AND NOT EXISTS(SELECT 1 FROM campaigns c WHERE c.review_list_id=l.id))
        ORDER BY l.created_at DESC LIMIT 100`,
       [request.account.role, request.account.id],
     );
@@ -229,8 +229,14 @@ export class ContactsController {
     if (body.decision === 'rejected' && !comment)
       throw new BadRequestException('Cần nhập nhận xét khi không đạt.');
     const result = await this.database.query(
-      `UPDATE contact_lists SET manager_review = $2, manager_comment = $3,
-       reviewed_by = $4, reviewed_at = now() WHERE id = $1 AND confirmed_at IS NOT NULL AND manager_review='pending' RETURNING *`,
+      `WITH reviewed AS (
+       UPDATE contact_lists SET manager_review=$2,manager_comment=$3,reviewed_by=$4,reviewed_at=now()
+       WHERE id=$1 AND confirmed_at IS NOT NULL AND manager_review='pending' RETURNING *
+      ), campaign_review AS (
+       UPDATE campaigns c SET status=CASE WHEN $2='approved' THEN 'approved' ELSE 'rejected' END,
+        manager_comment=$3,reviewed_by=$4,reviewed_at=now(),updated_at=now()
+       FROM reviewed r WHERE c.review_list_id=r.id AND c.status='pending_approval' RETURNING c.id
+      ) SELECT * FROM reviewed`,
       [id, body.decision, comment || null, request.account.id],
     );
     if (!result.rows[0])

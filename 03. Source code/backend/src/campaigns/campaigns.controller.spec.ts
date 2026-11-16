@@ -1,8 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../database/database.service';
 import type { AuthenticatedRequest } from '../auth/session.guard';
-import { CampaignsController } from './campaigns.controller';
+import { CampaignsController, fill } from './campaigns.controller';
 import { DeliveryWorker } from './delivery.worker';
+import { SmtpService } from '../senders/smtp.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('Campaign detail approval provenance', () => {
@@ -33,6 +34,7 @@ describe('Campaign detail approval provenance', () => {
       { query } as unknown as DatabaseService,
       {} as ConfigService,
       {} as DeliveryWorker,
+      {} as SmtpService,
     );
     const request = {
       account: { id: 'NV001', role: 'employee' },
@@ -56,6 +58,7 @@ describe('Campaign detail approval provenance', () => {
       { query } as unknown as DatabaseService,
       {} as ConfigService,
       {} as DeliveryWorker,
+      {} as SmtpService,
     );
     const request = {
       account: { id: 'NV002', role: 'employee' },
@@ -100,6 +103,7 @@ describe('Campaign confirmation', () => {
         { query } as unknown as DatabaseService,
         { get: () => 'https://example.test' } as unknown as ConfigService,
         { tick } as unknown as DeliveryWorker,
+        {} as SmtpService,
       );
       const request = {
         account: { id: 'NV001', role: 'employee' },
@@ -127,6 +131,7 @@ describe('Campaign confirmation', () => {
       { query } as unknown as DatabaseService,
       {} as ConfigService,
       {} as DeliveryWorker,
+      {} as SmtpService,
     );
     await expect(
       controller.confirm(1, {
@@ -147,6 +152,7 @@ describe('Campaign confirmation', () => {
       { query } as unknown as DatabaseService,
       {} as ConfigService,
       {} as DeliveryWorker,
+      {} as SmtpService,
     );
     const request = {
       account: { id: 'NV001', role: 'employee' },
@@ -156,5 +162,43 @@ describe('Campaign confirmation', () => {
       'không đủ hạn mức',
     );
     expect(query).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('Campaign review and preview safeguards', () => {
+  const request = {
+    account: { id: 'NV001', role: 'employee' },
+  } as AuthenticatedRequest;
+  it.each(['pending_approval', 'rejected'])(
+    'blocks all preparation writes before campaign recipients are approved (%s)',
+    async (status) => {
+      const query = jest
+        .fn()
+        .mockResolvedValue({ rows: [{ id: '1', owner_id: 'NV001', status }] });
+      const controller = new CampaignsController(
+        { query } as unknown as DatabaseService,
+        {} as ConfigService,
+        {} as DeliveryWorker,
+        {} as SmtpService,
+      );
+      await expect(
+        controller.content(1, { subject: 'Test', body: 'Body' }, request),
+      ).rejects.toThrow('không ở bước chuẩn bị');
+      await expect(
+        controller.sender(1, { senderAccountId: 1 }, request),
+      ).rejects.toThrow('không ở bước chuẩn bị');
+      await expect(
+        controller.schedule(1, { sendNow: true }, request),
+      ).rejects.toThrow('không ở bước chuẩn bị');
+      expect(query).toHaveBeenCalledTimes(3);
+    },
+  );
+  it('keeps missing personalization visible and does not erase surrounding text', () => {
+    expect(
+      fill('Kính gửi {{Họ tên}}, tại {{Tên doanh nghiệp}}.', null, ''),
+    ).toBe('Kính gửi {{Họ tên}}, tại {{Tên doanh nghiệp}}.');
+    expect(fill('Chào {{Họ tên}}, {{Chức vụ}}', ' Lan ', 'V5')).toBe(
+      'Chào Lan, {{Chức vụ}}',
+    );
   });
 });

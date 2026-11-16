@@ -26,7 +26,7 @@ describe('Contact list provenance', () => {
       const row = { id: '1', owner_id: employee.account.id, ...search };
       const contacts = [{ id: '1', email: 'one@example.invalid' }];
       const query = jest
-        .fn()
+        .fn<Promise<{ rows: Record<string, unknown>[] }>, [string, unknown[]]>()
         .mockResolvedValueOnce({ rows: [row] })
         .mockResolvedValueOnce({ rows: contacts });
       const controller = new ContactsController({
@@ -53,7 +53,9 @@ describe('Contact list provenance', () => {
       contact_count: 2,
       ...Object.fromEntries(Object.keys(search).map((key) => [key, null])),
     };
-    const query = jest.fn().mockResolvedValue({ rows: [manual] });
+    const query = jest
+      .fn<Promise<{ rows: Record<string, unknown>[] }>, [string, unknown[]]>()
+      .mockResolvedValue({ rows: [manual] });
     const controller = new ContactsController({
       query,
     } as unknown as DatabaseService);
@@ -64,14 +66,14 @@ describe('Contact list provenance', () => {
       'j.list_id=l.id AND j.owner_id=l.owner_id',
     );
     expect(query.mock.calls[0][0]).toContain(
-      "WHERE $1 = 'manager' OR l.owner_id = $2",
+      "WHERE $1 = 'manager' OR (l.owner_id = $2",
     );
     expect(query.mock.calls[0][1]).toEqual(['employee', 'NV001']);
   });
 
   it('rejects another employee list before loading its contacts', async () => {
     const query = jest
-      .fn()
+      .fn<Promise<{ rows: Record<string, unknown>[] }>, [string, unknown[]]>()
       .mockResolvedValue({ rows: [{ id: '1', owner_id: 'NV002', ...search }] });
     const controller = new ContactsController({
       query,
@@ -84,7 +86,9 @@ describe('Contact list provenance', () => {
   });
 
   it('keeps missing detail recovery', async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [] });
+    const query = jest
+      .fn<Promise<{ rows: Record<string, unknown>[] }>, [string, unknown[]]>()
+      .mockResolvedValue({ rows: [] });
     const controller = new ContactsController({
       query,
     } as unknown as DatabaseService);

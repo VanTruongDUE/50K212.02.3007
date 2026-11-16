@@ -110,3 +110,16 @@ Không chốt quy tắc nghiệp vụ chỉ dựa trên BPMN. Những mục cầ
 - **Trưởng phòng duyệt danh sách Contact gốc**. Theo UC5.1 và UC12, bước tạo chiến dịch vẫn phải lọc trùng, loại email không hợp lệ/đã từ chối, hiển thị kết quả lọc và danh sách người nhận hợp lệ. Chỉ chuyển sang soạn email sau khi Trưởng phòng duyệt và còn ít nhất một người nhận hợp lệ.
 - Với Response, hướng triển khai từ PV2, câu trả lời bổ sung `F2` và UC7–UC8 là lưu **loại phản hồi** riêng với **trạng thái xử lý**; giữ lịch sử tương tác, không Ẩn Response đã xử lý. Với Follow-up, dùng mốc 2 ngày làm việc và tối đa 3 lần từ `G2` làm giá trị mặc định, mỗi Response chỉ có một lịch `Chờ thực hiện` tại một thời điểm; nhân viên thực hiện, hệ thống nhắc việc và không tự gửi email Follow-up. Các ngoại lệ và cấu hình chi tiết phải đối chiếu UC tương ứng trước khi code.
 - BA chưa có quyền dùng Custom Search JSON API cũ. [Google đã đóng API này cho khách hàng mới](https://developers.google.com/custom-search/v1/overview), nên chưa có thông tin truy cập để chạy tìm kiếm Google thật từ BE. Cần chọn giải pháp Google còn khả dụng hoặc được cấp quyền phù hợp trước khi tích hợp live; tài khoản đăng nhập Google cá nhân không đủ.
+
+
+## Đối chiếu Chiến dịch theo Đức ngày 16/11/2026
+
+Theo yêu cầu BA áp dụng file `Đối chiếu web V5SI - Đức.docx`:
+- Áp dụng chỉ lọc và xem trước người nhận, không lưu chiến dịch. Xác nhận danh sách mới tạo chiến dịch `pending_approval` và một bản danh sách người nhận đã lọc để Trưởng phòng duyệt qua UC12. Duyệt danh sách gốc không thay cho duyệt người nhận chiến dịch. Quyết định này thay thế cách duyệt danh sách gốc trước khi tạo chiến dịch tại mục quyết định cũ.
+- Bước chọn người nhận chỉ thống kê ba lý do loại: trùng email, ngừng nhận, email trống/sai cú pháp. Kiểm soát bounce và khoảng cách liên hệ của worker vẫn giữ theo BS khi thực sự gửi.
+- BE chặn lưu nội dung, tài khoản và lịch khi chưa duyệt; trả về phải có nhận xét và chọn lại trong chính chiến dịch đó.
+- Bản xem trước giữ nguyên biến thiếu dữ liệu, không hợp lệ hoặc sai cú pháp; hiện `Biến lỗi`. Không đánh dấu bản xem trước hợp lệ khi còn lỗi.
+- Tài khoản được chọn phải xác thực SMTP thực tế, đã dùng dưới 80% hạn mức ngày và còn đủ số thư chưa gửi. Lần đầu chưa chọn sẵn tài khoản.
+- Tiếp tục gửi tạo lịch mới từ thời điểm xác nhận cộng 15 phút, chỉ dùng các người nhận `pending`, không dùng lịch cũ hoặc gửi ngay.
+- Danh sách chiến dịch thể hiện bước chuẩn bị; thao tác đúng bảng trong Word. Dùng `Xóa chiến dịch` (thay cách gọi Ẩn cũ), chỉ cho xóa khi chưa từng gửi; giữ lịch sử chiến dịch đã gửi.
+- Hộp thoại xác nhận có bốn dòng theo Figma; bỏ Lưu thành mẫu email khỏi trình soạn chiến dịch.
