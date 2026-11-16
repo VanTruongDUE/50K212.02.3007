@@ -2427,7 +2427,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           <div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép Ẩn.</span></div>
           <div className="next-actions-bar">
             <Button disabled={!followups.length} onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Ẩn lịch Follow-up</Button>
-            <Button primary onClick={() => go("response-list")}>Xem hồ sơ / Lập lịch</Button>
+            <Button primary onClick={() => go("followup-create")}>Xem hồ sơ / Lập lịch</Button>
           </div>
         </Page>
       );
