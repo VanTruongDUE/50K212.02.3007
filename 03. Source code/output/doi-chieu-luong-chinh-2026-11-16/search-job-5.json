@@ -38,8 +38,7 @@
         "companySize": "1–10 nhân viên",
         "emailStatus": "source_and_syntax",
         "publicEmailCount": 1
-      },
-      "unsubscribe_token": "745d78f8-8061-456c-9969-a1c229754099"
+      }
     },
     {
       "id": "36",
@@ -61,8 +60,7 @@
         "companySize": "1–10 nhân viên",
         "emailStatus": "source_and_syntax",
         "publicEmailCount": 1
-      },
-      "unsubscribe_token": "51750b20-fd96-4e65-aa85-ebff6ba8aebd"
+      }
     }
   ],
   "warnings": [

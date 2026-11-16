@@ -1,0 +1,150 @@
+[
+  {
+    "id": "7",
+    "criteria": {
+      "role": [],
+      "size": [],
+      "email": [],
+      "source": "Google Search/Web",
+      "keyword": "logistics",
+      "industry": [],
+      "location": []
+    },
+    "status": "succeeded",
+    "received": 20,
+    "invalid": 2,
+    "duplicate": 0,
+    "new_count": 18,
+    "list_id": "24",
+    "warnings": [
+      "Không đọc được URL: https://www.facebook.com/media/set/?vanity&set=a.106019159128721",
+      "Không đọc được URL: https://hkalogistics.vn/",
+      "Không đọc được URL: https://phaata.com/100000000001591/tim-gia-nhanh-logistics-ho-chi-minh-ho-chi-minh-vietnam-kaohsiung-kaohsiung-taiwan-08-04-2022-25916?page=contact?page=contact&lang=en",
+      "Không đọc được URL: https://xettuyen.hvtc.edu.vn/FileUploaded/Upload/FILES/2026/CTDT/CTDT%2001_06QT.pdf",
+      "Không đọc được URL: https://nctu.edu.vn/nganh/logistics-va-quan-ly-chuoi-cung-ung",
+      "Không đọc được URL: https://phenikaa-uni.edu.vn/vi/post/dao-tao/chuong-trinh-dao-tao-nganh-logistics-va-quan-ly-chuoi-cung-ung-logistics-so",
+      "Không đọc được URL: https://www.youtube.com/watch?v=VaGTxFRubMg",
+      "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+    ]
+  },
+  {
+    "id": "8",
+    "criteria": {
+      "role": [],
+      "size": [],
+      "email": [],
+      "source": "Google Search/Web",
+      "keyword": "công ty phần mềm",
+      "industry": [],
+      "location": []
+    },
+    "status": "succeeded",
+    "received": 6,
+    "invalid": 0,
+    "duplicate": 0,
+    "new_count": 6,
+    "list_id": "25",
+    "warnings": [
+      "Không đọc được URL: https://www.sambotower.com/vi/company-claim?id=4648",
+      "Không đọc được URL: https://contactout.com/dashboard/company?company=C%C3%B4ng+Ty+TNHH+X%C3%A2y+D%E1%BB%B1ng+Th%C6%B0%C6%A1ng+M%E1%BA%A1i+%26+D%E1%BB%8Bch+V%E1%BB%A5+To%C3%A0n+Thi%E1%BB%87n+Ph%C3%A1t&redirect_auth_to=/register?from=top-companies-using-data-tuoi-fresh-data",
+      "Không đọc được URL: https://orenda.vn/",
+      "Không đọc được URL: https://damivn.com/",
+      "Không đọc được URL: https://www.facebook.com/phamthaisonkt/videos/s%E1%BA%A3n-xu%E1%BA%A5t-ph%E1%BA%A7n-m%E1%BB%81m-c%C3%B3-%C4%91%C6%B0%E1%BB%A3c-mi%E1%BB%85n-thu%E1%BA%BF-tndn-kh%C3%B4ng-%C4%91i%E1%BB%81u-ki%E1%BB%87n-v%C3%A0-h%E1%BB%93-s%C6%A1-ch%E1%BB%A9ng-minh-th%E1%BB%B1/4581030068800615/",
+      "Không đọc được URL: https://easybooks.vn/ke-toan-cong-ty-phan-mem/",
+      "Không đọc được URL: https://www.youtube.com/watch?v=DTKqEwoLlnQ",
+      "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+    ]
+  },
+  {
+    "id": "9",
+    "criteria": {
+      "role": [],
+      "size": [],
+      "email": [],
+      "source": "Google Search/Web",
+      "keyword": "du lịch",
+      "industry": [],
+      "location": []
+    },
+    "status": "succeeded",
+    "received": 17,
+    "invalid": 2,
+    "duplicate": 2,
+    "new_count": 13,
+    "list_id": "26",
+    "warnings": [
+      "Không đọc được URL: https://thanhlongtourist.vn/",
+      "Không đọc được URL: https://uat.travel.com.vn/lien-he.aspx",
+      "Không đọc được URL: https://dichvucong.gov.vn/p/phananhkiennghi/pakn-detail.html?id=2D7B777B8D180CAAE063490AA8C07866",
+      "Không đọc được URL: https://www.tripadvisor.com.vn/pages/service_en.html",
+      "Không đọc được URL: https://findtourgo.com/vi/agency/2415-demo-travel-agency?srsltid=AYCX9vKJWfFaxLsbVK_NBq-kZfsvFlVTkkI46ymZPqLdx3GQ2h99agoG",
+      "Không đọc được URL: https://mail.goldenholidaytravel.nhmsoft.vn/",
+      "Không đọc được URL: https://support.google.com/accounts/thread/277459503/t%C3%B4i-qu%C3%AAn-m%E1%BA%ADt-kh%E1%BA%A9u-v%C3%A0-kh%C3%B4ng-c%C3%B2n-email-kh%C3%B4i-ph%E1%BB%A5c-ch%E1%BB%89-c%C3%B2n-s%E1%BB%91-%C4%91i%E1%BB%87n-tho%E1%BA%A1i?hl=vi",
+      "Không đọc được URL: https://mail.nepal.gov.np/",
+      "Không đọc được URL: https://www.youtube.com/watch?v=MuVHaSF_B_E&vl=vi",
+      "Không đọc được URL: https://www.youtube.com/watch?v=HezKKJdaDow",
+      "Không đọc được URL: https://www.infobel.com/en/vietnam/hcmc_visitor_information_and_support_center/quan_3/VN103134020-02839203040/businessdetails.aspx",
+      "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+    ]
+  },
+  {
+    "id": "10",
+    "criteria": {
+      "role": [],
+      "size": [],
+      "email": [],
+      "source": "Google Search/Web",
+      "keyword": "nội thất",
+      "industry": [],
+      "location": []
+    },
+    "status": "succeeded",
+    "received": 5,
+    "invalid": 0,
+    "duplicate": 0,
+    "new_count": 5,
+    "list_id": "27",
+    "warnings": [
+      "Không đọc được URL: https://ipv4.vietgo.vn/buyer/interior-and-exterior",
+      "Không đọc được URL: https://www.infobel.com/en/vietnam/n_i_th_t_thai_b_nh/quan_7/VN103028003/businessdetails.aspx",
+      "Không đọc được URL: https://noithatnganha.com/danh-sach-cong-ty-noi-that-ha-noi-uy-tin-va-dang-tin-cay.html",
+      "Không đọc được URL: https://www.facebook.com/xaydungnoithatatc/posts/s%E1%BA%A3n-xu%E1%BA%A5t-v%C3%A0-l%E1%BA%AFp-%C4%91%E1%BA%B7t-ho%C3%A0n-thi%E1%BB%87n-n%E1%BB%99i-th%E1%BA%A5t-ph%C3%B2ng-giao-d%E1%BB%8Bch-vietinbank-h%C3%A0o-nam%C4%91%E1%BB%8Ba-ch/1849827288604869/",
+      "Không đọc được URL: https://asemconnectvietnam.gov.vn/Business.aspx?ZID1=0&ID1=1&Biz_id=21774",
+      "Không đọc được URL: https://www.yellowpages.vn/srch/b%C3%ACnh_d%C6%B0%C6%A1ng/n%E1%BB%99i_th%E1%BA%A5t_.html?page=9",
+      "Không đọc được URL: https://dauthau.net/vi/dn/CONG-TY-TNHH-NOI-THAT-HNH/",
+      "Không đọc được URL: https://asemconnectvietnam.gov.vn/Business.aspx?ZID1=154&ID1=1&Biz_id=21215",
+      "Không đọc được URL: https://www.youtube.com/watch?v=__GUeA9Xe8A",
+      "Không đọc được URL: https://www.youtube.com/watch?v=Z3zaTqEeLs4",
+      "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+    ]
+  },
+  {
+    "id": "11",
+    "criteria": {
+      "role": [],
+      "size": [],
+      "email": [],
+      "source": "Google Search/Web",
+      "keyword": "bao bì",
+      "industry": [],
+      "location": []
+    },
+    "status": "succeeded",
+    "received": 7,
+    "invalid": 1,
+    "duplicate": 4,
+    "new_count": 2,
+    "list_id": "28",
+    "warnings": [
+      "Không đọc được URL: https://mail.business.gov.vn/",
+      "Không đọc được URL: https://mail.hungyenbusiness.gov.vn/",
+      "Không đọc được URL: https://app.tradeatlas.com/en/firms/cong-ty-tnhh-bao-bi-giay-ylc/5539f260a8f2bc93",
+      "Không đọc được URL: https://vietnamese.cosmetic-packagingboxes.com/contactnow.html",
+      "Không đọc được URL: https://mail.vnptemail.vn/",
+      "Không đọc được URL: https://mail.nepal.gov.np/",
+      "Không đọc được URL: https://www.linkedin.com/mypreferences/d/manage-email-addresses",
+      "Không đọc được URL: https://www.reddit.com/r/Thunderbird/comments/1wz3bfc/auto_delete_old_emails/?tl=vi",
+      "Đã đạt giới hạn 20 trang web; kết quả có thể chưa đầy đủ."
+    ]
+  }
+]

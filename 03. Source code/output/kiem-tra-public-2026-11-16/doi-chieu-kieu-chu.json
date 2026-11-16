@@ -1,0 +1,404 @@
+[
+  {
+    "role": "employee",
+    "route": "history",
+    "frame": "16:560",
+    "hasReference": true,
+    "matched": 39,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "results&searchId=4",
+    "frame": "16:403",
+    "hasReference": true,
+    "matched": 23,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "check&listId=28",
+    "frame": "16:436",
+    "hasReference": true,
+    "matched": 29,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "confirm&listId=28",
+    "frame": "16:472",
+    "hasReference": true,
+    "matched": 34,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "Trạng thái xác nhận: Chưa xác nhận",
+          "font": "Arial, sans-serif",
+          "size": 16,
+          "weight": "400",
+          "line": 24,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "54:7713",
+          "text": "Trạng thái xác nhận: Chưa xác nhận",
+          "font": "Arial",
+          "size": 16,
+          "weight": "700",
+          "line": 24,
+          "color": "#edf5ff"
+        }
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "route": "manager-review",
+    "frame": "486:8785",
+    "hasReference": true,
+    "matched": 8,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "H1",
+          "cls": "",
+          "text": "Kiểm tra danh sách",
+          "font": "Inter, Arial, sans-serif",
+          "size": 24,
+          "weight": "700",
+          "line": 32,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "I486:8841;24:545",
+          "text": "Kiểm tra danh sách",
+          "font": "Inter",
+          "size": 16,
+          "weight": "700",
+          "line": "auto",
+          "color": "#edf5ff"
+        }
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "route": "manager-account-check",
+    "frame": "486:9094",
+    "hasReference": true,
+    "matched": 14,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "home",
+    "frame": "156:32271",
+    "hasReference": true,
+    "matched": 15,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "BUTTON",
+          "cls": "",
+          "text": "Thiết lập tiêu chí",
+          "font": "Arial, sans-serif",
+          "size": 16,
+          "weight": "400",
+          "line": 24,
+          "color": "rgb(199, 216, 238)"
+        },
+        "expected": {
+          "id": "I156:32272;18:6324",
+          "text": "Thiết lập tiêu chí",
+          "font": "Arial",
+          "size": 16,
+          "weight": "700",
+          "line": 24,
+          "color": "#b4c7e2"
+        }
+      }
+    ]
+  },
+  {
+    "role": "employee",
+    "route": "criteria",
+    "frame": "16:188",
+    "hasReference": true,
+    "matched": 45,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "review",
+    "frame": "16:373",
+    "hasReference": true,
+    "matched": 26,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "templates",
+    "frame": "16:241",
+    "hasReference": true,
+    "matched": 22,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "template-create",
+    "frame": "16:271",
+    "hasReference": true,
+    "matched": 24,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "template-edit&filterId=10",
+    "frame": "16:322",
+    "hasReference": true,
+    "matched": 24,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "campaign-list",
+    "frame": "327:241209",
+    "hasReference": true,
+    "matched": 30,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "campaign-contacts",
+    "frame": "327:251508",
+    "hasReference": true,
+    "matched": 19,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "H1",
+          "cls": "",
+          "text": "Tạo chiến dịch mới",
+          "font": "Arial, sans-serif",
+          "size": 24,
+          "weight": "700",
+          "line": 32,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "I327:251545;18:4158;16:1011",
+          "text": "Tạo chiến dịch mới",
+          "font": "Arial",
+          "size": 24,
+          "weight": "700",
+          "line": 64,
+          "color": "#edf5ff"
+        }
+      }
+    ]
+  },
+  {
+    "role": "employee",
+    "route": "campaign-email&campaignId=15",
+    "frame": "327:253992",
+    "hasReference": true,
+    "matched": 21,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "campaign-editor&campaignId=15",
+    "frame": "327:254579",
+    "hasReference": true,
+    "matched": 37,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "campaign-sender&campaignId=15",
+    "frame": "327:256587",
+    "hasReference": true,
+    "matched": 27,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "TD",
+          "cls": "",
+          "text": "5",
+          "font": "Arial, sans-serif",
+          "size": 16,
+          "weight": "400",
+          "line": 24,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "I327:256647;327:240845;327:240812",
+          "text": "5",
+          "font": "Arial",
+          "size": 16,
+          "weight": "700",
+          "line": 24,
+          "color": "#b4c7e2"
+        }
+      }
+    ]
+  },
+  {
+    "role": "employee",
+    "route": "campaign-schedule&campaignId=15",
+    "frame": "327:257674",
+    "hasReference": true,
+    "matched": 30,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-list",
+    "frame": "43:6174",
+    "hasReference": true,
+    "matched": 28,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-detail&responseId=31",
+    "frame": "43:6303",
+    "hasReference": true,
+    "matched": 33,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-edit&responseId=31",
+    "frame": "60:6324",
+    "hasReference": true,
+    "matched": 18,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-status&responseId=31",
+    "frame": "43:6297",
+    "hasReference": true,
+    "matched": 15,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-reply&responseId=31",
+    "frame": "43:6300",
+    "hasReference": true,
+    "matched": 14,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "response-status-history&responseId=31",
+    "frame": "47:7735",
+    "hasReference": true,
+    "matched": 15,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "followup-list",
+    "frame": "43:6302",
+    "hasReference": true,
+    "matched": 24,
+    "mismatches": []
+  },
+  {
+    "role": "employee",
+    "route": "followup-create&responseId=31",
+    "frame": "43:6299",
+    "hasReference": true,
+    "matched": 17,
+    "mismatches": []
+  },
+  {
+    "role": "manager",
+    "route": "home",
+    "frame": "156:32370",
+    "hasReference": true,
+    "matched": 9,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "Trang chính",
+          "font": "Arial, sans-serif",
+          "size": 16,
+          "weight": "700",
+          "line": 24,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "I156:32371;76:14017",
+          "text": "Trang chính",
+          "font": "Arial",
+          "size": 16,
+          "weight": "400",
+          "line": 24,
+          "color": "#edf5ff"
+        }
+      }
+    ]
+  },
+  {
+    "role": "manager",
+    "route": "manager-account-list",
+    "frame": "486:10326",
+    "hasReference": true,
+    "matched": 18,
+    "mismatches": []
+  },
+  {
+    "role": "manager",
+    "route": "manager-account-edit&senderId=1",
+    "frame": "486:10446",
+    "hasReference": true,
+    "matched": 15,
+    "mismatches": []
+  },
+  {
+    "role": "manager",
+    "route": "manager-account-add",
+    "frame": "486:9432",
+    "hasReference": true,
+    "matched": 12,
+    "mismatches": []
+  },
+  {
+    "role": "manager",
+    "route": "manager-account-detail&senderId=1",
+    "frame": "229:33584",
+    "hasReference": true,
+    "matched": 15,
+    "mismatches": [
+      {
+        "actual": {
+          "tag": "SPAN",
+          "cls": "",
+          "text": "Tài khoản gửi",
+          "font": "Arial, sans-serif",
+          "size": 16,
+          "weight": "700",
+          "line": 24,
+          "color": "rgb(237, 245, 255)"
+        },
+        "expected": {
+          "id": "229:33605",
+          "text": "Tài khoản gửi",
+          "font": "Arial",
+          "size": 16,
+          "weight": "400",
+          "line": 24,
+          "color": "#edf5ff"
+        }
+      }
+    ]
+  }
+]
