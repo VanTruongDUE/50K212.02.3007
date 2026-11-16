@@ -112,6 +112,7 @@ function NavItem({ icon, children, heading = false, active = false, expanded, on
 function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: boolean; screen: string; go: Navigate; accountEmail: string; onLogout: () => Promise<void>; live: boolean }) {
   const workspaceRef = useRef<HTMLDivElement>(null)
   const [logoutError, setLogoutError] = useState(false)
+  const [senderMenu, setSenderMenu] = useState({ screen, open: screen.startsWith('manager-account') })
   useLayoutEffect(() => {
     const page = workspaceRef.current?.lastElementChild
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -125,6 +126,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const contactActive = ['contact-lists', 'contact-list-detail', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
   const searchExpanded = screen === 'home' || contactActive || criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   const managerAccountExpanded = screen.startsWith('manager-account')
+  const senderMenuOpen = senderMenu.screen === screen ? senderMenu.open : managerAccountExpanded
   const thaoSenderScreen = managerAccountExpanded && !/^manager-account-(check|result)/.test(screen)
   return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result)/.test(screen)) ? ' figma-inter' : '') + (thaoSenderScreen ? ' thao-sender-shell' : '')}>
     <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
@@ -133,7 +135,13 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
         {manager ? <>
           <NavItem icon="home" active={screen === 'home'} onClick={() => go('home')}>Trang chính</NavItem>
           <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách</NavItem>
-          <NavItem icon="managerKey" active={managerAccountExpanded} onClick={() => go('manager-account-home')}>Tài khoản gửi</NavItem>
+          <NavItem icon="managerKey" heading active={managerAccountExpanded} expanded={senderMenuOpen} onClick={() => setSenderMenu({ screen, open: !senderMenuOpen })}>Tài khoản gửi</NavItem>
+          <div className={'subnav' + (senderMenuOpen ? '' : ' collapsed')} aria-hidden={!senderMenuOpen} inert={!senderMenuOpen}>
+            <div className="subnav-items">
+              <button className={managerAccountExpanded && !thaoSenderScreen ? 'active' : ''} type="button" aria-current={managerAccountExpanded && !thaoSenderScreen ? 'page' : undefined} onClick={() => go('manager-account-check')}>Kiểm tra tài khoản gửi</button>
+              <button className={thaoSenderScreen ? 'active' : ''} type="button" aria-current={thaoSenderScreen ? 'page' : undefined} onClick={() => go('manager-account-home')}>Danh sách tài khoản gửi</button>
+            </div>
+          </div>
         </> : <>
           <NavItem icon="search" heading expanded={searchExpanded} onClick={() => go('criteria')}>Tìm kiếm Contact</NavItem>
           <div className={'subnav' + (searchExpanded ? '' : ' collapsed')} aria-hidden={!searchExpanded} inert={!searchExpanded}>
