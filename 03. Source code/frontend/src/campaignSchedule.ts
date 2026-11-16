@@ -4,9 +4,12 @@ export function scheduleError(value: string, now = Date.now()) {
     ? 'Chọn thời điểm bắt đầu từ 15 phút đến 90 ngày sau hiện tại.' : '';
 }
 
-export function expectedFinish(start: string, count: number, rate = 50, from = '08:00', to = '17:00', immediate = false): string | undefined {
+export function expectedFinish(start: string, count: number, rate = 50, from = '08:00', to = '17:00', immediate = false, dailyLimit = Infinity, usedToday = 0, now = Date.now()): string | undefined {
   let time = Date.parse(start);
   if (!Number.isFinite(time) || !Number.isInteger(count) || count < 1 || scheduleOptionsError(rate, from, to)) return;
+  if (dailyLimit <= 0 || usedToday < 0) return;
+  const day = (value: number) => Math.floor((value + 7 * 3600000) / 86400000);
+  let quotaDay = day(time), used = quotaDay === day(now) ? usedToday : 0;
   const minutes = (value: string) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
   const open = minutes(from), close = minutes(to);
   if (!Number.isFinite(open) || !Number.isFinite(close) || open < 0 || close > 1440) return;
@@ -18,9 +21,17 @@ export function expectedFinish(start: string, count: number, rate = 50, from = '
     return value;
   };
   if (!immediate) time = inWindow(time);
-  for (let index = 1; index < count; index++) {
-    time += 3600000 / rate;
-    if (!immediate) time = inWindow(time);
+  for (let index = 0; index < count; index++) {
+    if (day(time) !== quotaDay) { quotaDay = day(time); used = 0; }
+    if (used >= dailyLimit) {
+      time = (quotaDay + 1) * 86400000 - 7 * 3600000 + (immediate ? 0 : open * 60000);
+      quotaDay = day(time); used = 0;
+    }
+    used++;
+    if (index < count - 1) {
+      time += 3600000 / rate;
+      if (!immediate) time = inWindow(time);
+    }
   }
   return new Date(time).toISOString();
 }

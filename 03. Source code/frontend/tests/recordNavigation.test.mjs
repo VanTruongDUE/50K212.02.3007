@@ -6,7 +6,7 @@ test('new campaign recipient form opens without inheriting an existing campaign 
   assert.equal(recordRequired('campaign-contacts'), false);
   const params = navigationParams('campaign-contacts', new URLSearchParams('screen=campaign-detail&campaignId=9'));
   assert.equal(params.has('campaignId'), false);
-  assert.equal(recordRequired('campaign-filtered'), true);
+  assert.equal(recordRequired('campaign-filtered'), false);
   assert.equal(recordRequired('campaign-editor'), true);
 });
 

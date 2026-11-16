@@ -23,3 +23,11 @@ test('estimate observes GMT+7 window, rolls to next day and leaves immediate sen
   assert.equal(expectedFinish('bad', 2), undefined);
   assert.equal(expectedFinish('2026-11-15T00:00:00Z', 0), undefined);
 });
+
+test('daily allowance carries remaining recipients to next GMT+7 day and resets usage for future dates', () => {
+  const now = Date.parse('2026-11-15T01:00:00Z');
+  assert.equal(expectedFinish('2026-11-15T01:00:00Z', 3, 50, '08:00', '17:00', false, 2, 0, now), '2026-11-16T01:00:00.000Z');
+  assert.equal(expectedFinish('2026-11-15T01:00:00Z', 2, 50, '08:00', '17:00', false, 2, 1, now), '2026-11-16T01:00:00.000Z');
+  assert.equal(expectedFinish('2026-11-16T01:00:00Z', 2, 50, '08:00', '17:00', false, 2, 1, now), '2026-11-16T01:01:12.000Z');
+  assert.equal(expectedFinish('2026-11-15T16:59:00Z', 2, 50, '08:00', '17:00', true, 2, 1, now), '2026-11-15T17:00:12.000Z');
+});

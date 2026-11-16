@@ -149,7 +149,7 @@ function InlineContent({ parts }: { parts: InlinePart[] }) {
   })}</>;
 }
 
-export function PreviewBody({ value, campaignId }: { value: string; campaignId?: string }) {
+export function PreviewBody({ value, campaignId, variableErrors = [] }: { value: string; campaignId?: string; variableErrors?: string[] }) {
   return <>{value.split(/(\[\[(?:Hình ảnh(?::\d+)?|Nút(?::[^\]]+)?|Đường phân cách)\]\])/g).map((block, blockIndex) => {
     if (block === '[[Hình ảnh]]') return <div className="next-mail-image" key={blockIndex}>Hình ảnh</div>
     if (campaignId && /^\[\[Hình ảnh:\d+\]\]$/.test(block)) return <img className="next-content-image" key={blockIndex} src={`/api/campaigns/${campaignId}/assets/${block.slice(11, -2)}`} alt="Hình ảnh trong email" />
@@ -159,7 +159,7 @@ export function PreviewBody({ value, campaignId }: { value: string; campaignId?:
       if (url?.startsWith('https://')) return <a className="next-email-cta" key={blockIndex} href={url} target="_blank" rel="noopener noreferrer">{label}</a>
     }
     if (block === '[[Đường phân cách]]') return <hr className="next-mail-divider" key={blockIndex} />
-    return <span key={blockIndex}><InlineContent parts={inlineParts(block)} /></span>
+    return <span key={blockIndex}>{block.split(/(\{\{[^{}]*\}\}|\{\{[^}\n]*|[^{}\n]*\}\})/g).map((part, index) => variableErrors.includes(part) ? <span key={index} className="next-invalid-variable">{part}</span> : <InlineContent key={index} parts={inlineParts(part)} />)}</span>
   })}</>
 }
 
