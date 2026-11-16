@@ -1,3 +1,4 @@
+import Notification from "./Notification";
 import { campaignStage, campaignLabel, campaignNext } from "./campaignWorkflow";
 import { invalidEmailVariable } from "./campaignContent";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -1062,13 +1063,10 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         <div role="alert" className="next-error"><strong>{screen === "export" ? "Xuất dữ liệu không thành công" : screen === "check" ? "Không thể lưu kết quả kiểm tra" : screen === "confirm" ? "Không thể xác nhận danh sách" : screen === "campaign-editor" ? "Không thể lưu nội dung email" : screen === "campaign-filtered" ? "Không thể lưu danh sách người nhận" : screen === "response-add" ? "Thông tin Response chưa hợp lệ" : screen === "response-edit" ? "Thông tin cập nhật chưa hợp lệ" : screen === "followup-create" ? "Thông tin lịch Follow-up chưa hợp lệ" : screen === "followup-note" ? "Không thể lưu ghi chú" : screen === "response-reply" ? "Gửi phản hồi chưa thành công" : screen === "campaign-schedule" ? "Không thể lưu lịch gửi" : screen === "campaign-sender" ? "Không thể lưu tài khoản gửi" : screen === "campaign-confirm" ? "Không thể xác nhận chiến dịch" : screen === "campaign-resume" ? "Không thể tiếp tục gửi" : "Không thể hoàn tất thao tác"}</strong><p>{error}</p>{retryAction && <Button disabled={busy} onClick={retryAction}>{screen === "response-reply" ? "Thử gửi lại" : screen === "followup-note" ? "Thử lưu ghi chú" : screen === "confirm" ? "Thử xác nhận lại" : screen === "check" ? "Thử lưu" : "Thử lại"}</Button>}</div>
       )}
       {notice && !(group === "campaigns" && screen === "campaign-list") && (
-        <div role="status" className="mgr-toast">
+        <Notification key={notice} className="mgr-toast" onClose={() => setNotice("")}>
           <strong>{notice}</strong>
           <span>Thông tin đã được cập nhật.</span>
-          <button type="button" onClick={() => setNotice("")}>
-            Đóng
-          </button>
-        </div>
+        </Notification>
       )}
       {confirmAction && (
         <Dialog pending={busy}
@@ -1520,7 +1518,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
               ＋ Tạo chiến dịch mới
             </Button>
           </div>
-          {notice && <div className="next-campaign-notice" role="status"><strong>{notice.includes("tạm dừng") ? "Tạm dừng thành công" : notice.includes("tiếp tục") ? "Tiếp tục gửi thành công" : notice.includes("xác nhận") ? "Xác nhận thành công" : "Cập nhật thành công"}</strong><span>{notice}</span></div>}
+          {notice && <Notification key={notice} className="next-campaign-notice" onClose={() => setNotice("")}><strong>{notice.includes("tạm dừng") ? "Tạm dừng thành công" : notice.includes("tiếp tục") ? "Tiếp tục gửi thành công" : notice.includes("xác nhận") ? "Xác nhận thành công" : "Cập nhật thành công"}</strong><span>{notice}</span></Notification>}
           <div className="next-table-wrap"><table className="next-table next-campaign-table"><thead><tr>
             <th>Tên</th><th>Trạng thái</th><th>Tiến độ</th><th>Ngày tạo</th><th>Thao tác</th>
           </tr></thead><tbody>{campaigns.length ? campaigns.map(item => <tr key={item.id}>
@@ -2422,7 +2420,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           </Card>
           <div className="next-rule"><strong>Quy tắc thao tác</strong><span>Lịch mới tự xuất hiện trong công việc cá nhân. Chỉ lịch Chờ thực hiện được phép Ẩn.</span></div>
           <div className="next-actions-bar">
-            <Button disabled={!followups.length} onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Ẩn lịch Follow-up</Button>
+            <Button disabled={!followups.length} onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Xóa lịch Follow-up</Button>
             <Button primary onClick={() => go("followup-create")}>Xem hồ sơ / Lập lịch</Button>
           </div>
         </Page>
@@ -2591,7 +2589,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           ...(["responded", "no_response"].includes(followup.outcome || "") ? [[followup.resolved_at ? date(followup.resolved_at) : "-", followup.outcome === "responded" ? "Có phản hồi" : "Không phản hồi", "Hệ thống"]] : []),
         ]} /></Card>
         <div className="next-actions-bar">
-          {followup.status === "pending" && <Button onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Ẩn lịch Follow-up</Button>}
+          {followup.status === "pending" && <Button onClick={() => { if (followup) choose(followup.id, "followup-delete"); }}>Xóa lịch Follow-up</Button>}
           <div className="next-delete-other-actions">
           <Button primary onClick={() => { setDecisionNote(followup.note || ""); go("followup-note"); }}>Bổ sung ghi chú</Button>
           {followup.status === "pending" && <Button onClick={() => go("followup-detail")}>Ghi nhận kết quả</Button>}
@@ -2612,16 +2610,16 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         <div className="next-actions-bar"><Button disabled={busy} onClick={() => go("followup-result")}>Hủy</Button><Button primary disabled={busy} onClick={() => void run(() => api(`followups/${followup.id}/note`, "PATCH", { note: decisionNote }), "Đã lưu ghi chú.", "followup-result")}>Lưu ghi chú</Button>
             </div>
       </Page>;
-    if (screen === "followup-delete" && followup && followup.status !== "pending") return <Page section="Follow-up" title="Không thể ẩn lịch Follow-up" go={go}>{feedback}<FigmaState error title="Lịch Follow-up không được phép ẩn" description="Chỉ lịch Chờ thực hiện được phép ẩn. Kết quả và lịch sử được giữ nguyên." actions={<Button onClick={() => go("followup-list")}>Về danh sách Follow-up</Button>} /></Page>;
+    if (screen === "followup-delete" && followup && followup.status !== "pending") return <Page section="Follow-up" title="Không thể xóa lịch Follow-up" go={go}>{feedback}<FigmaState error title="Lịch Follow-up không được phép xóa" description="Chỉ lịch Chờ thực hiện được phép xóa. Kết quả và lịch sử được giữ nguyên." actions={<Button onClick={() => go("followup-list")}>Về danh sách Follow-up</Button>} /></Page>;
     if (screen === "followup-delete" && followup)
-      return <Page section="Follow-up" title="Xác nhận ẩn lịch" description={`${followup.customer_name} · RSP-${followup.response_id}`} go={go}>
+      return <Page section="Follow-up" title="Xác nhận xóa lịch" description={`${followup.customer_name} · RSP-${followup.response_id}`} go={go}>
         {feedback}
         <div className="next-compact-confirmation">
-          <section><span>XÁC NHẬN ẨN LỊCH</span><h2>Ẩn lịch Follow-up của {followup.customer_name}?</h2>
+          <section><span>XÁC NHẬN XÓA LỊCH</span><h2>Xóa lịch Follow-up của {followup.customer_name}?</h2>
             <p>RSP-{followup.response_id} · {followup.channel === "phone" ? "Gọi điện" : followup.channel.toUpperCase()} · {date(followup.due_at)} · {followup.status === "pending" ? "Chờ thực hiện" : "Đã xử lý"}.</p>
-            <p>Lịch được ẩn khỏi danh sách làm việc. Dữ liệu và lịch sử vẫn được giữ lại.</p>
+            <p>Lịch được xóa khỏi danh sách làm việc. Dữ liệu và lịch sử vẫn được giữ lại.</p>
           </section>
-          <div className="next-confirmation-actions"><Button primary disabled={busy || followup.status !== "pending"} onClick={() => void run(() => api(`followups/${followup.id}`, "DELETE"), "Đã ẩn lịch Follow-up.", "followup-list")}>Xác nhận ẩn</Button><Button disabled={busy} onClick={() => go("followup-list")}>Hủy</Button></div>
+          <div className="next-confirmation-actions"><Button primary disabled={busy || followup.status !== "pending"} onClick={() => void run(() => api(`followups/${followup.id}`, "DELETE"), "Đã xóa lịch Follow-up.", "followup-list")}>Xác nhận xóa</Button><Button disabled={busy} onClick={() => go("followup-list")}>Hủy</Button></div>
         </div>
       </Page>;
     return (
@@ -2692,18 +2690,18 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                     disabled={busy}
                     onClick={() => {
                       ask(
-                        "Ẩn lịch Follow-up",
-                        "Lịch đang chờ sẽ được ẩn khỏi danh sách và giữ lại trong lịch sử.",
+                        "Xóa lịch Follow-up",
+                        "Lịch đang chờ sẽ được xóa khỏi danh sách và giữ lại trong lịch sử.",
                         () =>
                           void run(
                             () => api(`followups/${followup.id}`, "DELETE"),
-                            "Đã ẩn lịch; lịch sử vẫn được giữ.",
+                            "Đã xóa lịch; lịch sử vẫn được giữ.",
                             "followup-list",
                           ),
                       );
                     }}
                   >
-                    Ẩn lịch Follow-up
+                    Xóa lịch Follow-up
                   </Button>
                 </div>
               </>
@@ -2817,8 +2815,8 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           {saved && screen !== "manager-account-added" && <p className="mgr-callout thao-saved-message" role="status">Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</p>}
         </Card>
         <div className="next-actions-bar">{saved ? <Button primary onClick={() => go("manager-account-list")}>Về danh sách</Button> : <Button onClick={backFromSender}>Quay lại</Button>}</div>
-        {screen === "manager-account-added" && createPortal(<div className="thao-sender-success" role="status"><strong>Đã thêm tài khoản gửi</strong><span>Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</span></div>, document.body)}
-        {screen === "manager-account-deleted" && <div className="thao-sender-success" role="status"><strong>Đã xóa tài khoản gửi</strong><span>Tài khoản gửi đã được xóa thành công.</span></div>}
+        {screen === "manager-account-added" && createPortal(<Notification key={screen} className="thao-sender-success"><strong>Đã thêm tài khoản gửi</strong><span>Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</span></Notification>, document.body)}
+        {screen === "manager-account-deleted" && <Notification key={screen} className="thao-sender-success"><strong>Đã xóa tài khoản gửi</strong><span>Tài khoản gửi đã được xóa thành công.</span></Notification>}
       </Page>;
     }
     if (manager && ["manager-account-add", "manager-account-edit"].includes(screen)) {

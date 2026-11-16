@@ -1,3 +1,4 @@
+import Notification from "./Notification";
 import { useEffect, useState, type FormEvent } from 'react'
 import './managerFlows.css'
 
@@ -45,11 +46,6 @@ export default function ManagerFlows({ screen, go }: Props) {
   const [dialog, setDialog] = useState('')
   const [deletedAccountName, setDeletedAccountName] = useState('')
   const [lastAction, setLastAction] = useState('')
-  useEffect(() => {
-    if (!deletedAccountName) return
-    const timeout = window.setTimeout(() => setDeletedAccountName(''), 5000)
-    return () => window.clearTimeout(timeout)
-  }, [deletedAccountName])
   useEffect(() => {
     const modal = document.querySelector<HTMLElement>('.mgr-dialog')
     if (!modal) return
@@ -121,6 +117,6 @@ export default function ManagerFlows({ screen, go }: Props) {
     {(screen === 'manager-account-list-empty' || screen === 'manager-account-fetch-error') && <><section className="mgr-panel"><h2>Danh sách tài khoản gửi</h2>{screen.endsWith('empty') ? <div className="mgr-empty"><strong>Chưa có tài khoản gửi</strong><p>Hiện chưa có dữ liệu tài khoản gửi trong phạm vi quyền được cấp.</p></div> : <Table heads={['Tên tài khoản', 'Mã tài khoản', 'Email', 'Giới hạn/ngày', 'Giới hạn/giờ', 'Trạng thái', 'Ngày tạo', 'Cập nhật gần nhất']} rows={[]} />}</section><div className="mgr-actions"><button className="mgr-primary" type="button" onClick={openAdd}>Thêm tài khoản gửi</button></div>{screen.endsWith('error') && <div className="mgr-dialog-backdrop"><div className="mgr-dialog" role="alertdialog" aria-modal="true" aria-labelledby="mgr-fetch-title" aria-describedby="mgr-fetch-message"><h2 id="mgr-fetch-title">Không tải được tài khoản gửi</h2><p id="mgr-fetch-message">Đã xảy ra lỗi khi truy xuất dữ liệu. Vui lòng thử tải lại sau.</p><div className="mgr-actions"><button type="button" onClick={() => go('manager-account-list')}>Thử lại</button></div></div></div>}</>}
     {['manager-account-add-save-error', 'manager-account-edit-not-found', 'manager-account-edit-save-error', 'manager-account-delete-blocked', 'manager-account-delete-error'].includes(screen) && <div className="mgr-dialog-backdrop"><div className="mgr-dialog" role="alertdialog" aria-modal="true" aria-labelledby="mgr-preview-title" aria-describedby="mgr-preview-description"><h2 id="mgr-preview-title">{({ 'manager-account-add-save-error': 'Thêm tài khoản chưa thành công', 'manager-account-edit-not-found': 'Không tìm thấy tài khoản', 'manager-account-edit-save-error': 'Cập nhật chưa thành công', 'manager-account-delete-blocked': 'Không thể Ẩn tài khoản', 'manager-account-delete-error': 'Ẩn tài khoản chưa thành công' } as Record<string, string>)[screen]}</h2><p id="mgr-preview-description">{({ 'manager-account-add-save-error': 'Hệ thống không thể lưu tài khoản gửi lúc này. Dữ liệu đã nhập chưa được ghi nhận.', 'manager-account-edit-not-found': 'Tài khoản gửi không tồn tại hoặc không thể truy xuất. Hãy quay lại danh sách và chọn lại.', 'manager-account-edit-save-error': 'Hệ thống không thể lưu thông tin mới. Các thay đổi chưa được áp dụng.', 'manager-account-delete-blocked': 'Không tìm thấy tài khoản, hoặc tài khoản không đáp ứng quyền và điều kiện ràng buộc để Ẩn.', 'manager-account-delete-error': 'Hệ thống không thể thực hiện thao tác Ẩn. Tài khoản vẫn được giữ nguyên.' } as Record<string, string>)[screen]}</p><div className="mgr-actions"><button className="mgr-primary" type="button" onClick={() => go(screen.includes('add-') ? 'manager-account-add' : screen.includes('edit-') ? 'manager-account-edit' : 'manager-account-detail')}>Đóng</button></div></div></div>}
     {dialog === 'delete' && <div className="mgr-dialog-backdrop" role="presentation"><div className="mgr-dialog" role="alertdialog" aria-modal="true" aria-labelledby="mgr-dialog-title" aria-describedby="mgr-dialog-description"><h2 id="mgr-dialog-title">Ẩn tài khoản gửi</h2><p id="mgr-dialog-description">Bạn có chắc chắn muốn Ẩn tài khoản {current?.name}?</p><div className="mgr-actions mgr-delete-actions"><button className="mgr-primary" type="button" onClick={() => { setDeletedAccountName(current.name); setSenders(x => x.filter((_, i) => i !== selectedSender)); setSelectedSender(0); setDialog(''); go('manager-account-list') }}>Ẩn tài khoản</button><button type="button" onClick={() => setDialog('')}>Hủy</button></div></div></div>}
-    {deletedAccountName && <div className="mgr-toast" role="status"><strong>Ẩn tài khoản thành công</strong><span>Tài khoản {deletedAccountName} đã được Ẩn khỏi danh sách.</span><button type="button" onClick={() => setDeletedAccountName('')}>Đóng</button></div>}
+    {deletedAccountName && <Notification key={deletedAccountName} className="mgr-toast" onClose={() => setDeletedAccountName('')}><strong>Ẩn tài khoản thành công</strong><span>Tài khoản {deletedAccountName} đã được Ẩn khỏi danh sách.</span></Notification>}
   </div>
 }
