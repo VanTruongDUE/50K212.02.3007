@@ -2543,7 +2543,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                       if (failure.message.includes("đã có lịch Follow-up")) go("followup-duplicate");
                       else if (failure.message.includes("từ chối nhận email")) go("followup-optout");
                     },
-                  ).then(item => { if (item) { setCreatedFollowup(item); go("followup-success", { key: "followupId", id: item.id }); } });
+                  ).then(item => { if (item) { setCreatedFollowup({ ...item, customer_name: item.customer_name || responses.find(response => response.id === String(item.response_id))?.customer_name || "—" }); go("followup-success", { key: "followupId", id: item.id }); } });
                 }}
               >
                 Thêm Follow-up
@@ -2559,7 +2559,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         {feedback}<div className="next-state success"><div><span>ĐÃ LƯU LỊCH FOLLOW-UP</span><h2>{saved ? `Đã thêm lịch Follow-up FU-${saved.id}` : "Lịch Follow-up đã lưu"}</h2>
           <p>{saved ? `Khách hàng ${saved.customer_name || "—"} · Response RSP-${saved.response_id} · Kênh ${saved.channel === "phone" ? "Gọi điện" : saved.channel.toUpperCase()}.` : "Xem danh sách để kiểm tra lịch đã lưu."}</p>
           {saved && <small>Hẹn {date(saved.due_at)} · Nhắc trước {saved.reminder_minutes} phút · Tối đa {saved.max_attempts} lần · Trạng thái: {saved.status === "pending" ? "Chờ thực hiện" : "Đã thực hiện"}.</small>}
-        </div><div className="next-state-actions"><Button primary onClick={() => go("response-list")}>Tạo lịch khác</Button><Button onClick={() => go("followup-list")}>Về danh sách Follow-up</Button></div></div>
+        </div><div className="next-state-actions"><Button primary onClick={() => { setCreatedFollowup(null); go("followup-create"); }}>Tạo lịch khác</Button><Button onClick={() => go("followup-list")}>Về danh sách Follow-up</Button></div></div>
       </Page>;
     }
     if (screen === "followup-result" && followup?.worker_error) return <Page section="Follow-up" title="Kết quả Follow-up" go={go}>{feedback}<FigmaState error title={followup.worker_error_stage === "chain" ? "Không thể tạo lịch Follow-up tiếp theo" : "Cập nhật trạng thái chưa thành công"} description={followup.worker_error} actions={<Button onClick={() => go("followup-list")}>Về danh sách Follow-up</Button>} /></Page>;

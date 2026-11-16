@@ -720,7 +720,7 @@
 .next-campaign-contacts-page .next-hint { color: #96afcf; }
 .next-contact-review:not(.next-contact-confirm) .mgr-list-heading button { color: #bedbff; }
 .next-contact-confirm .mgr-list-heading button { color: #b4c7e2; }
-.next-contact-confirm .next-confirmation-status > span:first-child { font-weight: 700; }
+.next-contact-confirm .next-confirmation-status > span { font-weight: 700; }
 .next-manager-sender-list .mgr-callout, .next-manager-sender-edit #sender-account-form > .mgr-callout { color: #edf5ff; }
 .next-sender-form .next-card { margin-top: 40px; }
 .next-sender-form .next-card h2 { margin-bottom: 28px; }
