@@ -37,7 +37,24 @@
   .mgr-sender-list-actions > .next-button:nth-child(2),
   .mgr-sender-list-actions > .next-button.primary { min-width: 0; flex: 1 1 100%; }
 }
-.manager-account-result .next-title p { margin-top: 8px; }
+.manager-account-check .next-title p, .manager-account-result .next-title p { margin-top: 8px; }
+.manager-account-check > .mgr-panel { margin-top: 40px; }
+.manager-account-check .next-table-wrap { border: 0; border-radius: 0; }
+.manager-account-check .next-table { table-layout: fixed; }
+.manager-account-check .next-table th:nth-child(1) { width: 26%; }
+.manager-account-check .next-table th:nth-child(2) { width: 18%; }
+.manager-account-check .next-table th:nth-child(3) { width: 19%; }
+.manager-account-check .next-table th:nth-child(4) { width: 18%; }
+.manager-account-check .next-table th:nth-child(5) { width: 19%; }
+.manager-account-check .next-table th:first-child { border-radius: 8px 0 0 8px; }
+.manager-account-check .next-table th:last-child { border-radius: 0 8px 8px 0; }
+.manager-account-check .next-table td { border-top: 0; border-bottom: 1px solid #294567; }
+.manager-account-check .next-table tbody tr { cursor: pointer; }
+.manager-account-check .next-table tbody tr:not(.selected):hover { background: #17314f; }
+.manager-account-check .next-table td button { padding: 0; border: 0; background: none; color: #edf5ff; font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.manager-account-check .mgr-callout { color: #edf5ff; background: #132f53; font-size: 16px; line-height: 24px; }
+.manager-account-check .mgr-actions { min-height: 72px; padding-block: 14px; }
+.manager-account-check .mgr-actions .mgr-primary { min-width: 220px; }
 .manager-account-result > .mgr-panel { margin-top: 40px; }
 .manager-account-result .mgr-panel h2 { font-size: 24px; line-height: 32px; }
 .manager-account-result .next-table-wrap { border: 0; border-radius: 6px; }
@@ -45,6 +62,7 @@
 .manager-account-result .next-table th:first-child { width: 32%; }
 .manager-account-result .next-table td { overflow-wrap: anywhere; }
 .manager-account-result .next-table tbody tr:nth-child(even) { background: #102541; }
+.manager-account-result .mgr-callout { color: #edf5ff; background: #132f53; font-size: 16px; line-height: 24px; }
 .manager-account-result .mgr-actions > button:first-child { min-width: 160px; }
 .manager-account-result .mgr-actions > .mgr-primary { min-width: 270px; }
 @media (max-width: 600px) {

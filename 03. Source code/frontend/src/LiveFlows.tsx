@@ -76,8 +76,8 @@ type Sender = {
   name: string;
   email: string;
   status: string;
-  quota_3_days: number;
-  used_3_days: number;
+  quota_daily: number;
+  used_today: number;
   quota_warning?: boolean;
   smtp_host: string | null;
   smtp_port: number | null;
@@ -606,7 +606,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     smtpUser: "",
     smtpPassword: "",
     status: "inactive",
-    quota3Days: "100",
+    quotaDaily: "100",
     inboundEnabled: false,
   });
   useEffect(() => {
@@ -683,7 +683,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         setSenderId(current => current || senders.find(item => item.status === "active" && item.configured)?.id || "");
       } else if (screen === "campaign-sender") {
         if (!campaign) return;
-        const available = senders.find(item => item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= campaign.recipient_count - campaign.sent_count);
+        const available = senders.find(item => item.status === "active" && item.configured && item.quota_daily - item.used_today >= campaign.recipient_count - campaign.sent_count);
         setSenderId(campaign.sender_account_id || available?.id || "");
         setSenderName(campaign.sender_name || senders.find(item => item.id === campaign.sender_account_id)?.name || available?.name || "");
       } else if (screen === "manager-account-edit") {
@@ -691,7 +691,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         setSenderEditId(sender.id);
         setSenderForm({ code: sender.code || `TK-${sender.id}`, name: sender.name, email: sender.email, smtpHost: sender.smtp_host || "",
           smtpPort: String(sender.smtp_port || 465), smtpUser: sender.smtp_user || "", smtpPassword: "",
-          status: sender.status, quota3Days: String(sender.quota_3_days), inboundEnabled: sender.inbound_enabled });
+          status: sender.status, quotaDaily: String(sender.quota_daily), inboundEnabled: sender.inbound_enabled });
       } else {
         loadedForm.current = "";
         return;
@@ -788,7 +788,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
               smtpUser: editing.smtp_user || "",
               smtpPassword: "",
               status: editing.status,
-              quota3Days: String(editing.quota_3_days),
+              quotaDaily: String(editing.quota_daily),
               inboundEnabled: editing.inbound_enabled,
             });
           }
@@ -1818,11 +1818,11 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           <div className="next-campaign-info"><div><span>Chiến dịch</span><strong>{current.name}</strong></div><div><span>Số người nhận</span><strong>{n(current.recipient_count)}</strong></div></div>
           <Card title={'Tài khoản gửi "Hoạt động"'} className="next-sender-accounts">
             <Table
-              heads={["Địa chỉ email", "Tên hiển thị", "Giới hạn gửi trong 3 ngày", "Đã gửi trong 3 ngày", "Hạn mức còn lại"]}
+              heads={["Địa chỉ email", "Tên hiển thị", "Giới hạn gửi trong ngày", "Đã gửi trong ngày", "Hạn mức còn lại"]}
               selectedRow={availableSenders.findIndex(item => item.id === senderId)}
               onSelect={index => {
                 const item = availableSenders[index];
-                if (!busy && item.quota_3_days - item.used_3_days >= remainingCount) { setSenderId(item.id); setSenderName(item.name); }
+                if (!busy && item.quota_daily - item.used_today >= remainingCount) { setSenderId(item.id); setSenderName(item.name); }
               }}
               rows={availableSenders.map((item) => [
                   <label key={item.id} className="next-sender-option"><input
@@ -1830,24 +1830,24 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                     name="sender"
                     aria-label={`Chọn ${item.name}`}
                     checked={senderId === item.id}
-                    disabled={busy || item.quota_3_days - item.used_3_days < current.recipient_count - current.sent_count}
+                    disabled={busy || item.quota_daily - item.used_today < current.recipient_count - current.sent_count}
                     onChange={() => { setSenderId(item.id); setSenderName(item.name); }}
                   /><span>{item.email}</span></label>,
                   item.name,
-                  n(item.quota_3_days),
-                  n(item.used_3_days),
-                  n(Math.max(0, item.quota_3_days - item.used_3_days)),
+                  n(item.quota_daily),
+                  n(item.used_today),
+                  n(Math.max(0, item.quota_daily - item.used_today)),
                 ])}
             />
           </Card>
-          {selectedSender && selectedSender.quota_3_days - selectedSender.used_3_days >= remainingCount && <div className="next-sender-eligible" role="status"><EditorIcon name="check" /><div><strong>Tài khoản đủ điều kiện gửi</strong><span>{selectedSender.email}: đã lưu cấu hình kết nối; đã dùng {selectedSender.quota_3_days > 0 ? Math.round(selectedSender.used_3_days * 100 / selectedSender.quota_3_days) : 0}% hạn mức trong 3 ngày; hạn mức còn lại {n(Math.max(0, selectedSender.quota_3_days - selectedSender.used_3_days))} không nhỏ hơn số người nhận {n(remainingCount)}.</span></div></div>}
+          {selectedSender && selectedSender.quota_daily - selectedSender.used_today >= remainingCount && <div className="next-sender-eligible" role="status"><EditorIcon name="check" /><div><strong>Tài khoản đủ điều kiện gửi</strong><span>{selectedSender.email}: đã lưu cấu hình kết nối; đã dùng {selectedSender.quota_daily > 0 ? Math.round(selectedSender.used_today * 100 / selectedSender.quota_daily) : 0}% hạn mức trong ngày; hạn mức còn lại {n(Math.max(0, selectedSender.quota_daily - selectedSender.used_today))} không nhỏ hơn số người nhận {n(remainingCount)}.</span></div></div>}
           {senderId && <Card title="Người gửi" className="next-sender-identity">
             <div className="next-field"><label htmlFor="campaign-sender-name">Tên người gửi hiển thị <small>(bắt buộc)</small></label><input id="campaign-sender-name" disabled={busy} value={senderName ?? current.sender_name ?? selectedSender?.name ?? ""} onChange={event => setSenderName(event.target.value)} maxLength={50} required aria-describedby="campaign-sender-name-help" /><small id="campaign-sender-name-help">Tối đa 50 ký tự.</small>{error && (!senderName?.trim() || senderName.length > 50) && <p className="next-field-error" role="alert">Vui lòng nhập tên người gửi, tối đa 50 ký tự.</p>}</div>
             <div className="next-field"><label htmlFor="campaign-sender-email">Địa chỉ email gửi</label><input id="campaign-sender-email" value={selectedSender?.email || ""} readOnly aria-describedby="campaign-sender-email-help" /><small id="campaign-sender-email-help">Không sửa địa chỉ email gửi ở bước này.</small></div>
           </Card>}
-          {!senders.some(item => item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= current.recipient_count - current.sent_count) && <FigmaState error title="Chưa có tài khoản gửi phù hợp" description="Tài khoản phải hoạt động, có kết nối và đủ hạn mức cho người nhận chưa gửi." actions={<Button onClick={() => setReload(value => value + 1)}>Tải lại tài khoản</Button>} />}
+          {!senders.some(item => item.status === "active" && item.configured && item.quota_daily - item.used_today >= current.recipient_count - current.sent_count) && <FigmaState error title="Chưa có tài khoản gửi phù hợp" description="Tài khoản phải hoạt động, có kết nối và đủ hạn mức cho người nhận chưa gửi." actions={<Button onClick={() => setReload(value => value + 1)}>Tải lại tài khoản</Button>} />}
           {senderId && <div className="next-actions-bar">{cancelEdit}
-            <Button primary disabled={busy || !senders.some(item => item.id === senderId && item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= (current.status === "paused" ? Math.max(0, current.recipient_count - current.sent_count) : current.recipient_count))}
+            <Button primary disabled={busy || !senders.some(item => item.id === senderId && item.status === "active" && item.configured && item.quota_daily - item.used_today >= (current.status === "paused" ? Math.max(0, current.recipient_count - current.sent_count) : current.recipient_count))}
               onClick={() => update("sender", "PATCH", { senderAccountId: idNumber(senderId), senderName: senderName ?? current.sender_name ?? senders.find(item => item.id === senderId)?.name }, "Đã chọn tài khoản gửi.", current.status === "paused" ? "campaign-resume" : editingSection ? "campaign-confirm" : "campaign-schedule")}>Xác nhận tài khoản</Button>
           </div>}
         </Page>
@@ -1864,7 +1864,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           <div className="next-campaign-info">
             <div><span>Số người nhận</span><strong>{n(current.recipient_count)}</strong></div>
             <div><span>Tài khoản gửi</span><strong>{senders.find(item => item.id === current.sender_account_id)?.email || "—"}</strong></div>
-            <div><span>Giới hạn gửi trong 3 ngày</span><strong>{n(senders.find(item => item.id === current.sender_account_id)?.quota_3_days)}</strong></div>
+            <div><span>Giới hạn gửi trong ngày</span><strong>{n(senders.find(item => item.id === current.sender_account_id)?.quota_daily)}</strong></div>
           </div>
           <Card title="Lịch gửi" className="next-schedule-form">
             <div className="next-field"><label>Kiểu gửi</label><div className="next-inline">
@@ -1911,10 +1911,10 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
               <dt>Biến cá nhân hóa</dt><dd>{(current.body || "").match(/\{\{[^}]+\}\}/g)?.join(", ") || "—"}</dd>
               <dt>Tệp đính kèm</dt><dd>{assets.filter(item => item.kind === "pdf").map(item => item.file_name).join(", ") || "Không có"}</dd>
             </dl></Card>
-            <Card title="Tài khoản gửi"><p className={"next-validity" + (senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= current.recipient_count - current.sent_count) ? "" : " invalid")}>{senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= current.recipient_count - current.sent_count) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
+            <Card title="Tài khoản gửi"><p className={"next-validity" + (senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_daily - item.used_today >= current.recipient_count - current.sent_count) ? "" : " invalid")}>{senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_daily - item.used_today >= current.recipient_count - current.sent_count) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
               <dt>Địa chỉ email</dt><dd>{senders.find(item => item.id === current.sender_account_id)?.email || "—"}</dd>
               <dt>Tên người gửi</dt><dd>{current.sender_name || senders.find(item => item.id === current.sender_account_id)?.name || "—"}</dd>
-              <dt>Hạn mức còn lại</dt><dd>{n(Math.max(0, (senders.find(item => item.id === current.sender_account_id)?.quota_3_days || 0) - (senders.find(item => item.id === current.sender_account_id)?.used_3_days || 0)))}</dd>
+              <dt>Hạn mức còn lại</dt><dd>{n(Math.max(0, (senders.find(item => item.id === current.sender_account_id)?.quota_daily || 0) - (senders.find(item => item.id === current.sender_account_id)?.used_today || 0)))}</dd>
             </dl></Card>
             <Card title="Lịch gửi"><p className={"next-validity" + (current.send_mode === "now" || (current.scheduled_at && !scheduleError(current.scheduled_at)) ? "" : " invalid")}>{current.send_mode === "now" || (current.scheduled_at && !scheduleError(current.scheduled_at)) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
               <dt>Thời điểm bắt đầu</dt><dd>{current.send_mode === "now" ? "Ngay sau khi xác nhận" : date(current.scheduled_at)}</dd>
@@ -1946,7 +1946,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     if (screen === "campaign-resume") {
       const remainingRecipients = Math.max(0, current.recipient_count - current.sent_count);
       const selectedSender = senders.find(item => item.id === current.sender_account_id);
-      const available = selectedSender ? selectedSender.quota_3_days - selectedSender.used_3_days : 0;
+      const available = selectedSender ? selectedSender.quota_daily - selectedSender.used_today : 0;
       const needsSender = !selectedSender || selectedSender.status !== "active" || !selectedSender.configured || available < remainingRecipients;
       return <Page section="Chiến dịch" title={current.name} description={null} className="next-resume-page" go={go}>
         {feedback}
@@ -1971,10 +1971,10 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             <dt>Biến cá nhân hóa</dt><dd>{(current.body || "").match(/\{\{[^}]+\}\}/g)?.join(", ") || "—"}</dd>
             <dt>Tệp đính kèm</dt><dd>{assets.filter(item => item.kind === "pdf").map(item => item.file_name).join(", ") || "Không có"}</dd>
           </dl></Card>
-          <Card title="Tài khoản gửi"><p className={"next-validity" + (senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= current.recipient_count - current.sent_count) ? "" : " invalid")}>{senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_3_days - item.used_3_days >= current.recipient_count - current.sent_count) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
+          <Card title="Tài khoản gửi"><p className={"next-validity" + (senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_daily - item.used_today >= current.recipient_count - current.sent_count) ? "" : " invalid")}>{senders.some(item => item.id === current.sender_account_id && item.status === "active" && item.configured && item.quota_daily - item.used_today >= current.recipient_count - current.sent_count) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
             <dt>Địa chỉ email</dt><dd>{senders.find(item => item.id === current.sender_account_id)?.email || "—"}</dd>
             <dt>Tên người gửi</dt><dd>{current.sender_name || senders.find(item => item.id === current.sender_account_id)?.name || "—"}</dd>
-            <dt>Hạn mức còn lại</dt><dd>{n(Math.max(0, (senders.find(item => item.id === current.sender_account_id)?.quota_3_days || 0) - (senders.find(item => item.id === current.sender_account_id)?.used_3_days || 0)))}</dd>
+            <dt>Hạn mức còn lại</dt><dd>{n(Math.max(0, (senders.find(item => item.id === current.sender_account_id)?.quota_daily || 0) - (senders.find(item => item.id === current.sender_account_id)?.used_today || 0)))}</dd>
           </dl></Card>
           <Card title="Lịch gửi"><p className={"next-validity" + (current.send_mode === "now" || (current.scheduled_at && !scheduleError(current.scheduled_at)) ? "" : " invalid")}>{current.send_mode === "now" || (current.scheduled_at && !scheduleError(current.scheduled_at)) ? "Hợp lệ" : "Cần xử lý"}</p><dl className="next-details">
             <dt>Thời điểm bắt đầu</dt><dd>{current.send_mode === "now" ? "Ngay sau khi xác nhận" : date(summaryStart)}</dd>
@@ -2723,14 +2723,14 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     if (screen === "manager-account-check" && !loading && !senders.length) return <Page section="Tài khoản gửi" title="Chưa có tài khoản gửi email" go={go}>{feedback}<FigmaState title="Chưa có tài khoản để kiểm tra" description="Danh sách tài khoản gửi đang trống." actions={<Button primary onClick={() => go("manager-account-list")}>Về danh sách</Button>} /></Page>;
     if (screen === "manager-account-check") {
       const active = senders.find(item => item.id === selected) || senders[0];
-      return <Page section="Tài khoản gửi" title="Kiểm tra tài khoản gửi" go={go}>
+      return <Page section="Tài khoản gửi" title="Kiểm tra tài khoản gửi email" description="Kiểm tra địa chỉ email dùng gửi thư cho khách hàng, kết nối dịch vụ và hạn mức gửi." crumbLabel="Kiểm tra tình trạng" className="manager-account-check" go={go} backTo="manager-account-check">
         {feedback}
         <section className="mgr-panel"><h2>Tài khoản đã cấu hình</h2>
-          <div className="next-table-wrap"><table className="next-table"><thead><tr><th>Email người gửi</th><th>Trạng thái</th><th>Giới hạn 3 ngày</th><th>Đã gửi</th><th>Còn lại</th></tr></thead><tbody>
-            {senders.length ? senders.map(item => <tr key={item.id} className={active?.id === item.id ? "selected" : ""}>
+          <div className="next-table-wrap"><table className="next-table"><thead><tr><th>Email người gửi</th><th>Trạng thái</th><th>Giới hạn ngày</th><th>Đã gửi</th><th>Còn lại</th></tr></thead><tbody>
+            {senders.length ? senders.map(item => <tr key={item.id} className={active?.id === item.id ? "selected" : ""} onClick={() => setSelected(item.id)}>
               <td><button type="button" aria-pressed={active?.id === item.id} onClick={() => setSelected(item.id)}>{item.email}</button></td>
               <td>{item.status === "active" ? "Hoạt động" : item.status === "blocked" ? "Bị khóa" : "Ngừng hoạt động"}</td>
-              <td>{n(item.quota_3_days)}</td><td>{n(item.used_3_days)}</td><td>{n(Math.max(0, item.quota_3_days - item.used_3_days))}</td>
+              <td>{n(item.quota_daily)}</td><td>{n(item.used_today)}</td><td>{n(Math.max(0, item.quota_daily - item.used_today))}</td>
             </tr>) : <tr><td colSpan={5}>Chưa có tài khoản gửi email để kiểm tra.</td></tr>}
           </tbody></table></div>
           <p className="mgr-callout">Kết quả kiểm tra và hạn mức được hiển thị cho từng tài khoản.</p>
@@ -2748,8 +2748,8 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     if (screen.startsWith("manager-account-result")) {
       const checked = selectedRecord(senders, selected);
       const result = senderCheckResult?.id === checked?.id ? senderCheckResult : null;
-      const quota = checked?.quota_3_days ?? 0;
-      const used = checked?.used_3_days ?? 0;
+      const quota = checked?.quota_daily ?? 0;
+      const used = checked?.used_today ?? 0;
       const remaining = Math.max(0, quota - used);
       const percent = quota > 0 ? Math.round(used * 100 / quota) : 0;
       const nearQuota = checked?.quota_warning ?? (quota > 0 && used >= quota * 0.8);
@@ -2762,12 +2762,12 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             <Table heads={["Chỉ tiêu", "Kết quả"]} rows={[
               ["Trạng thái hiện tại", status],
               ["Kết quả kiểm tra", result.connected ? "Xác thực hợp lệ, kết nối thành công." : result.message],
-              ["Giới hạn 3 ngày / Đã gửi / Còn lại", `${n(quota)} / ${n(used)} / ${n(remaining)}`],
-              ...(result.connected ? [["Cảnh báo", nearQuota ? `Gần ngưỡng · Đã sử dụng ${percent}% giới hạn trong 3 ngày.` : "Không có cảnh báo hạn mức."]] : []),
+              ["Giới hạn ngày / Đã gửi / Còn lại", `${n(quota)} / ${n(used)} / ${n(remaining)}`],
+              ...(result.connected ? [["Cảnh báo", nearQuota ? `Gần ngưỡng · Đã sử dụng ${percent}% giới hạn trong ngày.` : "Không có cảnh báo hạn mức."]] : []),
               ["Thông báo", "Kiểm tra tình trạng tài khoản gửi email hoàn tất."],
             ]} />
             <p className="mgr-callout">{result.connected
-              ? `Hạn mức còn lại là ${n(remaining)} email.${quota > 0 ? ` Tài khoản đã dùng ${percent}% giới hạn trong 3 ngày.` : ""}`
+              ? `Hạn mức còn lại là ${n(remaining)} email.${quota > 0 ? ` Tài khoản đã dùng ${percent}% giới hạn trong ngày.` : ""}`
               : `Kiểm tra không làm thay đổi trạng thái ${status} của tài khoản.`}</p>
           </> : <p role="status">Chọn tài khoản và kiểm tra tình trạng để xem kết quả.</p>}
         </section>
@@ -2794,14 +2794,14 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           {feedback}
           {!loading && !senders.length ? <FigmaState title="Chưa có tài khoản gửi" description="Thêm tài khoản gửi để cấu hình email của phòng Marketing." /> : <Card title="Danh sách tài khoản">
             <Table
-              heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", ...(screen === "manager-account-list" ? [] : ["Hạn mức 3 ngày"]), "Trạng thái"]}
+              heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", ...(screen === "manager-account-list" ? [] : ["Hạn mức ngày"]), "Trạng thái"]}
               selectedRow={Math.max(0, senders.findIndex(item => item.id === selected))}
               onSelect={index => manager ? setSelected(senders[index].id) : choose(senders[index].id, "sender-detail")}
               rows={senders.map(item => [
                 manager ? item.name : <button className="next-text-link" key={item.id} type="button" onClick={() => choose(item.id, "sender-detail")}>{item.name}</button>,
                 item.code || `TK-${item.id}`,
                 item.email,
-                ...(screen === "manager-account-list" ? [] : [`${n(item.used_3_days)} / ${n(item.quota_3_days)}`]),
+                ...(screen === "manager-account-list" ? [] : [`${n(item.used_today)} / ${n(item.quota_daily)}`]),
                 item.status === "active" ? "Hoạt động" : item.status === "blocked" ? "Bị khóa" : "Ngừng hoạt động",
               ])}
             />
@@ -2822,7 +2822,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                     smtpUser: "",
                     smtpPassword: "",
                     status: "inactive",
-                    quota3Days: "100",
+                    quotaDaily: "100",
                     inboundEnabled: false,
                   });
                   go("manager-account-add");
@@ -2838,8 +2838,8 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
       return <Page section="Tài khoản gửi" title="Đã lưu tài khoản gửi email" go={go}>
         {feedback}
         <section className="mgr-panel"><h2>Lưu thông tin tài khoản thành công</h2>
-          <Table heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Hạn mức 3 ngày", "Trạng thái"]}
-            rows={senders.map(item => [item.name, item.code || `TK-${item.id}`, item.email, n(item.quota_3_days), item.status === "active" ? "Hoạt động" : "Ngừng hoạt động"])} />
+          <Table heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Hạn mức ngày", "Trạng thái"]}
+            rows={senders.map(item => [item.name, item.code || `TK-${item.id}`, item.email, n(item.quota_daily), item.status === "active" ? "Hoạt động" : "Ngừng hoạt động"])} />
           <p className="mgr-callout success">Thông tin tài khoản gửi đã được lưu.</p>
         </section>
         <div className="mgr-actions"><button className="mgr-primary" type="button" onClick={() => go("manager-account-list")}>Về danh sách</button></div>
@@ -2883,7 +2883,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                         code: senderForm.code,
                         email: senderForm.email,
                         status: senderForm.status,
-                        quota3Days: Number(senderForm.quota3Days),
+                        quotaDaily: Number(senderForm.quotaDaily),
                         smtpHost: senderForm.smtpHost,
                         smtpPort: Number(senderForm.smtpPort),
                         smtpUser: senderForm.smtpUser,
@@ -2921,11 +2921,11 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                 required
               />
               <Field disabled={busy}
-                label="Hạn mức email / 3 ngày"
-                error={senderErrors.quota3Days}
-                value={senderForm.quota3Days}
+                label="Hạn mức email / ngày"
+                error={senderErrors.quotaDaily}
+                value={senderForm.quotaDaily}
                 set={(value) =>
-                  setSenderForm({ ...senderForm, quota3Days: value })
+                  setSenderForm({ ...senderForm, quotaDaily: value })
                 }
                 type="number"
                 required
@@ -2944,7 +2944,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                 </select>
               </label>
               </div>
-              <p className="next-hint">Tên tối đa 50 ký tự. Hạn mức gửi áp dụng trong 3 ngày.</p>
+              <p className="next-hint">Tên tối đa 50 ký tự. Hạn mức gửi áp dụng trong ngày.</p>
               <p className="mgr-callout">Thay đổi chỉ có hiệu lực sau khi lưu thành công.</p>
               <details className="next-connection-settings" open={!!(senderErrors.smtpHost || senderErrors.smtpPort || senderErrors.smtpUser)}><summary>Cấu hình Gmail / SMTP và đồng bộ IMAP</summary>
           {screen === "manager-account-edit" && (() => {
@@ -2952,7 +2952,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             const dirty = senderForm.code !== (editing.code || `TK-${editing.id}`) || senderForm.email !== editing.email || senderForm.name !== editing.name ||
               senderForm.smtpHost !== (editing.smtp_host || "") || Number(senderForm.smtpPort) !== editing.smtp_port ||
               senderForm.smtpUser !== (editing.smtp_user || "") || !!senderForm.smtpPassword ||
-              senderForm.status !== editing.status || Number(senderForm.quota3Days) !== editing.quota_3_days ||
+              senderForm.status !== editing.status || Number(senderForm.quotaDaily) !== editing.quota_daily ||
               senderForm.inboundEnabled !== editing.inbound_enabled;
             return googleConnection(editing, dirty);
           })()}
@@ -3025,8 +3025,8 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
         {sender ? (
           <Card><dl className="next-sender-detail-grid">{[
             ["Tên tài khoản gửi", sender.name], ["Mã tài khoản gửi", sender.code || `TK-${sender.id}`],
-            ["Email", sender.email], ["Hạn mức trong 3 ngày", n(sender.quota_3_days)],
-            ["Đã gửi trong 3 ngày", n(sender.used_3_days)], ["Trạng thái", sender.status === "active" ? "Hoạt động" : sender.status === "blocked" ? "Bị khóa" : "Ngừng hoạt động"],
+            ["Email", sender.email], ["Hạn mức trong ngày", n(sender.quota_daily)],
+            ["Đã gửi trong ngày", n(sender.used_today)], ["Trạng thái", sender.status === "active" ? "Hoạt động" : sender.status === "blocked" ? "Bị khóa" : "Ngừng hoạt động"],
             ["Ngày tạo tài khoản", date(sender.created_at)], ["Cập nhật gần nhất", date(sender.updated_at)],
           ].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
             {manager && <details className="next-connection-settings"><summary>Kết nối Gmail và thao tác tài khoản</summary>{googleConnection(sender)}
@@ -3049,7 +3049,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
                       smtpUser: sender.smtp_user || "",
                       smtpPassword: "",
                       status: sender.status,
-                      quota3Days: String(sender.quota_3_days),
+                      quotaDaily: String(sender.quota_daily),
                       inboundEnabled: sender.inbound_enabled,
                     });
                     go("manager-account-edit", { key: "senderId", id: sender.id });
