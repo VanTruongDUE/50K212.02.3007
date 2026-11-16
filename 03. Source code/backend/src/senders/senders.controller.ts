@@ -1,3 +1,4 @@
+import { dailyQuotaStartSql } from './daily-quota';
 import {
   BadRequestException,
   Body,
@@ -26,6 +27,7 @@ type Sender = QueryResultRow &
     id: string;
     name: string;
     status: string;
+    // Legacy storage name; the value is the daily limit.
     quota_3_days: number;
     inbound_enabled: boolean;
   };
@@ -34,6 +36,7 @@ type SenderInput = {
   name?: unknown;
   email?: unknown;
   status?: unknown;
+  quotaDaily?: unknown;
   quota3Days?: unknown;
   smtpHost?: unknown;
   smtpPort?: unknown;
@@ -42,11 +45,11 @@ type SenderInput = {
   inboundEnabled?: unknown;
 };
 const publicFields =
-  "id, code, name, email, status, quota_3_days, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at, updated_at";
+  "id, code, name, email, status, quota_3_days, quota_3_days AS quota_daily, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at, updated_at";
 const usageField = `((SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
-  AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
+  AND d.state IN ('sent','sending') AND (d.state='sending' OR COALESCE(d.sent_at,d.created_at)>=${dailyQuotaStartSql}))
   +(SELECT count(*)::int FROM response_email_deliveries r WHERE r.sender_account_id=s.id
-  AND r.state IN ('sent','sending') AND r.created_at>now()-interval '3 days')) AS used_3_days`;
+  AND r.state IN ('sent','sending') AND (r.state='sending' OR COALESCE(r.sent_at,r.created_at)>=${dailyQuotaStartSql}))) AS used_today`;
 
 @Controller('api/sender-accounts')
 @UseGuards(SessionGuard)
@@ -65,7 +68,8 @@ export class SendersController {
     );
     return result.rows.map((row) => ({
       ...row,
-      quota_warning: Number(row.used_3_days) >= Number(row.quota_3_days) * 0.8,
+      used_3_days: Number(row.used_today),
+      quota_warning: Number(row.used_today) >= Number(row.quota_3_days) * 0.8,
     }));
   }
 
@@ -81,8 +85,9 @@ export class SendersController {
     if (!result.rows[0]) throw new NotFoundException();
     return {
       ...result.rows[0],
+      used_3_days: Number(result.rows[0].used_today),
       quota_warning:
-        Number(result.rows[0].used_3_days) >=
+        Number(result.rows[0].used_today) >=
         Number(result.rows[0].quota_3_days) * 0.8,
     };
   }
@@ -218,10 +223,12 @@ export class SendersController {
     const email = body.email === undefined ? current?.email : body.email;
     const status =
       body.status === undefined ? (current?.status ?? 'inactive') : body.status;
+    const requestedQuota =
+      body.quotaDaily === undefined ? body.quota3Days : body.quotaDaily;
     const quota =
-      body.quota3Days === undefined
+      requestedQuota === undefined
         ? (current?.quota_3_days ?? 100)
-        : body.quota3Days;
+        : requestedQuota;
     const host =
       body.smtpHost === undefined ? current?.smtp_host : body.smtpHost;
     const port =
@@ -333,8 +340,9 @@ export class SendersController {
     );
     return {
       ...result.rows[0],
+      used_3_days: Number(result.rows[0].used_today),
       quota_warning:
-        Number(result.rows[0].used_3_days) >=
+        Number(result.rows[0].used_today) >=
         Number(result.rows[0].quota_3_days) * 0.8,
     };
   }

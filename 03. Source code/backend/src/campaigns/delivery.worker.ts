@@ -1,3 +1,4 @@
+import { dailyQuotaStartSql } from '../senders/daily-quota';
 import {
   Injectable,
   Logger,
@@ -131,11 +132,11 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
         return;
       }
       const quota = await client.query<{ used: string; hourly: string }>(
-        `SELECT count(*) FILTER (WHERE created_at>now()-interval '3 days') AS used,
+        `SELECT count(*) FILTER (WHERE (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql})) AS used,
           count(*) FILTER (WHERE created_at>now()-interval '1 hour') AS hourly
          FROM (
-           SELECT created_at FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
-           UNION ALL SELECT created_at FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
+           SELECT state,created_at,sent_at FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
+           UNION ALL SELECT state,created_at,sent_at FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
          ) d`,
         [job.account_id],
       );

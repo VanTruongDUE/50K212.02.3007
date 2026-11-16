@@ -98,6 +98,10 @@ Ghi chú này tổng hợp tài liệu trong `01. Thu thập yêu cầu` và `02
 
 Không chốt quy tắc nghiệp vụ chỉ dựa trên BPMN. Những mục cần BA xác nhận ở phần trên vẫn còn hiệu lực, ngoại trừ các quyết định BA bổ sung dưới đây.
 
+## Cập nhật hạn mức gửi (16/11/2026)
+
+- Theo file `ĐẶC TẢ FIGMA.docx` và xác nhận trực tiếp của BA: đổi hạn mức gửi từ cửa sổ 3 ngày sang **từng ngày**, áp dụng cả FE và BE. Ngày được tính theo GMT+7, đặt lại lúc 00:00; cộng số thư chiến dịch và phản hồi đã gửi/đang gửi. Giữ giá trị cấu hình từng tài khoản và cảnh báo 80%. Quyết định này thay thế phần hạn mức 3 ngày trong quyết định cũ bên dưới.
+
 ## Quyết định BA bổ sung khi chuẩn bị BE (11/11/2026)
 
 - Giai đoạn hiện tại chỉ triển khai hai vai trò: **Nhân viên Marketing** và **Trưởng phòng Marketing**. Trưởng nhóm và Admin để sau.

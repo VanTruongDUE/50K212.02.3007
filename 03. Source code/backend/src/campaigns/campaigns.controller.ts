@@ -1,3 +1,4 @@
+import { dailyQuotaStartSql } from '../senders/daily-quota';
 import { createHash } from 'node:crypto';
 import {
   BadRequestException,
@@ -680,8 +681,8 @@ export class CampaignsController {
       pending: string;
     }>(
       `SELECT s.quota_3_days
-        - (SELECT count(*) FROM email_deliveries d WHERE d.sender_account_id=s.id AND d.state IN ('sent','sending') AND d.created_at>now()-interval '3 days')
-        - (SELECT count(*) FROM response_email_deliveries r WHERE r.sender_account_id=s.id AND r.state IN ('sent','sending') AND r.created_at>now()-interval '3 days') AS remaining,
+        - (SELECT count(*) FROM email_deliveries d WHERE d.sender_account_id=s.id AND d.state IN ('sent','sending') AND (d.state='sending' OR COALESCE(d.sent_at,d.created_at)>=${dailyQuotaStartSql}))
+        - (SELECT count(*) FROM response_email_deliveries r WHERE r.sender_account_id=s.id AND r.state IN ('sent','sending') AND (r.state='sending' OR COALESCE(r.sent_at,r.created_at)>=${dailyQuotaStartSql})) AS remaining,
         (SELECT count(*) FROM campaign_recipients WHERE campaign_id=$2 AND status='pending') AS pending
        FROM sender_accounts s WHERE s.id=$1 AND s.status='active' AND ((s.google_refresh_secret IS NOT NULL AND s.google_status='connected') OR (s.google_refresh_secret IS NULL AND s.smtp_secret IS NOT NULL))`,
       [senderId, campaignId],

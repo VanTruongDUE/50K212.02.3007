@@ -1,3 +1,4 @@
+import { dailyQuotaStartSql } from '../senders/daily-quota';
 import {
   BadRequestException,
   Body,
@@ -157,12 +158,12 @@ export class ResponsesController {
           'Tài khoản gửi chưa hoạt động hoặc chưa cấu hình SMTP.',
         );
       const usage = await client.query<{ used: string }>(
-        `SELECT (SELECT count(*) FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND created_at>now()-interval '3 days')
-         +(SELECT count(*) FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND created_at>now()-interval '3 days') AS used`,
+        `SELECT (SELECT count(*) FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql}))
+         +(SELECT count(*) FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql})) AS used`,
         [account.id],
       );
       if (Number(usage.rows[0].used) >= sender.rows[0].quota_3_days)
-        throw new ConflictException('Tài khoản gửi đã đạt hạn mức 3 ngày.');
+        throw new ConflictException('Tài khoản gửi đã đạt hạn mức ngày.');
       const saved = await client.query<{ id: string }>(
         "INSERT INTO response_email_deliveries(response_id,sender_account_id,actor_id,subject,content,state) VALUES($1,$2,$3,$4,$5,'sending') RETURNING id",
         [id, account.id, request.account.id, subject, content],

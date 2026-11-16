@@ -27,9 +27,9 @@ Filter Template: Nhân viên dùng `GET/POST /api/filter-templates`, `GET/PATCH/
 
 | Method | URL | Vai trò | Nội dung |
 | --- | --- | --- | --- |
-| GET | `/api/sender-accounts` | Cả hai | Nhân viên chỉ thấy tài khoản `active`; trả số đã dùng trong 3 ngày |
+| GET | `/api/sender-accounts` | Cả hai | Nhân viên chỉ thấy tài khoản `active`; trả số đã dùng trong ngày (GMT+7) |
 | GET | `/api/sender-accounts/:id` | Cả hai | Chi tiết, không trả mật khẩu SMTP |
-| POST/PATCH | `/api/sender-accounts` hoặc `/:id` | Trưởng phòng | `name`, `email`, `status`, `quota3Days`, `smtpHost`, `smtpPort`, `smtpUser`, `smtpPassword`, `inboundEnabled` |
+| POST/PATCH | `/api/sender-accounts` hoặc `/:id` | Trưởng phòng | `name`, `email`, `status`, `quotaDaily`, `smtpHost`, `smtpPort`, `smtpUser`, `smtpPassword`, `inboundEnabled` |
 | POST | `/api/sender-accounts/:id/verify` | Trưởng phòng | Kiểm tra kết nối SMTP, không gửi email |
 | POST | `/api/sender-accounts/:id/verify-inbox` | Trưởng phòng | Kiểm tra kết nối Gmail IMAP |
 | POST | `/api/sender-accounts/:id/sync-inbox` | Trưởng phòng | Đồng bộ email mới ngay; lần đầu chỉ khởi tạo con trỏ |
@@ -77,7 +77,7 @@ Response mới giữ trạng thái `new` và nhân viên phụ trách chiến d�
 | POST | `/api/campaigns/:id/pause`, `/:id/resume` | Chủ/Trưởng phòng | Tạm dừng với `{ "reason": "..." }` tùy chọn, tối đa 250 ký tự; lưu thời điểm và lý do. Tiếp tục các email chưa gửi; nếu đã sửa nội dung/tệp khi tạm dừng, phải xem trước lại |
 | DELETE | `/api/campaigns/:id` | Chủ chiến dịch | Chỉ trước khi có lần thử gửi, kể cả chiến dịch đã tạm dừng |
 
-Worker gửi tối đa 50 email/giờ và hạn mức mặc định 100 email/3 ngày trên mỗi tài khoản. Khi chọn tài khoản, xác nhận hoặc tiếp tục chiến dịch, API kiểm tra hạn mức còn lại đủ cho số email chưa gửi; chiến dịch đang tạm dừng có thể đổi tài khoản gửi. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
+Worker gửi tối đa 50 email/giờ và hạn mức mặc định 100 email/ngày trên mỗi tài khoản. Khi chọn tài khoản, xác nhận hoặc tiếp tục chiến dịch, API kiểm tra hạn mức còn lại đủ cho số email chưa gửi; chiến dịch đang tạm dừng có thể đổi tài khoản gửi. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
 Logo PNG/JPG và ảnh nội dung được nhúng vào HTML email bằng CID; SVG được đính kèm dạng tệp vì nhiều trình đọc email không hiển thị SVG nội tuyến. PDF được gửi như tệp đính kèm. Nếu tổng dung lượng vượt giới hạn nhà cung cấp SMTP, chiến dịch sẽ tạm dừng và ghi lỗi gửi; cần kiểm tra trước khi tiếp tục.
 Các dấu định dạng từ thanh công cụ soạn thảo (`**đậm**`, `_nghiêng_`, `~gạch chân~`) được dựng thành HTML khi gửi. Ảnh nội dung không còn được tham chiếu sẽ không đính kèm vào email.
 
@@ -133,3 +133,7 @@ Các trạng thái lỗi: 400 tiêu chí/requestKey/cursor sai, 401 thiếu phi�
 contacts có thêm search_provenance: emailStatus, method=inferred, industry, evidence, companySize/sizeMethod/sizeNote và publicEmailCount. Quy mô `public-email-count-proxy-v1` gán khoảng 1–10/11–50/51–200/201–500 theo khoảng số email đã quan sát; ngoài 1–500 để null. Đây là proxy chưa hiệu chuẩn, luôn “Chưa đảm bảo”, không phải số nhân viên thật và không lọc cứng. Không đoán địa chỉ email. Email chung không gán chức vụ cá nhân. API danh sách Contact trả metadata này; xuất danh sách có nguồn và ghi chú khi chứa Contact từ tìm kiếm.
 
 Thiết kế ban đầu ở tasks/ chỉ là đề xuất; các endpoint thực tế ở mục này và source là hợp đồng đã triển khai. Lần thử live SerpAPI chưa chạy vì thiếu key; không xem fixtures là bằng chứng chất lượng Google thật.
+
+### Hạn mức ngày
+
+Hạn mức được đặt lại lúc 00:00 theo `Asia/Ho_Chi_Minh`. Số đã dùng cộng cả chiến dịch và phản hồi email, gồm thư đã gửi trong ngày và các lượt đang gửi chưa xác định kết quả (kể cả bắt đầu trước 00:00); thư lỗi không chiếm hạn mức. Dữ liệu đọc dùng `quota_daily`, `used_today`, `quota_warning`; ghi dùng `quotaDaily` (1–100). Cột lưu trữ `quota_3_days`, thuộc tính cũ `used_3_days` và tham số `quota3Days` được giữ để tương thích phiên bản cũ, nhưng cùng mang ý nghĩa hạn mức ngày. Không cần đổi giá trị cấu hình hiện có hay chạy migration.
