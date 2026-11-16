@@ -99,6 +99,8 @@ export default function SearchFlows({
       sessionStorage.getItem(key + ":job") ||
       "",
   );
+  const [historySelection, setHistorySelection] = useState("");
+  const [contactSelection, setContactSelection] = useState("");
   const requestKey = useRef(sessionStorage.getItem(key + ":request") || ""),
     starting = useRef(false);
   function navigate(next: string) {
@@ -269,10 +271,8 @@ export default function SearchFlows({
       screen === "search-all-contacts"
         ? rows.slice((page - 1) * 10, page * 10)
         : rows.slice(0, 5);
-  const label = (c: Contact) =>
-    c.job_title || c.location || c.search_provenance?.industry
-      ? "Chưa đảm bảo — thông tin suy đoán"
-      : "Chưa xác định";
+  const activeHistory = history.find(item => item.id === historySelection) || history[0];
+  const activeContact = rows.find(item => item.id === contactSelection) || rows[0];
   return (
     <section className="flow-content search-content">
       <nav className="breadcrumb" aria-label="Đường dẫn">
@@ -280,16 +280,17 @@ export default function SearchFlows({
           Tìm kiếm Contact
         </button>
         <span aria-hidden>›</span>
-        <span>{titles[screen] || "Tìm kiếm Contact"}</span>
+        <span>{isReview ? "Kiểm tra bộ tiêu chí" : titles[screen] || "Tìm kiếm Contact"}</span>
       </nav>
       <header className="flow-heading">
-        <h1>{busy && isReview ? "Đang ghi nhận bộ tiêu chí" : titles[screen] || "Tìm kiếm Contact"}</h1>
+        <h1>{busy && isReview ? "Đang ghi nhận bộ tiêu chí" : screen === "review" ? "Bộ tiêu chí hợp lệ" : titles[screen] || "Tìm kiếm Contact"}</h1>
         <p>
           {screen === "review-success" ? "Bộ tiêu chí đã được ghi nhận cho lần tìm kiếm hiện tại." : screen === "template-created" ? "Template đã được lưu. Kiểm tra và xác nhận lại trước khi áp dụng tiêu chí cho lần tìm kiếm." : isReview
-            ? "Kiểm tra bộ tiêu chí trước khi xác nhận tìm kiếm."
+            ? "Các điều kiện đã vượt qua kiểm tra. Xác nhận để tiếp tục tìm kiếm."
+            : screen === "searching" ? "Hệ thống đang xử lý yêu cầu tìm kiếm."
             : isHistory
-              ? "Xem tiêu chí và kết quả thực tế của từng lần tìm kiếm."
-              : "Kết quả được lưu từ nguồn Google Search/Web."}
+              ? "Xem lại nguồn và kết quả của từng lần tìm kiếm."
+              : screen === "history-detail" ? "Xem tiêu chí và kết quả của lần tìm kiếm đã lưu." : `Hiển thị ${visible.length} trong ${job?.new_count ?? rows.length} Contact mới hợp lệ.`}
         </p>
       </header>
       {error && (
@@ -305,33 +306,26 @@ export default function SearchFlows({
           <section className="flow-panel review-panel">
             <h2>Bộ tiêu chí tìm kiếm</h2>
             <div className="criteria-summary">
-              {Object.entries(criteria).map(([field, value]) => (
+              {([
+                ["role", "Chức vụ Contact"],
+                ["industry", "Ngành nghề / lĩnh vực"],
+                ["location", "Địa điểm / khu vực"],
+                ["keyword", "Từ khóa doanh nghiệp"],
+                ["size", "Quy mô doanh nghiệp"],
+                ["email", "Trạng thái email"],
+              ] as const).map(([field, label]) => (
                 <div key={field}>
-                  <span>
-                    {{
-                      role: "Chức vụ Contact",
-                      industry: "Ngành nghề",
-                      location: "Khu vực",
-                      size: "Quy mô tham khảo",
-                      email: "Trạng thái email",
-                      keyword: "Từ khóa",
-                      source: "Nguồn",
-                    }[field] || field}
-                  </span>
+                  <span>{label}</span>
                   <strong>
-                    {Array.isArray(value)
-                      ? value.join(", ") || "—"
-                      : value || "—"}
+                    {Array.isArray(criteria[field])
+                      ? criteria[field].join(", ") || "—"
+                      : criteria[field] || "—"}
                   </strong>
                 </div>
               ))}
             </div>
-            <p>
-              Email “Đã xác nhận” nghĩa là tìm thấy trên website nguồn và hợp lệ
-              về cú pháp, chưa xác minh khả năng nhận thư. Chức vụ, ngành và khu
-              vực suy đoán ghi “Chưa đảm bảo”. Quy mô tham khảo không lọc cứng;
-              thiếu cơ sở thì chưa ước đoán.
-            </p>
+            <div className="review-source"><strong>Nguồn tìm kiếm</strong><span>{criteria.source || "—"}</span></div>
+            <p>Lưu thành Template để dùng lại. Tìm kiếm chỉ bắt đầu khi bạn xác nhận.</p>
 
           </section>
           <div className="flow-actions">
@@ -343,36 +337,32 @@ export default function SearchFlows({
               disabled={busy}
               onClick={() => void (screen === "review-success" ? start() : confirmCriteria())}
             >
-              {busy ? "Đang ghi nhận…" : error ? "Thử ghi nhận lại" : screen === "review-success" ? "Tìm kiếm Contact" : "Xác nhận tiêu chí"}
+              {busy ? "Đang ghi nhận…" : error ? "Thử ghi nhận lại" : screen === "review-success" ? "Tìm kiếm Contact" : screen === "review" ? "Xác nhận và tìm kiếm" : "Xác nhận tiêu chí"}
             </Button>
           </div>
         </>
       ) : isHistory ? (
         <>
           <section className="flow-panel">
-            <h2>Các lần tìm kiếm</h2>
             {busy ? (
               <p role="status">Đang tải lịch sử…</p>
             ) : error ? <FigmaState error title="Không thể tải lịch sử tìm kiếm" description={error} actions={<Button onClick={() => setReload(v => v + 1)}>Tải lại lịch sử</Button>} /> : !history.length ? (
               <FigmaState title="Chưa có lịch sử tìm kiếm" description="Chưa có lần tìm kiếm nào được ghi nhận." actions={<Button primary onClick={() => navigate("criteria")}>Thiết lập tìm kiếm</Button>} />
             ) : (
-              <table className="flow-table search-history-table">
+              <div className="search-history-scroll"><table className="flow-table search-history-table">
                 <thead>
                   <tr>
                     <th>Thời điểm</th>
                     <th>Người thực hiện</th>
                     <th>Nguồn</th>
-                    <th>Kết quả</th>
-                    <th>Thao tác</th>
+                    <th>Contact mới</th>
                   </tr>
                 </thead>
                 <tbody>
                   {history.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        {new Date(item.created_at).toLocaleString("vi-VN")}
-                      </td>
-                      <td>{item.owner_id || owner}</td><td>Google Search/Web</td>
+                    <tr key={item.id} className={activeHistory?.id === item.id ? "selected" : undefined} onClick={() => setHistorySelection(item.id)}>
+                      <td><button type="button" className="table-select" aria-pressed={activeHistory?.id === item.id} onClick={() => setHistorySelection(item.id)}>{new Date(item.created_at).toLocaleString("vi-VN")}</button></td>
+                      <td title={item.owner_id || owner}>Nhân viên Marketing</td><td>Google Search/Web</td>
                       <td>
                         {item.status === "succeeded"
                           ? `${item.new_count} Contact mới`
@@ -380,23 +370,13 @@ export default function SearchFlows({
                             ? "Không thành công"
                             : "Đang xử lý"}
                       </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="table-select"
-                          onClick={() => selectJob(item.id, "history-detail")}
-                        >
-                          Xem chi tiết
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </section>
-          {history.length >= 25 && (
-            <div className="flow-actions">
+          {!!history.length && <div className="flow-actions"><div>{history.length >= 25 && (
               <Button
                 disabled={busy}
                 onClick={() => {
@@ -412,8 +392,7 @@ export default function SearchFlows({
               >
                 Xem thêm lịch sử
               </Button>
-            </div>
-          )}
+          )}</div><Button primary disabled={busy || !activeHistory} onClick={() => selectJob(activeHistory.id, "history-detail")}>Xem chi tiết</Button></div>}
         </>
       ) : !job ? (
         <section className="flow-panel">
@@ -425,22 +404,14 @@ export default function SearchFlows({
           <Button onClick={() => navigate("history")}>Lịch sử tìm kiếm</Button>
         </section>
       ) : job.status === "queued" || job.status === "running" ? (
-        <section className="flow-panel" aria-live="polite">
-          <h2>Đang tìm kiếm Contact</h2><Button disabled onClick={() => {}}>Đang tìm kiếm…</Button>
-          <p>
-            {{
-              queued: "Đang chờ xử lý",
-              searching: "Đang tìm website trên Google",
-              fetching: "Đang đọc website và lấy email",
-              saving: "Đang kiểm tra và lưu dữ liệu",
-            }[job.stage] || job.stage}{" "}
-            · Đã xử lý {job.processed} trang.
-          </p>
-          <p>
-            Không đóng dữ liệu hoặc tạo yêu cầu khác. Có thể mở lại lần tìm
-            trong lịch sử.
-          </p>
-        </section>
+        <>
+          <section className="flow-notice searching-notice" role="status" aria-live="polite">
+            <div>Đang gửi và xử lý yêu cầu từ nguồn đã chọn.<br />Chưa có kết quả cuối cùng. Vui lòng chờ, không gửi lại yêu cầu.
+              <span className="sr-only"> Đã xử lý {job.processed} trang.</span>
+            </div>
+          </section>
+          <div className="flow-actions search-loading-actions"><Button primary disabled onClick={() => {}}>Đang tìm kiếm…</Button></div>
+        </>
       ) : job.status === "succeeded" && !rows.length ? <FigmaState title="Không tìm thấy Contact phù hợp" description="Google Search/Web không trả về Contact mới phù hợp. Lịch sử tìm kiếm đã được lưu." actions={<Button onClick={() => navigate("criteria")}>Quay lại</Button>} /> : job.status === "failed" ? (
         <>
           <div className="flow-notice error" role="alert">
@@ -466,7 +437,7 @@ export default function SearchFlows({
         </>
       ) : (
         <>
-          <section className="flow-panel result-panel">
+          <section className={"flow-panel result-panel search-result-figma" + (screen === "history-detail" ? " search-detail-figma" : "")}>
             <p>
               Nguồn: Google Search/Web ·{" "}
               {new Date(job.created_at).toLocaleString("vi-VN")}
@@ -484,34 +455,6 @@ export default function SearchFlows({
                 </div>
               ))}
             </div>
-            <details open={screen === "history-detail"}>
-              <summary>Tiêu chí đã sử dụng</summary>
-              <div className="criteria-summary">
-                {Object.entries(job.criteria).map(([k, v]) => (
-                  <div key={k}>
-                    <span>{{ role: "Chức vụ Contact", industry: "Ngành nghề / lĩnh vực", location: "Địa điểm / khu vực", keyword: "Từ khóa doanh nghiệp", size: "Quy mô doanh nghiệp", email: "Trạng thái email", source: "Nguồn tìm kiếm" }[k] || k}</span>
-                    <strong>
-                      {Array.isArray(v) ? v.join(", ") || "—" : v || "—"}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            </details>
-            {!!job.warnings.length && (
-              <div className="flow-notice warning" role="status">
-                <strong>Kết quả có giới hạn hoặc chưa đầy đủ</strong>
-                <ul>
-                  {job.warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p>
-              Email “Đã xác nhận”: tìm thấy trên website nguồn và hợp lệ về cú
-              pháp; chưa xác minh khả năng nhận thư. Thông tin suy đoán có thể
-              sai.
-            </p>
             {!rows.length ? (
               <p>
                 Không có Contact mới.{" "}
@@ -530,7 +473,7 @@ export default function SearchFlows({
                       type="button"
                       onClick={() => navigate("search-all-contacts")}
                     >
-                      Xem toàn bộ Contact
+                      Hiển thị toàn bộ contact
                     </button>
                   )}
                 </p>
@@ -544,10 +487,10 @@ export default function SearchFlows({
                     <tbody>
                       {visible.map((c) => (
                         <tr key={c.id}>
-                          <td><strong>{c.full_name || "Chưa xác định tên"}</strong></td>
-                          <td>{c.email}<details><summary>Đã xác nhận · Nguồn</summary><a href={c.source_url} target="_blank" rel="noreferrer">Xem website nguồn</a><p>{c.search_provenance?.evidence}</p><small>Xác nhận nguồn công khai và cú pháp; chưa kiểm tra khả năng nhận thư.</small></details></td>
-                          <td>{c.job_title || "—"}<small>{label(c)}</small></td>
-                          <td>{c.company || "—"}<details><summary>Thông tin tham khảo</summary><p>{c.location || "—"} · {c.search_provenance?.industry || "—"}</p><p>{c.search_provenance?.companySize || "Chưa xác định quy mô"}</p><small>{c.search_provenance?.sizeNote || "Thông tin suy đoán: Chưa đảm bảo."}</small></details></td>
+                          <td>{screen === "history-detail" ? <button type="button" className="table-select" aria-pressed={activeContact?.id === c.id} onClick={() => setContactSelection(c.id)}>{c.full_name || "Chưa xác định tên"}</button> : c.full_name || "Chưa xác định tên"}</td>
+                          <td><span title="Email công khai và hợp lệ cú pháp; chưa xác minh khả năng nhận thư.">{c.email}</span></td>
+                          <td>{c.job_title || "—"}</td>
+                          <td>{c.company || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -555,6 +498,17 @@ export default function SearchFlows({
                 </div>
               </>
             )}
+            {screen === "history-detail" && activeContact && <div className="search-contact-summary">
+              <span>Contact: {activeContact.full_name || "—"} · Chức vụ: {activeContact.job_title || "—"}</span><span>Địa điểm / khu vực: {activeContact.location || "—"}</span>
+              <span>Ngành nghề / lĩnh vực: {activeContact.search_provenance?.industry || "—"}</span><span>Quy mô doanh nghiệp: {activeContact.search_provenance?.companySize || "—"}</span>
+              <span>Từ khóa: {job.criteria.keyword || "—"}</span><span>Email: {activeContact.email} · {activeContact.search_provenance ? "Đã xác nhận nguồn và cú pháp" : "Chưa xác minh"}</span>
+            </div>}
+            <details className="search-evidence"><summary>{job.warnings.length ? `Lưu ý kết quả (${job.warnings.length}) · Tiêu chí và nguồn` : "Tiêu chí và nguồn dữ liệu"}</summary>
+              <p>Email “Đã xác nhận” chỉ xác nhận nguồn công khai và cú pháp, chưa xác minh khả năng nhận thư. Chức vụ, ngành, khu vực và quy mô suy đoán: Chưa đảm bảo.</p>
+              <div className="criteria-summary">{Object.entries(job.criteria).map(([key, value]) => <div key={key}><span>{{role:"Chức vụ Contact",industry:"Ngành nghề / lĩnh vực",location:"Địa điểm / khu vực",keyword:"Từ khóa doanh nghiệp",size:"Quy mô doanh nghiệp",email:"Trạng thái email",source:"Nguồn tìm kiếm"}[key] || key}</span><strong>{Array.isArray(value) ? value.join(", ") || "—" : value || "—"}</strong></div>)}</div>
+              {!!job.warnings.length && <ul>{job.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+              {visible.map(contact => <p key={contact.id}>{contact.email} · <a href={contact.source_url} target="_blank" rel="noreferrer">Website nguồn</a> · {contact.search_provenance?.evidence || "—"}<br />{contact.location || "—"} · {contact.search_provenance?.industry || "—"} · {contact.search_provenance?.companySize || "—"}<br />{contact.search_provenance?.sizeNote || "Thông tin suy đoán: Chưa đảm bảo."}</p>)}
+            </details>
             {screen === "search-all-contacts" && rows.length > 10 && (
               <div className="flow-actions">
                 <Button
@@ -576,25 +530,8 @@ export default function SearchFlows({
             )}
           </section>
           <div className="flow-actions">
-            <div>
-              <Button
-                onClick={() =>
-                  navigate(
-                    screen === "search-all-contacts" ? "results" : screen === "history-detail" ? "history" : "criteria",
-                  )
-                }
-              >
-                Quay lại
-              </Button>
-              <Button onClick={() => navigate("history")}>
-                Lịch sử tìm kiếm
-              </Button>
-            </div>
-            {job.list_id && (
-              <Button primary onClick={openList}>
-                Kiểm tra danh sách
-              </Button>
-            )}
+            <div>{screen === "history-detail" ? <Button onClick={() => navigate("history")}>Quay lại lịch sử</Button> : screen === "search-all-contacts" ? <Button onClick={() => navigate("results")}>Quay lại</Button> : <Button onClick={() => navigate("history")}>Lịch sử tìm kiếm</Button>}</div>
+            {screen !== "history-detail" && job.list_id && <Button primary onClick={openList}>Kiểm tra danh sách</Button>}
           </div>
         </>
       )}

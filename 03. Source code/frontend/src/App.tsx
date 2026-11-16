@@ -5,7 +5,6 @@ const searchScreens = ['criteria-checking','criteria-check-error','template-crea
 import NextFlows from './NextFlows'
 import ManagerFlows from './ManagerFlows'
 import LiveFlows from './LiveFlows'
-import { api } from './api'
 import { navigationParams, type Navigate, type RecordContext } from './recordNavigation'
 import './styles.css'
 
@@ -113,17 +112,6 @@ function NavItem({ icon, children, heading = false, active = false, expanded, on
 function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: boolean; screen: string; go: Navigate; accountEmail: string; onLogout: () => Promise<void>; live: boolean }) {
   const workspaceRef = useRef<HTMLDivElement>(null)
   const [logoutError, setLogoutError] = useState(false)
-  const [overview, setOverview] = useState<{ campaigns: number; emails_sent: number; responses: number; open_responses: number; due_followups: number; active_sender_accounts: number } | null>(null)
-  const [notifications, setNotifications] = useState<{ type: string; title: string }[]>([])
-  const [overviewError, setOverviewError] = useState('')
-  useEffect(() => {
-    if (!live || screen !== 'home') return
-    let active = true
-    Promise.all([manager ? api<typeof overview>('dashboard?period=week') : Promise.resolve(null), api<{ type: string; title: string }[]>('notifications')])
-      .then(([summary, items]) => { if (active) { setOverview(summary); setNotifications(items); setOverviewError('') } })
-      .catch(() => { if (active) setOverviewError('Không thể tải dữ liệu trang chính. Vui lòng tải lại trang.') })
-    return () => { active = false }
-  }, [live, screen, manager])
   useLayoutEffect(() => {
     const page = workspaceRef.current?.lastElementChild
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -133,9 +121,9 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
     )
     return () => animation.cancel()
   }, [screen])
-  const criteriaActive = ['criteria', 'criteria-adjust', 'criteria-invalid', 'criteria-checking', 'criteria-check-error', 'review', 'review-recording', 'review-success', 'review-error', 'searching', 'results', 'search-empty', 'search-error', 'apollo-unavailable', 'apollo-empty'].includes(screen)
+  const criteriaActive = ['criteria', 'criteria-adjust', 'criteria-invalid', 'criteria-checking', 'criteria-check-error', 'review', 'review-recording', 'review-success', 'review-error', 'template-created', 'searching', 'results', 'search-empty', 'search-error', 'apollo-unavailable', 'apollo-empty'].includes(screen)
   const contactActive = ['contact-lists', 'contact-list-detail', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
-  const searchExpanded = criteriaActive || screen.startsWith('template') || screen.startsWith('history')
+  const searchExpanded = screen === 'home' || contactActive || criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   const managerAccountExpanded = screen.startsWith('manager-account')
   const managerAccountCheckActive = screen.startsWith('manager-account-check') || screen.startsWith('manager-account-result')
   return <main className="app-shell">
@@ -157,7 +145,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
           <div className={'subnav' + (searchExpanded ? '' : ' collapsed')} aria-hidden={!searchExpanded} inert={!searchExpanded}>
             <div className="subnav-items">
               <button className={criteriaActive ? 'active' : ''} type="button" aria-current={criteriaActive ? 'page' : undefined} onClick={() => go('criteria')}>Thiết lập tiêu chí</button>
-              <button className={screen.startsWith('template') ? 'active' : ''} type="button" aria-current={screen.startsWith('template') ? 'page' : undefined} onClick={() => go('templates')}>Filter Template</button>
+              <button className={screen.startsWith('template') && !criteriaActive ? 'active' : ''} type="button" aria-current={screen.startsWith('template') && !criteriaActive ? 'page' : undefined} onClick={() => go('templates')}>Filter Template</button>
               <button className={screen.startsWith('history') ? 'active' : ''} type="button" aria-current={screen.startsWith('history') ? 'page' : undefined} onClick={() => go('history')}>Lịch sử tìm kiếm</button>
             </div>
           </div>
@@ -179,7 +167,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
       </header>
       {screen === 'home' ? <section className="home-content">
         <h1>Trang chính</h1>
-        <div className="success-panel"><strong>Đăng nhập thành công</strong>{!live ? <span>Chọn chức năng trong menu để bắt đầu làm việc.</span> : overviewError ? <span role="alert">{overviewError}</span> : <><span>{manager && overview ? `${overview.campaigns} chiến dịch · ${overview.emails_sent} email đã gửi · ${overview.open_responses} Response chưa xử lý · ${overview.due_followups} Follow-up đến hạn · ${overview.active_sender_accounts} tài khoản gửi hoạt động` : !manager ? notifications.length ? `${notifications.length} thông báo cần theo dõi.` : 'Chưa có thông báo cần xử lý.' : 'Đang tải dữ liệu…'}</span>{notifications.map((item, index) => <span key={`${item.type}-${index}`}>{item.title}</span>)}</>}</div>
+        <div className="success-panel"><strong>Đăng nhập thành công</strong><span>Chọn chức năng trong menu để bắt đầu làm việc.</span></div>
       </section> : screen === 'profile' ? <section className="profile-page"><nav className="profile-crumb"><button type="button" onClick={() => go('home')}>Trang chính</button><span>›</span><span>Thông tin tài khoản</span></nav><div className="profile-panel"><h1>Thông tin tài khoản</h1><dl>{accountEmail && <div><dt>Email</dt><dd>{accountEmail}</dd></div>}<div><dt>Vai trò</dt><dd>{manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}</dd></div><div><dt>Không gian làm việc</dt><dd>V5 Marketing</dd></div></dl><button type="button" onClick={() => { setLogoutError(false); void onLogout().catch(() => setLogoutError(true)) }}>Đăng xuất</button>{logoutError && <p role="alert">Không thể đăng xuất. Vui lòng thử lại.</p>}</div></section> : live && !manager && searchScreens.includes(screen) ? <SearchFlows screen={screen} go={go} owner={accountEmail || ''} /> : live ? <LiveFlows screen={screen} go={go} manager={manager} owner={accountEmail || ""} /> : manager && screen.startsWith('manager-') ? <ManagerFlows screen={screen} go={go} /> : /^(campaign|response|followup)-/.test(screen) ? <NextFlows screen={screen} go={go} /> : <Flow screen={screen} go={go} />}
     </div>
   </main>
