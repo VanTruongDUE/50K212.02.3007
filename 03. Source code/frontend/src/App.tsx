@@ -128,7 +128,8 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const managerAccountExpanded = screen.startsWith('manager-account')
   const senderMenuOpen = senderMenu.screen === screen ? senderMenu.open : managerAccountExpanded
   const thaoSenderScreen = managerAccountExpanded && !/^manager-account-(check|result)/.test(screen)
-  return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result)/.test(screen)) ? ' figma-inter' : '') + (thaoSenderScreen ? ' thao-sender-shell' : '')}>
+  const figmaSenderList = ['manager-account-list', 'manager-account-added', 'manager-account-updated', 'manager-account-deleted', 'manager-account-saved'].includes(screen)
+  return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result)/.test(screen) || figmaSenderList) ? ' figma-inter' : '') + (thaoSenderScreen && !figmaSenderList ? ' thao-sender-shell' : '')}>
     <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
       <nav aria-label="Menu chính">
@@ -164,7 +165,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
         <span>Hệ thống tìm kiếm &amp; tiếp cận khách hàng B2B</span>
         <button className="account account-button" type="button" onClick={() => go('profile')} aria-label="Xem thông tin tài khoản">
           <img width="20" height="20" src="/icons/user.svg" alt="" />
-          {manager ? (thaoSenderScreen ? 'Trưởng phòng' : 'Trưởng phòng Marketing') : 'Nhân viên Marketing'}
+          {manager ? (thaoSenderScreen && !figmaSenderList ? 'Trưởng phòng' : 'Trưởng phòng Marketing') : 'Nhân viên Marketing'}
         </button>
       </header>
       {screen === 'home' ? <section className="home-content">

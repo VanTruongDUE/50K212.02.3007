@@ -2795,6 +2795,21 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
     if (manager && ["manager-account-list", "manager-account-update-list", "manager-account-delete-list", "manager-account-added", "manager-account-updated", "manager-account-deleted", "manager-account-saved"].includes(screen)) {
       const mode = screen === "manager-account-update-list" ? "edit" : screen === "manager-account-delete-list" ? "delete" : "view";
       const success = screen === "manager-account-added" ? ["Đã thêm tài khoản gửi", "Tài khoản gửi mới đã được lưu thành công."] : screen === "manager-account-updated" || screen === "manager-account-saved" ? ["Đã cập nhật tài khoản gửi", "Thông tin tài khoản gửi đã được lưu thành công."] : screen === "manager-account-deleted" ? ["Đã xóa tài khoản gửi", "Tài khoản gửi đã được xóa thành công."] : null;
+      if (mode === "view") return <Page section="Tài khoản gửi" title="Tài khoản gửi" description="Email của V5 dùng để gửi thư cho đối tác và khách hàng tiềm năng." crumbLabel="Danh sách tài khoản" backTo="manager-account-home" className="manager-account-list-figma" go={go}>
+        {feedback}
+        <Card title="Danh sách tài khoản">
+          <Table heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Trạng thái"]}
+            rowKeys={senders.map(item => item.id)} selectedRow={senders.findIndex(item => item.id === selected)} onSelect={index => setSelected(senders[index].id)}
+            rows={senders.map(item => [item.name, item.code || `TK-${item.id}`, item.email, senderStatus(item.status)])} />
+          <p className="mgr-callout">Thêm hoặc cập nhật email của V5 dùng gửi thư cho đối tác, khách hàng tiềm năng.</p>
+        </Card>
+        <div className="next-actions-bar">
+          <Button disabled={busy || !senders.some(item => item.id === selected)} onClick={() => choose(selected, "manager-account-edit")}>Cập nhật tài khoản</Button>
+          <Button onClick={() => go("manager-account-home")}>Quay lại</Button>
+          <Button primary onClick={openAddSender}>Thêm tài khoản gửi mới</Button>
+        </div>
+        {success && <div className="thao-sender-success" role="status"><strong>{success[0]}</strong><span>{success[1]}</span></div>}
+      </Page>;
       return <Page section="Tài khoản gửi" title="Tài khoản gửi" description="Danh sách tài khoản gửi trong phạm vi quyền được cấp." crumbLabel={mode === "edit" ? "Cập nhật tài khoản gửi" : mode === "delete" ? "Xóa tài khoản gửi" : screen === "manager-account-added" ? "Thêm tài khoản gửi" : "Xem tài khoản gửi"} backTo="manager-account-home" className="thao-sender-list" go={go}>
         {feedback}
         <div className="thao-sender-list-toolbar"><Button primary onClick={openAddSender}>Thêm tài khoản gửi</Button></div>

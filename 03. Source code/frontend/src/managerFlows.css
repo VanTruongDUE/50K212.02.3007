@@ -150,6 +150,21 @@
 .thao-sender-menu > button:focus-visible { outline: 3px solid #bedbff; outline-offset: 3px; }
 .thao-sender-list-toolbar { display: flex; justify-content: flex-end; margin-top: 24px; }
 .thao-sender-list-toolbar .next-button { min-width: 240px; }
+.manager-account-list-figma > .next-card { margin-top: 40px; }
+.manager-account-list-figma .next-table-wrap { border: 0; border-radius: 0; }
+.manager-account-list-figma .next-table { table-layout: fixed; }
+.manager-account-list-figma .next-table th { color: #b4c7e2; }
+.manager-account-list-figma .next-table th:nth-child(1) { width: 21%; }
+.manager-account-list-figma .next-table th:nth-child(2) { width: 13%; }
+.manager-account-list-figma .next-table th:nth-child(3) { width: 39%; }
+.manager-account-list-figma .next-table th:nth-child(4) { width: 27%; }
+.manager-account-list-figma .next-table td { overflow-wrap: anywhere; border-top: 0; border-bottom: 1px solid #294567; }
+.manager-account-list-figma .next-table tbody tr:nth-child(odd):not(.selected):not(:hover) { background: #10223a; }
+.manager-account-list-figma .next-card > .mgr-callout { margin: 20px 0 0; }
+.next-page.manager-account-list-figma > .next-actions-bar { justify-content: flex-start; gap: 12px; margin-top: 16px; }
+.manager-account-list-figma > .next-actions-bar > .next-button { background: #142b47; min-width: 160px; }
+.manager-account-list-figma > .next-actions-bar > .next-button:first-child { min-width: 220px; }
+.next-page.manager-account-list-figma > .next-actions-bar > .next-button.primary:last-child { margin-left: auto; min-width: 260px; background: #2d6cdf; }
 .thao-sender-list > .next-card { margin-top: 20px; min-height: 384px; padding: 15px 15px 23px; }
 .thao-sender-list .next-table-wrap { border: 0; border-radius: 0; }
 .thao-sender-list .next-table { min-width: 1104px; table-layout: fixed; }
