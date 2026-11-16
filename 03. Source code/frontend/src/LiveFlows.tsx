@@ -2755,7 +2755,7 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
             <Table
               heads={["Tên tài khoản", "Mã", "Địa chỉ email người gửi", "Hạn mức 3 ngày", "Trạng thái"]}
               selectedRow={Math.max(0, senders.findIndex(item => item.id === selected))}
-              onSelect={index => setSelected(senders[index].id)}
+              onSelect={index => choose(senders[index].id, manager ? "manager-account-detail" : "sender-detail")}
               rows={senders.map(item => [
                 <button className="next-text-link" key={item.id} type="button" onClick={() => choose(item.id, manager ? "manager-account-detail" : "sender-detail")}>{item.name}</button>,
                 item.code || `TK-${item.id}`,
