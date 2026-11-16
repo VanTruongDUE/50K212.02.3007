@@ -163,7 +163,7 @@
 .thao-sender-list th:nth-child(4) { width: 120px; } .thao-sender-list th:nth-child(5) { width: 137px; } .thao-sender-list th:nth-child(6) { width: 91px; }
 .thao-sender-list th:nth-child(7) { width: 108px; } .thao-sender-list th:nth-child(8) { width: 140px; }
 .thao-status-paused { color: #ffb5ba; }
-.thao-sender-success { position: fixed; bottom: 32px; right: 32px; width: 480px; min-height: 96px; max-width: calc(100vw - 48px); display: grid; gap: 8px; padding: 16px 24px; background: #142b47; border: 1px solid #397b68; border-radius: 10px; z-index: 20; }
+.thao-sender-success { box-sizing: border-box; position: fixed; bottom: 32px; right: 32px; width: 480px; min-height: 96px; max-width: calc(100vw - 48px); display: grid; gap: 8px; padding: 16px 24px; background: #142b47; border: 1px solid #397b68; border-radius: 10px; z-index: 20; }
 .thao-sender-form > .next-card { margin-top: 40px; padding: 16px 24px 28px; min-height: 488px; box-sizing: border-box; }
 .thao-sender-form .next-card > form { display: flex; flex-direction: column; min-height: 442px; }
 .thao-sender-form .next-card .thao-form-note { margin: 0; font-size: 16px; line-height: 24px; white-space: pre-wrap; }
@@ -195,9 +195,6 @@
 }
 
 .thao-sender-shell .topbar > span { font-weight: 400; color: #b4c7e2; }
-.thao-sender-shell .sidebar-manager { padding-inline: 16px; }
-.thao-sender-shell .sidebar-manager nav { margin-top: 16px; gap: 8px; }
-.thao-sender-shell .sidebar-manager .brand { padding-left: 8px; gap: 12px; }
 .thao-sender-form .next-field label { margin-bottom: 4px; }
 
 .thao-sender-shell .next-title { padding: 15px 23px; border-radius: 12px; }

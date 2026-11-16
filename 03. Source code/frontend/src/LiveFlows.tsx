@@ -1,6 +1,7 @@
 import { campaignStage, campaignLabel, campaignNext } from "./campaignWorkflow";
 import { invalidEmailVariable } from "./campaignContent";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ApiError, api, idNumber } from "./api";
 import { recordContext, recordKey, recordRequired, selectedRecord, type Navigate, type RecordContext } from "./recordNavigation";
 import { createContactExport, type ExportFormat } from "./exportContacts";
@@ -2799,9 +2800,10 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
           <Table heads={["Tên tài khoản", "Mã tài khoản", "Email", "Giới hạn/ngày", "Giới hạn/giờ", "Trạng thái", "Ngày tạo", "Cập nhật gần nhất"]}
             rowKeys={senders.map(item => item.id)} selectedRow={senders.findIndex(item => item.id === selected)} onSelect={index => { setSenderDetail(null); setSenderDetailError(""); choose(senders[index].id, mode === "edit" ? "manager-account-edit" : mode === "delete" ? "manager-account-delete" : "manager-account-detail"); }}
             rows={senders.map(item => [item.name, item.code || `TK-${item.id}`, item.email, n(item.quota_daily), n(item.quota_hourly), <span key={item.id} className={item.status !== "active" ? "thao-status-paused" : ""}>{senderStatus(item.status)}</span>, senderDay(item.created_at), senderDay(item.updated_at)])} />
-          {saved && <p className="mgr-callout thao-saved-message" role="status">Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</p>}
+          {saved && screen !== "manager-account-added" && <p className="mgr-callout thao-saved-message" role="status">Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</p>}
         </Card>
         <div className="next-actions-bar">{saved ? <Button primary onClick={() => go("manager-account-list")}>Về danh sách</Button> : <Button onClick={backFromSender}>Quay lại</Button>}</div>
+        {screen === "manager-account-added" && createPortal(<div className="thao-sender-success" role="status"><strong>Đã thêm tài khoản gửi</strong><span>Thông tin tài khoản{senderDetail ? ` ${senderDetail.name}` : " gửi"} đã được lưu thành công.</span></div>, document.body)}
         {screen === "manager-account-deleted" && <div className="thao-sender-success" role="status"><strong>Đã xóa tài khoản gửi</strong><span>Tài khoản gửi đã được xóa thành công.</span></div>}
       </Page>;
     }

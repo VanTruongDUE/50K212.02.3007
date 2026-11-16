@@ -53,6 +53,7 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 .app-shell { min-height: 100vh; display: flex; background: #081426; }
 .app-shell.figma-inter { --ui-font: Inter, Arial, sans-serif; font-family: var(--ui-font); }
 .sidebar { flex: 0 0 240px; min-height: 100vh; padding: 16px; background: #0d1d33; border-right: 1px solid #294567; }
+.sidebar-manager { --ui-font: Inter, Arial, sans-serif; font-family: var(--ui-font); }
 .sidebar .brand { height: 64px; padding-left: 8px; }
 .brand-home { display: block; width: 100%; padding: 0; color: inherit; background: none; border: 0; text-align: left; cursor: pointer; }
 .brand-home:focus-visible { outline: 3px solid #bedbff; outline-offset: 2px; border-radius: 8px; }
@@ -74,7 +75,7 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 .subnav button { min-height: 44px; padding: 8px 12px; color: #c7d8ee; background: none; border: 0; border-radius: 8px; font-size: 16px; line-height: 24px; text-align: left; cursor: pointer; transition: background-color 140ms ease, color 140ms ease, transform 100ms ease; }
 .sidebar-manager .subnav button { padding-inline: 8px; }
 @media (min-width: 901px) {
-  .sidebar-manager { padding-inline: 14px; }
+  .sidebar-manager { width: 240px; min-width: 240px; max-width: 240px; padding-inline: 14px; }
   .sidebar-manager .brand { padding-left: 10px; gap: 14px; }
   .sidebar-manager nav { margin-top: 36px; gap: 12px; }
   .sidebar-manager .nav-item { padding-inline: 12px; }
@@ -93,7 +94,6 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 .workspace:has(> .home-content) .topbar > span { color: #b4c7e2; font-weight: 400; }
 .figma-inter .account { color: #edf5ff; }
 .sidebar-manager ~ .workspace .account { color: #edf5ff; }
-.app-shell:has(.home-content) .sidebar-manager .brand strong { color: #b4c7e2; font-weight: 400; }
 .app-shell:has(.home-content) .sidebar-manager nav { color: #edf5ff; }
 .workspace:has(.next-sender-detail-page) .topbar > span { color: #b4c7e2; font-weight: 400; }
 .account { display: inline-flex; align-items: center; gap: 12px; color: #c7d8ee; }
@@ -133,6 +133,7 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   .sidebar .brand { height: 48px; }
   .sidebar nav { flex-direction: row; align-items: center; gap: 8px; margin-top: 8px; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
   .sidebar button.nav-item { flex: 0 0 auto; width: auto; padding-inline: 12px; white-space: nowrap; }
+  .sidebar-manager button.nav-item { flex: 0 0 240px; width: 240px; }
   .subnav { flex: 0 0 auto; display: block; margin: 0; padding: 0; border: 0; }
   .subnav.collapsed { display: none; }
   .subnav-items { flex-direction: row; overflow: visible; }
