@@ -517,7 +517,8 @@
   .next-response-list-page > .next-card { display: flex; flex-direction: column; min-height: 0; max-height: min(552px, calc(100dvh - 408px)); margin-top: 40px; border: 0; border-radius: 12px; }
   .next-response-list-page > .next-card > .next-table-wrap { min-height: 0; overflow: auto; border: 0; border-radius: 0; }
   .next-response-list-page > .next-card h2 { font-size: 16px; line-height: 24px; }
-  .next-response-list-page .next-table { table-layout: fixed; border-collapse: separate; border-spacing: 0 16px; margin-block: -16px; font-size: 16px; }
+  .next-response-list-page .next-table { table-layout: fixed; border-collapse: separate; border-spacing: 0 16px; margin-block: 0; font-size: 16px; }
+  .next-response-list-page .next-table tbody tr:hover, .next-response-list-page .next-table tbody tr:focus-visible { background: #203f64; }
   .next-response-list-page .next-table th { position: sticky; top: 0; z-index: 1; box-sizing: border-box; height: 64px; padding: 8px 12px; font-size: 16px; vertical-align: top; }
   .next-response-list-page .next-table :is(th, td):nth-child(1) { width: 22.06%; }
   .next-response-list-page .next-table :is(th, td):nth-child(2) { width: 18.38%; }
