@@ -49,6 +49,24 @@ export function scheduleStartError(value: string, from: string, to: string, now 
   return time < from || time >= to ? 'Giờ bắt đầu phải nằm trong khung giờ gửi.' : '';
 }
 
+export function scheduleFieldErrors(value: string, rate: number, from: string, to: string, immediate: boolean, now = Date.now()) {
+  const errors: Record<string, string> = {};
+  if (!immediate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value.slice(0, 10))) errors.date = 'Chọn ngày bắt đầu.';
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value.slice(11, 16))) errors.time = 'Chọn giờ bắt đầu.';
+    if (!errors.date && !errors.time) {
+      const issue = scheduleError(value + '+07:00', now);
+      if (issue) errors.date = issue;
+      else if (value.slice(11, 16) < from || value.slice(11, 16) >= to) errors.time = 'Giờ bắt đầu phải nằm trong khung giờ gửi.';
+    }
+  }
+  if (!Number.isInteger(rate) || rate < 1 || rate > 100) errors.rate = 'Tốc độ gửi phải là số nguyên từ 1 đến 100 email/giờ.';
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(from)) errors.from = 'Chọn giờ bắt đầu khung gửi.';
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(to)) errors.to = 'Chọn giờ kết thúc khung gửi.';
+  else if (!errors.from && from >= to) errors.to = 'Giờ kết thúc phải sau giờ bắt đầu khung gửi.';
+  return errors;
+}
+
 
 export function sendDuration(count: number, rate: number, from?: string, to?: string) {
   if (!Number.isInteger(count) || count < 1 || !Number.isInteger(rate) || rate < 1) return '—';

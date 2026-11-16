@@ -685,6 +685,7 @@
 .next-schedule-form .next-grid .next-field { margin: 0; }
 .next-schedule-form .next-field label { margin-bottom: 8px; line-height: 24px; }
 .next-schedule-form .next-field small { margin-top: 8px; color: #96afcf; font-size: 16px; line-height: 24px; }
+.next-schedule-form .next-field small[role="alert"] { color: #ffb8c1; }
 .next-schedule-form .next-inline { gap: 24px; }
 .next-schedule-form .next-inline label { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; margin: 0; font-weight: 400; }
 .next-schedule-form input[type="radio"] { appearance: none; box-sizing: border-box; flex: 0 0 16px; width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0; border: 1px solid #6f8fb9; border-radius: 50%; background: transparent; }
@@ -862,6 +863,9 @@
 
 .next-delete-warning { padding: 16px; border: 1px solid #f3d38c; border-radius: 8px; background: #30291a; color: #f3d38c; }
 .next-delete-warning p { margin: 8px 0 0; color: #edf5ff; }
+.next-recipient-review { display: flex; align-items: flex-start; gap: 12px; margin-top: 16px; }
+.next-recipient-review > svg { flex: 0 0 20px; margin-top: 2px; }
+.next-recipient-review > div { min-width: 0; overflow-wrap: anywhere; }
 .next-campaign-delete .next-details { margin-bottom: 24px; }
 .next-campaign-status.status-rejected { background: #422232; color: #ffb8c1; }
 .next-variable-errors, .next-recipient-error { padding: 16px; border: 1px solid #ffb8c1; border-radius: 8px; background: #352033; }
