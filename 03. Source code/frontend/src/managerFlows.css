@@ -29,6 +29,21 @@
 .mgr-delete-actions .mgr-primary { margin-left: 0; }
 .mgr-actions button { min-width: 136px; min-height: 44px; padding: 8px 18px; color: #edf5ff; background: #172f4e; border: 1px solid #54759d; border-radius: 6px; cursor: pointer; font: 700 16px/24px Arial, sans-serif; transition: filter 150ms ease, transform 100ms ease; }
 .mgr-actions .mgr-primary { background: #2d6cdf; border-color: #2d6cdf; }
+.manager-account-result .next-title p { margin-top: 8px; }
+.manager-account-result > .mgr-panel { margin-top: 40px; }
+.manager-account-result .mgr-panel h2 { font-size: 24px; line-height: 32px; }
+.manager-account-result .next-table-wrap { border: 0; border-radius: 6px; }
+.manager-account-result .next-table { table-layout: fixed; font-size: 16px; line-height: 24px; }
+.manager-account-result .next-table th:first-child { width: 32%; }
+.manager-account-result .next-table td { overflow-wrap: anywhere; }
+.manager-account-result .next-table tbody tr:nth-child(even) { background: #102541; }
+.manager-account-result .mgr-actions > button:first-child { min-width: 160px; }
+.manager-account-result .mgr-actions > .mgr-primary { min-width: 270px; }
+@media (max-width: 600px) {
+  .manager-account-result .next-table th:first-child { width: 40%; }
+  .manager-account-result .mgr-actions > button:first-child,
+  .manager-account-result .mgr-actions > .mgr-primary { min-width: 0; flex: 1 1 100%; }
+}
 .mgr-actions button:hover { filter: brightness(1.15); }
 .mgr-actions button:disabled { opacity: .55; cursor: not-allowed; filter: none; }
 .mgr-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }

@@ -2707,19 +2707,30 @@ export default function LiveFlows({ screen, go: navigate, manager, owner }: Prop
       </Page>;
     }
     if (screen.startsWith("manager-account-result")) {
-      const checked = senders.find(item => item.id === senderCheckResult?.id) || senders.find(item => item.id === selected) || senders[0];
-      return <Page section="Tài khoản gửi" title="Kết quả kiểm tra tài khoản" go={go}>
+      const checked = selectedRecord(senders, selected);
+      const result = senderCheckResult?.id === checked?.id ? senderCheckResult : null;
+      const quota = checked?.quota_3_days ?? 0;
+      const used = checked?.used_3_days ?? 0;
+      const remaining = Math.max(0, quota - used);
+      const percent = quota > 0 ? Math.round(used * 100 / quota) : 0;
+      const nearQuota = checked?.quota_warning ?? (quota > 0 && used >= quota * 0.8);
+      const status = checked?.status === "active" ? "Hoạt động" : checked?.status === "blocked" ? "Bị khóa" : "Ngừng hoạt động";
+      const resultTitle = !result ? "Chưa có kết quả kiểm tra" : result.connected ? "Kết nối tốt" : /xác thực|EAUTH|535|credentials/i.test(result.message) ? "Lỗi xác thực" : "Lỗi kết nối dịch vụ";
+      return <Page section="Tài khoản gửi" title="Kết quả kiểm tra tài khoản" description={checked?.email || null} crumbLabel="Kiểm tra tình trạng" className="manager-account-result" go={go} backTo="manager-account-check">
         {feedback}
-        <section className="mgr-panel"><p>{checked?.email}</p><h2>{senderCheckResult?.connected ? "Kết nối tốt" : /xác thực|EAUTH|535|credentials/i.test(senderCheckResult?.message || "") ? "Lỗi xác thực" : "Lỗi kết nối dịch vụ"}</h2>
-          <Table heads={["Chỉ tiêu", "Kết quả"]} rows={[
-            ["Địa chỉ email", checked?.email || "—"],
-            ["Trạng thái hiện tại", checked?.status === "active" ? "Hoạt động" : "Ngừng hoạt động"],
-            ["Kết quả kiểm tra", senderCheckResult?.message || "Chưa có kết quả kiểm tra."],
-            ["Thông báo", senderCheckResult?.connected ? "Tài khoản có thể gửi email." : "Kiểm tra thông tin tài khoản và kết nối rồi thử lại."],
-            ["Cảnh báo", checked && (checked.quota_warning ?? checked.used_3_days >= checked.quota_3_days * 0.8) ? "Tài khoản sắp đạt hạn mức gửi trong 3 ngày. Kiểm tra hạn mức còn lại trước khi gửi." : "Không có cảnh báo hạn mức."],
-            ["Giới hạn / Đã gửi / Còn lại trong 3 ngày", checked ? `${n(checked.quota_3_days)} / ${n(checked.used_3_days)} / ${n(Math.max(0, checked.quota_3_days - checked.used_3_days))}` : "—"],
-          ]} />
-          <p className={"mgr-callout" + (senderCheckResult?.connected ? " success" : " danger")}>{senderCheckResult?.message || "Chọn tài khoản và kiểm tra lại."}</p>
+        <section className="mgr-panel"><h2>{resultTitle}</h2>
+          {result ? <>
+            <Table heads={["Chỉ tiêu", "Kết quả"]} rows={[
+              ["Trạng thái hiện tại", status],
+              ["Kết quả kiểm tra", result.connected ? "Xác thực hợp lệ, kết nối thành công." : result.message],
+              ["Giới hạn 3 ngày / Đã gửi / Còn lại", `${n(quota)} / ${n(used)} / ${n(remaining)}`],
+              ...(result.connected ? [["Cảnh báo", nearQuota ? `Gần ngưỡng · Đã sử dụng ${percent}% giới hạn trong 3 ngày.` : "Không có cảnh báo hạn mức."]] : []),
+              ["Thông báo", "Kiểm tra tình trạng tài khoản gửi email hoàn tất."],
+            ]} />
+            <p className="mgr-callout">{result.connected
+              ? `Hạn mức còn lại là ${n(remaining)} email.${quota > 0 ? ` Tài khoản đã dùng ${percent}% giới hạn trong 3 ngày.` : ""}`
+              : `Kiểm tra không làm thay đổi trạng thái ${status} của tài khoản.`}</p>
+          </> : <p role="status">Chọn tài khoản và kiểm tra tình trạng để xem kết quả.</p>}
         </section>
         <div className="mgr-actions"><button type="button" onClick={() => go("manager-account-check")}>Quay lại</button><button className="mgr-primary" type="button" onClick={() => go("manager-account-list")}>Thêm hoặc đổi tài khoản</button></div>
       </Page>;
