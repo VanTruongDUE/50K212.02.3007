@@ -147,7 +147,11 @@ export class ResponsesController {
       if (suppressed.rowCount)
         throw new ConflictException('Địa chỉ email đã bị chặn nhận thư.');
       const sender = await client.query<
-        SmtpAccount & { id: string; quota_3_days: number } & QueryResultRow
+        SmtpAccount & {
+          id: string;
+          quota_3_days: number;
+          quota_hourly: number;
+        } & QueryResultRow
       >(
         "SELECT * FROM sender_accounts WHERE id=$1 AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) FOR UPDATE",
         [body.senderAccountId],
@@ -157,13 +161,16 @@ export class ResponsesController {
         throw new ConflictException(
           'Tài khoản gửi chưa hoạt động hoặc chưa cấu hình SMTP.',
         );
-      const usage = await client.query<{ used: string }>(
+      const usage = await client.query<{ used: string; hourly: string }>(
         `SELECT (SELECT count(*) FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql}))
-         +(SELECT count(*) FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql})) AS used`,
+         +(SELECT count(*) FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') AND (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql})) AS used,
+         (SELECT count(*) FROM (SELECT state,sent_at,created_at FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent') UNION ALL SELECT state,sent_at,created_at FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')) d WHERE state='sending' OR COALESCE(sent_at,created_at)>now()-interval '1 hour') AS hourly`,
         [account.id],
       );
       if (Number(usage.rows[0].used) >= sender.rows[0].quota_3_days)
         throw new ConflictException('Tài khoản gửi đã đạt hạn mức ngày.');
+      if (Number(usage.rows[0].hourly) >= sender.rows[0].quota_hourly)
+        throw new ConflictException('Tài khoản gửi đã đạt hạn mức giờ.');
       const saved = await client.query<{ id: string }>(
         "INSERT INTO response_email_deliveries(response_id,sender_account_id,actor_id,subject,content,state) VALUES($1,$2,$3,$4,$5,'sending') RETURNING id",
         [id, account.id, request.account.id, subject, content],

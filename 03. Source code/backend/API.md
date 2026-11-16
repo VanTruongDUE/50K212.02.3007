@@ -29,7 +29,7 @@ Filter Template: Nhân viên dùng `GET/POST /api/filter-templates`, `GET/PATCH/
 | --- | --- | --- | --- |
 | GET | `/api/sender-accounts` | Cả hai | Nhân viên chỉ thấy tài khoản `active`; trả số đã dùng trong ngày (GMT+7) |
 | GET | `/api/sender-accounts/:id` | Cả hai | Chi tiết, không trả mật khẩu SMTP |
-| POST/PATCH | `/api/sender-accounts` hoặc `/:id` | Trưởng phòng | `name`, `email`, `status`, `quotaDaily`, `smtpHost`, `smtpPort`, `smtpUser`, `smtpPassword`, `inboundEnabled` |
+| POST/PATCH | `/api/sender-accounts` hoặc `/:id` | Trưởng phòng | `name`, `code`, `email`, `status`, `quotaDaily`, `quotaHourly`, `smtpHost`, `smtpPort`, `smtpUser`, `smtpPassword`, `inboundEnabled` |
 | POST | `/api/sender-accounts/:id/verify` | Trưởng phòng | Kiểm tra kết nối SMTP, không gửi email |
 | POST | `/api/sender-accounts/:id/verify-inbox` | Trưởng phòng | Kiểm tra kết nối Gmail IMAP |
 | POST | `/api/sender-accounts/:id/sync-inbox` | Trưởng phòng | Đồng bộ email mới ngay; lần đầu chỉ khởi tạo con trỏ |
@@ -79,7 +79,7 @@ Response mới giữ trạng thái `new` và nhân viên phụ trách chiến d�
 | POST | `/api/campaigns/:id/pause`, `/:id/resume` | Chủ/Trưởng phòng | Tạm dừng với `{ "reason": "..." }` tùy chọn, tối đa 250 ký tự; lưu thời điểm và lý do. Tiếp tục các email chưa gửi; nếu đã sửa nội dung/tệp khi tạm dừng, phải xem trước lại |
 | DELETE | `/api/campaigns/:id` | Chủ chiến dịch | Chỉ trước khi có lần thử gửi, kể cả chiến dịch đã tạm dừng |
 
-Worker gửi tối đa 50 email/giờ và hạn mức mặc định 100 email/ngày trên mỗi tài khoản. Khi chọn tài khoản, xác nhận hoặc tiếp tục chiến dịch, API kiểm tra hạn mức còn lại đủ cho số email chưa gửi; chiến dịch đang tạm dừng có thể đổi tài khoản gửi. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
+Worker gửi theo tốc độ chiến dịch, không vượt giới hạn `quota_hourly` của tài khoản; hạn mức ngày mặc định là 100 email trên mỗi tài khoản. Khi chọn tài khoản, xác nhận hoặc tiếp tục chiến dịch, API kiểm tra hạn mức còn lại đủ cho số email chưa gửi; chiến dịch đang tạm dừng có thể đổi tài khoản gửi. Lịch hẹn gửi trong khung 08:00–17:00 GMT+7; lựa chọn Gửi ngay bắt đầu sau khi xác nhận kể cả ngoài khung giờ hẹn. Gửi dở sau sự cố được tạm dừng để đối chiếu, không tự thử lại khi kết quả SMTP chưa xác định.
 Logo PNG/JPG và ảnh nội dung được nhúng vào HTML email bằng CID; SVG được đính kèm dạng tệp vì nhiều trình đọc email không hiển thị SVG nội tuyến. PDF được gửi như tệp đính kèm. Nếu tổng dung lượng vượt giới hạn nhà cung cấp SMTP, chiến dịch sẽ tạm dừng và ghi lỗi gửi; cần kiểm tra trước khi tiếp tục.
 Các dấu định dạng từ thanh công cụ soạn thảo (`**đậm**`, `_nghiêng_`, `~gạch chân~`) được dựng thành HTML khi gửi. Ảnh nội dung không còn được tham chiếu sẽ không đính kèm vào email.
 
@@ -142,4 +142,24 @@ Hạn mức được đặt lại lúc 00:00 theo `Asia/Ho_Chi_Minh`. Số đã 
 
 
 Duyệt danh sách người nhận chiến dịch dùng lại `/api/contact-lists/:id/approval` với danh sách snapshot `campaigns.review_list_id`. Kết quả cập nhật danh sách và chiến dịch trong cùng câu lệnh: `approved` hoặc `rejected`, lưu nhận xét/người duyệt/thời điểm. Snapshot không xuất hiện trong danh sách Contact của nhân viên để tránh dùng lại làm đầu vào.
-Bản xem trước trả thêm `variable_errors`, giữ nguyên biến chưa có giá trị. Tiếp tục chiến dịch luôn lên lịch mới sau 15 phút và chỉ gửi người nhận `pending`. Xóa bị chặn khi đã có lần gửi; các giới hạn worker khi gửi vẫn áp dụng.
+Bản xem trước trả thêm `variable_errors` cho biến sai cú pháp hoặc ngoài danh sách hỗ trợ; giữ nguyên biến chưa có giá trị của Contact, không tính trường hợp đó là lỗi biến. Tiếp tục chiến dịch luôn lên lịch mới sau 15 phút và chỉ gửi người nhận `pending`. Xóa bị chặn khi đã có lần gửi; các giới hạn worker khi gửi vẫn áp dụng.
+
+
+### Tài khoản gửi — cập nhật theo SỬA WEB (THẢO), 16/11/2026
+
+- `quotaHourly`: số nguyên dương, không vượt `quotaDaily`. GET trả `quota_hourly`. Migration `027_sender_hourly_quota.sql` bổ sung cột, backfill tài khoản hiện có bằng min(hạn mức ngày, 50), giữ nguyên các giá trị và thông tin xác thực khác. Với POST không truyền hạn mức giờ, API dùng min(hạn mức ngày, 50).
+- Hạn mức giờ dùng cửa sổ 60 phút gần nhất, cộng thư chiến dịch và thư Response đã gửi cùng tất cả lượt đang gửi chưa xác định kết quả. Worker và Response khóa cùng tài khoản trước khi giữ chỗ; thư lỗi không chiếm hạn mức. Khi lưu lịch, tốc độ thực tế không vượt hạn mức giờ của tài khoản.
+- POST có thể chỉ gửi thông tin hồ sơ (tên, mã, email, hạn mức ngày/giờ); tài khoản mặc định `inactive`. PATCH hồ sơ không truyền cấu hình kết nối sẽ giữ nguyên xác thực và trạng thái. Chỉ kích hoạt khi đã cấu hình SMTP/OAuth. Đổi email Gmail đã liên kết vẫn cần ngắt liên kết trước, như quy tắc hiện có.
+- DELETE `/api/sender-accounts/:id`: chỉ Trưởng phòng; trả 409 nếu đã được chiến dịch hoặc lịch sử gửi/nhận sử dụng, 404 nếu không tồn tại. Không xóa dây chuyền lịch sử gửi/nhận. Tài khoản chưa sử dụng được xóa thật.
+
+
+### Phản hồi cập nhật M02 của Đức
+
+- Xem trước hợp lệ đánh dấu đã xem cả khi Contact thiếu họ tên/doanh nghiệp. Chỉ cú pháp sai hoặc tên biến không hỗ trợ mới chặn lưu/xác nhận/tiếp tục. Dữ liệu Contact và phần văn bản gốc không bị sửa để vượt kiểm tra.
+- Áp dụng mẫu vào chiến dịch chưa duyệt trả 409 với lý do phê duyệt; tài khoản không có quyền vẫn nhận 404. FE đưa đường dẫn sai bước về bước hiện tại, xóa lỗi khi chuyển màn/chiến dịch, bỏ lỗi đến muộn từ thao tác trước. Retry dành cho mất kết nối/lỗi máy chủ.
+- Khi xác nhận gửi ngay, BE đặt lại `scheduled_at=now()` tại thời điểm đồng ý; hẹn giờ giữ mốc đã chọn và vẫn kiểm tra tối thiểu 15 phút. FE dùng chung phép tính cho khối Lịch gửi và hộp thoại: gửi ngay hiện thời lượng gửi, hẹn giờ hiện mốc hoàn tất dự kiến.
+
+
+### Danh tính danh sách kiểm tra của Trưởng phòng
+
+`GET /api/contact-lists/:id` trả thêm `campaign_id`, `campaign_name`, `source_list_names`. Chiến dịch chỉ được ghép bằng `campaigns.review_list_id`; danh sách nguồn lấy từ `campaign_lists`, không lấy số Contact thay tên danh sách. Danh sách gốc chưa gắn yêu cầu chiến dịch trả `campaign_id/campaign_name = null`, `source_list_names = []`. Phân quyền danh sách và nghiệp vụ duyệt/trả về giữ nguyên. Không cần migration.

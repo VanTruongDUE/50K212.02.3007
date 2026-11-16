@@ -73,3 +73,83 @@ describe('SendersController SMTP verification', () => {
     );
   });
 });
+
+describe('Sender profile hourly quota', () => {
+  const profile = {
+    name: 'Marketing',
+    code: 'MKT01',
+    email: 'marketing@example.com',
+    quotaDaily: 25,
+  };
+  it.each([0, 26, 1.5, '10'])(
+    'rejects hourly quota %p before writing',
+    async (quotaHourly) => {
+      const query = jest.fn();
+      const controller = new SendersController(
+        { query } as unknown as DatabaseService,
+        {} as SmtpService,
+      );
+      await expect(
+        controller.create({ ...profile, quotaHourly }),
+      ).rejects.toThrow('không hợp lệ');
+      expect(query).not.toHaveBeenCalled();
+    },
+  );
+  it('creates an inactive profile without SMTP credentials and persists the hourly limit', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ id: '1' }] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: '1',
+            quota_daily: 25,
+            quota_hourly: 10,
+            used_today: 0,
+            status: 'inactive',
+          },
+        ],
+      });
+    const controller = new SendersController(
+      { query } as unknown as DatabaseService,
+      {} as SmtpService,
+    );
+    await expect(
+      controller.create({ ...profile, quotaHourly: 10 }),
+    ).resolves.toMatchObject({ quota_hourly: 10, status: 'inactive' });
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('INSERT INTO sender_accounts'),
+      [
+        'Marketing',
+        'marketing@example.com',
+        'inactive',
+        25,
+        null,
+        null,
+        null,
+        null,
+        false,
+        'MKT01',
+        10,
+      ],
+    );
+  });
+  it('refuses deletion when a sender is referenced instead of losing history', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ id: '1' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+    const controller = new SendersController(
+      { query } as unknown as DatabaseService,
+      {} as SmtpService,
+    );
+    await expect(controller.remove(1)).rejects.toThrow(
+      'Lịch sử gửi được giữ nguyên',
+    );
+    expect(query).toHaveBeenLastCalledWith(
+      expect.stringContaining('FROM inbound_messages'),
+      [1],
+    );
+  });
+});

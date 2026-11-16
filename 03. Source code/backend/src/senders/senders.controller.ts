@@ -29,6 +29,7 @@ type Sender = QueryResultRow &
     status: string;
     // Legacy storage name; the value is the daily limit.
     quota_3_days: number;
+    quota_hourly: number;
     inbound_enabled: boolean;
   };
 type SenderInput = {
@@ -38,6 +39,7 @@ type SenderInput = {
   status?: unknown;
   quotaDaily?: unknown;
   quota3Days?: unknown;
+  quotaHourly?: unknown;
   smtpHost?: unknown;
   smtpPort?: unknown;
   smtpUser?: unknown;
@@ -45,7 +47,7 @@ type SenderInput = {
   inboundEnabled?: unknown;
 };
 const publicFields =
-  "id, code, name, email, status, quota_3_days, quota_3_days AS quota_daily, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at, updated_at";
+  "id, code, name, email, status, quota_3_days, quota_3_days AS quota_daily, quota_hourly, inbound_enabled, smtp_host, smtp_port, smtp_user, google_status, ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) AS configured, created_at, updated_at";
 const usageField = `((SELECT count(*)::int FROM email_deliveries d WHERE d.sender_account_id=s.id
   AND d.state IN ('sent','sending') AND (d.state='sending' OR COALESCE(d.sent_at,d.created_at)>=${dailyQuotaStartSql}))
   +(SELECT count(*)::int FROM response_email_deliveries r WHERE r.sender_account_id=s.id
@@ -98,8 +100,8 @@ export class SendersController {
     const data = this.validate(body);
     try {
       const result = await this.database.query<Sender>(
-        `INSERT INTO sender_accounts (name,email,status,quota_3_days,smtp_host,smtp_port,smtp_user,smtp_secret,inbound_enabled,code)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($10,'TK-' || gen_random_uuid()::text)) RETURNING id`,
+        `INSERT INTO sender_accounts (name,email,status,quota_3_days,smtp_host,smtp_port,smtp_user,smtp_secret,inbound_enabled,code,quota_hourly)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,COALESCE($10,'TK-' || gen_random_uuid()::text),$11) RETURNING id`,
         [
           data.name,
           data.email,
@@ -111,6 +113,7 @@ export class SendersController {
           data.secret,
           data.inbound,
           data.code,
+          data.hourly,
         ],
       );
       return this.publicOne(result.rows[0].id);
@@ -143,7 +146,7 @@ export class SendersController {
     const data = this.validate(body, current);
     try {
       await this.database.query(
-        `UPDATE sender_accounts SET name=$2,email=$3,status=$4,quota_3_days=$5,smtp_host=$6,smtp_port=$7,smtp_user=$8,smtp_secret=$9,inbound_enabled=$10,code=COALESCE($11,code),updated_at=now() WHERE id=$1`,
+        `UPDATE sender_accounts SET name=$2,email=$3,status=$4,quota_3_days=$5,smtp_host=$6,smtp_port=$7,smtp_user=$8,smtp_secret=$9,inbound_enabled=$10,code=COALESCE($11,code),quota_hourly=$12,updated_at=now() WHERE id=$1`,
         [
           id,
           data.name,
@@ -156,6 +159,7 @@ export class SendersController {
           data.secret,
           data.inbound,
           data.code,
+          data.hourly,
         ],
       );
     } catch (error) {
@@ -207,12 +211,31 @@ export class SendersController {
   @Roles('manager')
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.privateOne(id);
-    const result = await this.database.query(
-      'DELETE FROM sender_accounts WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM campaigns WHERE sender_account_id=$1)',
-      [id],
-    );
-    if (!result.rowCount)
-      throw new ConflictException('Tài khoản đã được dùng trong chiến dịch.');
+    try {
+      const result = await this.database.query(
+        `DELETE FROM sender_accounts WHERE id=$1
+          AND NOT EXISTS(SELECT 1 FROM campaigns WHERE sender_account_id=$1)
+          AND NOT EXISTS(SELECT 1 FROM email_deliveries WHERE sender_account_id=$1)
+          AND NOT EXISTS(SELECT 1 FROM response_email_deliveries WHERE sender_account_id=$1)
+          AND NOT EXISTS(SELECT 1 FROM inbound_messages WHERE sender_account_id=$1)`,
+        [id],
+      );
+      if (!result.rowCount)
+        throw new ConflictException(
+          'Không thể xóa tài khoản đã được sử dụng. Lịch sử gửi được giữ nguyên.',
+        );
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: unknown }).code === '23503'
+      )
+        throw new ConflictException(
+          'Không thể xóa tài khoản đang được sử dụng. Lịch sử gửi được giữ nguyên.',
+        );
+      throw error;
+    }
     return { deleted: true };
   }
 
@@ -229,6 +252,10 @@ export class SendersController {
       requestedQuota === undefined
         ? (current?.quota_3_days ?? 100)
         : requestedQuota;
+    const hourly =
+      body.quotaHourly === undefined
+        ? (current?.quota_hourly ?? Math.min(Number(quota), 50))
+        : body.quotaHourly;
     const host =
       body.smtpHost === undefined ? current?.smtp_host : body.smtpHost;
     const port =
@@ -251,7 +278,10 @@ export class SendersController {
       !Number.isInteger(quota) ||
       typeof inbound !== 'boolean' ||
       Number(quota) < 1 ||
-      Number(quota) > 100
+      Number(quota) > 100 ||
+      !Number.isInteger(hourly) ||
+      Number(hourly) < 1 ||
+      Number(hourly) > Number(quota)
     )
       throw new BadRequestException('Dữ liệu tài khoản gửi không hợp lệ.');
     if (
@@ -316,6 +346,7 @@ export class SendersController {
       email: email.trim().toLowerCase(),
       status,
       quota,
+      hourly,
       host: host ?? null,
       port: port ?? null,
       user: user ?? null,

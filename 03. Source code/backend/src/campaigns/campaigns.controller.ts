@@ -439,13 +439,7 @@ export class CampaignsController {
           /\{\{[^{}]*\}\}|\{\{[^}\n]*|[^{}\n]*\}\}/g,
         ) || [],
       ),
-    ].filter(
-      (token) =>
-        !variables.includes(token) ||
-        (token === variables[0]
-          ? !contact.rows[0].full_name?.trim()
-          : !contact.rows[0].company?.trim()),
-    );
+    ].filter((token) => !variables.includes(token));
     if (variableErrors.length)
       await this.database.query(
         'UPDATE campaigns SET preview_draft_hash=NULL,previewed_at=NULL WHERE id=$1',
@@ -586,13 +580,13 @@ export class CampaignsController {
     const campaign = await this.owned(id, request);
     this.editable(campaign, true);
     const sendNow = body?.sendNow === true;
-    const rate = body.rate ?? 50;
+    const requestedRate = body.rate ?? 50;
     const windowStart = body.windowStart ?? '08:00';
     const windowEnd = body.windowEnd ?? '17:00';
     if (
-      !Number.isInteger(rate) ||
-      Number(rate) < 1 ||
-      Number(rate) > 100 ||
+      !Number.isInteger(requestedRate) ||
+      Number(requestedRate) < 1 ||
+      Number(requestedRate) > 100 ||
       typeof windowStart !== 'string' ||
       typeof windowEnd !== 'string' ||
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(windowStart) ||
@@ -618,6 +612,14 @@ export class CampaignsController {
       throw new BadRequestException(
         'Giờ bắt đầu phải nằm trong khung giờ gửi.',
       );
+    const senderLimit = await this.database.query<{ quota_hourly: number }>(
+      'SELECT quota_hourly FROM sender_accounts WHERE id=$1',
+      [campaign.sender_account_id],
+    );
+    const rate = Math.min(
+      Number(requestedRate),
+      senderLimit.rows[0]?.quota_hourly ?? Number(requestedRate),
+    );
     const result = await this.database.query(
       "UPDATE campaigns SET status=CASE WHEN status='scheduled' THEN 'approved' ELSE status END,needs_reconfirmation=(status='paused'),scheduled_at=$2,send_mode=$3,send_rate=$4,window_start=$5,window_end=$6,updated_at=now() WHERE id=$1 AND status IN ('approved','paused','scheduled') RETURNING *",
       [id, date, sendNow ? 'now' : 'scheduled', rate, windowStart, windowEnd],
@@ -680,7 +682,7 @@ export class CampaignsController {
       throw new ConflictException('Tài khoản gửi không còn hoạt động.');
     await this.ensureSenderCapacity(Number(campaign.sender_account_id), id);
     const result = await this.database.query(
-      `UPDATE campaigns SET status='scheduled',updated_at=now() WHERE id=$1 AND status='approved' AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1) RETURNING *`,
+      `UPDATE campaigns SET status='scheduled',scheduled_at=CASE WHEN send_mode='now' THEN now() ELSE scheduled_at END,updated_at=now() WHERE id=$1 AND status='approved' AND EXISTS(SELECT 1 FROM campaign_recipients WHERE campaign_id=$1) RETURNING *`,
       [id],
     );
     if (!result.rowCount)

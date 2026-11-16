@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ConflictException,
   Delete,
   Get,
   NotFoundException,
@@ -140,11 +141,22 @@ export class TemplatesController {
     const client = await this.database.connect();
     try {
       await client.query('BEGIN');
-      const campaign = await client.query(
-        "SELECT id FROM campaigns WHERE id=$1 AND owner_id=$2 AND status IN ('approved','paused') FOR UPDATE",
+      const campaign = await client.query<{ id: string; status: string }>(
+        'SELECT id,status FROM campaigns WHERE id=$1 AND owner_id=$2 FOR UPDATE',
         [campaignId, request.account.id],
       );
-      if (!campaign.rowCount) throw new NotFoundException();
+      if (!campaign.rowCount)
+        throw new NotFoundException(
+          'Không tìm thấy chiến dịch hoặc bạn không có quyền truy cập.',
+        );
+      if (!['approved', 'paused'].includes(String(campaign.rows[0].status)))
+        throw new ConflictException(
+          ['pending_approval', 'rejected', 'draft'].includes(
+            String(campaign.rows[0].status),
+          )
+            ? 'Danh sách người nhận chưa được Trưởng phòng duyệt.'
+            : 'Chiến dịch không ở bước chuẩn bị hoặc tạm dừng.',
+        );
       const template = (
         await client.query<{ subject: string; body: string }>(
           'SELECT subject,body FROM email_templates WHERE id=$1',

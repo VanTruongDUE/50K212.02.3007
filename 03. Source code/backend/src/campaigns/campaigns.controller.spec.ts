@@ -112,6 +112,12 @@ describe('Campaign confirmation', () => {
       await controller.confirm(1, request);
 
       expect(tick).toHaveBeenCalledTimes(sendMode === 'now' ? 1 : 0);
+      expect(query).toHaveBeenLastCalledWith(
+        expect.stringContaining(
+          "scheduled_at=CASE WHEN send_mode='now' THEN now() ELSE scheduled_at END",
+        ),
+        [1],
+      );
     },
   );
 
@@ -201,4 +207,81 @@ describe('Campaign review and preview safeguards', () => {
       'Chào Lan, {{Chức vụ}}',
     );
   });
+});
+
+describe('Campaign schedule sender hourly limit', () => {
+  it('persists the effective rate so schedule estimates cannot exceed the account cap', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: '1',
+            owner_id: 'NV001',
+            status: 'approved',
+            sender_account_id: '3',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ quota_hourly: 10 }] })
+      .mockResolvedValueOnce({ rows: [{ id: '1', send_rate: 10 }] });
+    const controller = new CampaignsController(
+      { query } as unknown as DatabaseService,
+      {} as ConfigService,
+      {} as DeliveryWorker,
+      {} as SmtpService,
+    );
+    const request = {
+      account: { id: 'NV001', role: 'employee' },
+    } as AuthenticatedRequest;
+    await expect(
+      controller.schedule(1, { sendNow: true, rate: 50 }, request),
+    ).resolves.toMatchObject({ send_rate: 10 });
+    expect(query).toHaveBeenLastCalledWith(
+      expect.stringContaining('UPDATE campaigns SET'),
+      [1, expect.any(Date), 'now', 10, '08:00', '17:00'],
+    );
+  });
+});
+
+describe('Preview variable validity from UC5.2.1', () => {
+  it.each([
+    ['Mời {{Họ tên}}', 'Xin chào {{Tên doanh nghiệp}}', []],
+    ['Mời {{Sai}}', 'Xin chào {{Chua dong', ['{{Sai}}', '{{Chua dong']],
+  ])(
+    'validates supported syntax without treating absent Contact fields as errors',
+    async (subject, body, errors) => {
+      const query = jest
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [
+            { id: '1', owner_id: 'NV001', status: 'paused', subject, body },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [{ id: '2', full_name: null, company: null }],
+        })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] });
+      const controller = new CampaignsController(
+        { query } as unknown as DatabaseService,
+        {} as ConfigService,
+        {} as DeliveryWorker,
+        {} as SmtpService,
+      );
+      const result = await controller.preview(1, {}, {
+        account: { id: 'NV001', role: 'employee' },
+      } as AuthenticatedRequest);
+      expect(result.variable_errors).toEqual(errors);
+      expect(result.subject).toEqual(subject);
+      expect(result.body).toEqual(body);
+      expect(query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringContaining(
+          errors.length ? 'previewed_at=NULL' : 'previewed_at=now()',
+        ),
+        [1],
+      );
+    },
+  );
 });

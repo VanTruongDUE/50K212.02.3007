@@ -249,7 +249,11 @@ export class ContactsController {
     request: AuthenticatedRequest,
   ): Promise<ListRow> {
     const result = await this.database.query<ListRow>(
-      `SELECT l.*, search.* FROM contact_lists l
+      `SELECT l.*, search.*, campaign.id AS campaign_id, campaign.name AS campaign_name,
+        ARRAY(SELECT source.name FROM campaign_lists cl JOIN contact_lists source ON source.id=cl.list_id
+          WHERE cl.campaign_id=campaign.id ORDER BY source.id) AS source_list_names
+       FROM contact_lists l
+       LEFT JOIN LATERAL (SELECT c.id,c.name FROM campaigns c WHERE c.review_list_id=l.id ORDER BY c.id LIMIT 1) campaign ON true
        LEFT JOIN LATERAL (
          SELECT j.id AS search_id, j.created_at AS search_started_at,
           j.finished_at AS search_finished_at, j.received AS search_received,

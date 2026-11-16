@@ -27,11 +27,12 @@ type Job = QueryResultRow &
     subject: string;
     body: string;
     quota_3_days: number;
+    quota_hourly: number;
   };
 
 export const claimDeliverySql = `SELECT ca.id AS campaign_id, cr.contact_id, sa.id AS account_id,
   ct.email AS recipient_email,ct.full_name,ct.company,ct.unsubscribe_token,
-  ca.subject,ca.body,ca.sender_name,ca.send_rate,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days
+  ca.subject,ca.body,ca.sender_name,ca.send_rate,sa.email,sa.smtp_host,sa.smtp_port,sa.smtp_user,sa.smtp_secret,sa.google_refresh_secret,sa.google_status,sa.quota_3_days,sa.quota_hourly
  FROM campaign_recipients cr JOIN campaigns ca ON ca.id=cr.campaign_id
  JOIN contacts ct ON ct.id=cr.contact_id JOIN sender_accounts sa ON sa.id=ca.sender_account_id
  WHERE ca.status IN ('scheduled','sending') AND ca.scheduled_at<=now()
@@ -133,7 +134,7 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
       }
       const quota = await client.query<{ used: string; hourly: string }>(
         `SELECT count(*) FILTER (WHERE (state='sending' OR COALESCE(sent_at,created_at)>=${dailyQuotaStartSql})) AS used,
-          count(*) FILTER (WHERE created_at>now()-interval '1 hour') AS hourly
+          count(*) FILTER (WHERE state='sending' OR COALESCE(sent_at,created_at)>now()-interval '1 hour') AS hourly
          FROM (
            SELECT state,created_at,sent_at FROM email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
            UNION ALL SELECT state,created_at,sent_at FROM response_email_deliveries WHERE sender_account_id=$1 AND state IN ('sending','sent')
@@ -142,7 +143,11 @@ export class DeliveryWorker implements OnModuleInit, OnModuleDestroy {
       );
       if (
         Number(quota.rows[0].used) >= job.quota_3_days ||
-        Number(quota.rows[0].hourly) >= Number(job.send_rate ?? 50)
+        Number(quota.rows[0].hourly) >=
+          Math.min(
+            Number(job.send_rate ?? 50),
+            Number(job.quota_hourly ?? job.send_rate ?? 50),
+          )
       ) {
         await client.query('COMMIT');
         return;

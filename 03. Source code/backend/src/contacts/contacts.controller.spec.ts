@@ -99,3 +99,33 @@ describe('Contact list provenance', () => {
     expect(query).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Campaign review identity', () => {
+  it('returns the linked campaign and original list names without substituting Contact count', async () => {
+    const row = {
+      id: '9',
+      owner_id: 'NV001',
+      campaign_id: '4',
+      campaign_name: 'Giới thiệu dịch vụ',
+      source_list_names: ['Danh sách khách hàng tháng 11'],
+    };
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce({ rows: [row] })
+      .mockResolvedValueOnce({ rows: [] });
+    const controller = new ContactsController({
+      query,
+    } as unknown as DatabaseService);
+    await expect(controller.detail(9, manager)).resolves.toMatchObject(row);
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('c.review_list_id=l.id'),
+      [9],
+    );
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('WHERE cl.campaign_id=campaign.id'),
+      [9],
+    );
+  });
+});
