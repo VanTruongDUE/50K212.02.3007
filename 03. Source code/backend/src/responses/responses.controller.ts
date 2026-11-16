@@ -20,6 +20,7 @@ import { SessionGuard } from '../auth/session.guard';
 import type { AuthenticatedRequest } from '../auth/session.guard';
 import { DatabaseService } from '../database/database.service';
 import { SmtpService, type SmtpAccount } from '../senders/smtp.service';
+import { fill } from '../campaigns/campaigns.controller';
 
 type ResponseRow = QueryResultRow & {
   id: string;
@@ -105,20 +106,19 @@ export class ResponsesController {
     body: { senderAccountId?: unknown; subject?: unknown; content?: unknown },
     @Req() request: AuthenticatedRequest,
   ) {
-    const subject =
-      typeof body?.subject === 'string' ? body.subject.trim() : '';
+    let subject = typeof body?.subject === 'string' ? body.subject.trim() : '';
     const content =
       typeof body?.content === 'string' ? body.content.trim() : '';
     if (
-      !Number.isSafeInteger(body?.senderAccountId) ||
-      Number(body.senderAccountId) < 1 ||
-      !subject ||
-      subject.length > 150 ||
+      (body?.senderAccountId !== undefined &&
+        (!Number.isSafeInteger(body.senderAccountId) ||
+          Number(body.senderAccountId) < 1)) ||
+      (body?.subject !== undefined && (!subject || subject.length > 150)) ||
       !content ||
       content.length > 100000
     )
       throw new BadRequestException(
-        'Tài khoản gửi, tiêu đề và nội dung email là bắt buộc.',
+        'Thông tin tài khoản gửi, tiêu đề hoặc nội dung email không hợp lệ.',
       );
     const client = await this.database.connect();
     let account: (SmtpAccount & { id: string }) | undefined;
@@ -146,6 +146,28 @@ export class ResponsesController {
       );
       if (suppressed.rowCount)
         throw new ConflictException('Địa chỉ email đã bị chặn nhận thư.');
+      let senderAccountId = body.senderAccountId;
+      if (senderAccountId === undefined || body.subject === undefined) {
+        const campaign = await client.query<
+          {
+            sender_account_id: string | null;
+            subject: string | null;
+            full_name?: string | null;
+            company?: string | null;
+          } & QueryResultRow
+        >(
+          'SELECT c.sender_account_id,c.subject,p.full_name,p.company FROM campaigns c JOIN responses r ON r.campaign_id=c.id LEFT JOIN contacts p ON p.id=r.contact_id WHERE r.id=$1',
+          [id],
+        );
+        senderAccountId ??= campaign.rows[0]?.sender_account_id;
+        if (body.subject === undefined)
+          subject = campaign.rows[0]?.subject
+            ? `Re: ${fill(campaign.rows[0].subject, campaign.rows[0].full_name ?? null, campaign.rows[0].company ?? null)}`.slice(
+                0,
+                150,
+              )
+            : `Phản hồi RSP-${id}`;
+      }
       const sender = await client.query<
         SmtpAccount & {
           id: string;
@@ -153,8 +175,8 @@ export class ResponsesController {
           quota_hourly: number;
         } & QueryResultRow
       >(
-        "SELECT * FROM sender_accounts WHERE id=$1 AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) FOR UPDATE",
-        [body.senderAccountId],
+        "SELECT * FROM sender_accounts WHERE ($1::bigint IS NULL OR id=$1) AND status='active' AND ((google_refresh_secret IS NOT NULL AND google_status='connected') OR (google_refresh_secret IS NULL AND smtp_secret IS NOT NULL)) ORDER BY id LIMIT 1 FOR UPDATE",
+        [senderAccountId ?? null],
       );
       account = sender.rows[0];
       if (!account)
