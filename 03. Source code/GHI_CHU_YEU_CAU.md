@@ -118,8 +118,27 @@ Theo yêu cầu BA áp dụng file `Đối chiếu web V5SI - Đức.docx`:
 - Áp dụng chỉ lọc và xem trước người nhận, không lưu chiến dịch. Xác nhận danh sách mới tạo chiến dịch `pending_approval` và một bản danh sách người nhận đã lọc để Trưởng phòng duyệt qua UC12. Duyệt danh sách gốc không thay cho duyệt người nhận chiến dịch. Quyết định này thay thế cách duyệt danh sách gốc trước khi tạo chiến dịch tại mục quyết định cũ.
 - Bước chọn người nhận chỉ thống kê ba lý do loại: trùng email, ngừng nhận, email trống/sai cú pháp. Kiểm soát bounce và khoảng cách liên hệ của worker vẫn giữ theo BS khi thực sự gửi.
 - BE chặn lưu nội dung, tài khoản và lịch khi chưa duyệt; trả về phải có nhận xét và chọn lại trong chính chiến dịch đó.
-- Bản xem trước giữ nguyên biến thiếu dữ liệu, không hợp lệ hoặc sai cú pháp; hiện `Biến lỗi`. Không đánh dấu bản xem trước hợp lệ khi còn lỗi.
+- Bản xem trước giữ nguyên biến thiếu dữ liệu. Theo phản hồi M02 cập nhật của Đức, chỉ biến sai cú pháp hoặc không thuộc danh sách hỗ trợ mới hiện `Biến lỗi` và chặn xác nhận; Contact thiếu dữ liệu không phải lỗi biến.
 - Tài khoản được chọn phải xác thực SMTP thực tế, đã dùng dưới 80% hạn mức ngày và còn đủ số thư chưa gửi. Lần đầu chưa chọn sẵn tài khoản.
 - Tiếp tục gửi tạo lịch mới từ thời điểm xác nhận cộng 15 phút, chỉ dùng các người nhận `pending`, không dùng lịch cũ hoặc gửi ngay.
 - Danh sách chiến dịch thể hiện bước chuẩn bị; thao tác đúng bảng trong Word. Dùng `Xóa chiến dịch` (thay cách gọi Ẩn cũ), chỉ cho xóa khi chưa từng gửi; giữ lịch sử chiến dịch đã gửi.
 - Hộp thoại xác nhận có bốn dòng theo Figma; bỏ Lưu thành mẫu email khỏi trình soạn chiến dịch.
+
+
+## Quyết định bổ sung 16/11/2026 — Tài khoản gửi Trưởng phòng
+
+Theo yêu cầu trực tiếp và tài liệu `SỬA WEB (THẢO).docx`: sidebar chỉ có mục Tài khoản gửi, mở màn tổng Xem / Thêm / Cập nhật / Xóa; bỏ hai menu con. Danh sách có tám cột, nhấn dòng mở chi tiết; Cập nhật/Xóa chọn tài khoản trước khi thao tác. Form thêm có năm trường, form sửa có bốn trường; mã và trạng thái chỉ đọc khi sửa. Hai nút Hủy và Thêm/Lưu đặt cạnh nhau bên trái theo lời ghi trong Word (khác vị trí bên phải trong frame).
+
+Hạn mức ngày theo quyết định người dùng trước đó (00:00 GMT+7, 1–100 email/ngày) tiếp tục áp dụng, thay thế ghi chú 100 email/3 ngày cũ ở trên. Tài liệu mới bổ sung hạn mức giờ lưu thật, số nguyên dương không vượt hạn mức ngày; dùng cửa sổ 60 phút và cộng cả chiến dịch/Response. Giữ đường cấu hình Gmail/SMTP và kiểm tra tình trạng riêng từ màn chi tiết để các form thêm/sửa khớp tài liệu mà vẫn kết nối được tài khoản. Tài khoản thêm mới chưa xác thực không được báo Hoạt động. Không thêm tài khoản giả vào database thật để khớp số dòng mẫu trong Figma.
+
+Ô cuối màn tổng trong ảnh ghi lặp Xem tài khoản gửi; dùng Xóa tài khoản gửi theo phần diễn giải chức năng thứ tư của Word. Xóa tài khoản đã sử dụng bị từ chối để bảo toàn lịch sử.
+
+
+## Phản hồi M02 cập nhật của Đức — Chiến dịch Nhân viên
+
+Đối chiếu `V5SI M02 - Nội dung cần chỉnh sửa Đức (cập nhật).docx`: bỏ điều kiện khóa xem trước/tiếp tục do Contact thiếu dữ liệu biến; giữ kiểm tra cú pháp/danh sách hỗ trợ. Không sửa dữ liệu Contact hoặc tự điền tên. Lỗi không dính qua màn/chiến dịch, lỗi nghiệp vụ không có Retry. Đường dẫn mở bước chuẩn bị khi chưa duyệt phải về bước hiện tại, có lý do rõ ràng. Khối Lịch gửi và xác nhận cuối dùng chung phép tính; gửi ngay hiện thời lượng theo Figma, tính từ lúc đồng ý; BE lưu lại mốc bắt đầu lúc đồng ý. Hẹn giờ vẫn chặn khi còn dưới 15 phút. Các luồng Mở theo trạng thái, lọc ba lý do, chọn và xác thực tài khoản đã đúng được giữ nguyên và kiểm tra hồi quy.
+
+
+## Kiểm tra danh sách Trưởng phòng — ĐẶC TẢ FIGMA (1)
+
+Theo Word và các frame UC12 `486:8948`, `486:8984`, `486:9025`: màn Nhận xét có hai dòng Chiến dịch / Danh sách đã kiểm tra, dùng tên chiến dịch và danh sách nguồn thật; không hiển thị số Contact ở vị trí này. Màn kết quả duyệt và không đạt dùng breadcrumb Kiểm tra danh sách > Chi tiết danh sách, giữ tiêu đề Kết quả kiểm tra danh sách. Nhận xét, kết quả, người duyệt và thời điểm tiếp tục lưu qua API hiện có; Nhân viên xem kết quả của chính mình. Hai ảnh cuối Word là màn lưu tài khoản gửi cũ; không thay thế luồng tài khoản gửi đã chốt theo Thảo trong yêu cầu trước.

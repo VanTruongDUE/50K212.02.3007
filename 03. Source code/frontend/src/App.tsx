@@ -125,21 +125,15 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
   const contactActive = ['contact-lists', 'contact-list-detail', 'check', 'check-save-error', 'check-rejected', 'confirm', 'confirm-error', 'confirmed', 'all-contacts', 'export', 'export-loading', 'export-success', 'export-error'].includes(screen)
   const searchExpanded = screen === 'home' || contactActive || criteriaActive || screen.startsWith('template') || screen.startsWith('history')
   const managerAccountExpanded = screen.startsWith('manager-account')
-  const managerAccountCheckActive = screen.startsWith('manager-account-check') || screen.startsWith('manager-account-result')
-  return <main className={'app-shell' + (manager && screen.startsWith('manager-') && screen !== 'manager-account-detail' ? ' figma-inter' : '')}>
+  const thaoSenderScreen = managerAccountExpanded && !/^manager-account-(check|result)/.test(screen)
+  return <main className={'app-shell' + (manager && (screen.startsWith('manager-review') || /^manager-account-(check|result)/.test(screen)) ? ' figma-inter' : '') + (thaoSenderScreen ? ' thao-sender-shell' : '')}>
     <aside className={'sidebar' + (manager ? ' sidebar-manager' : '')}>
       <button className="brand-home" type="button" aria-label="Về trang chính" onClick={() => go('home')}><Brand /></button>
       <nav aria-label="Menu chính">
         {manager ? <>
           <NavItem icon="home" active={screen === 'home'} onClick={() => go('home')}>Trang chính</NavItem>
           <NavItem icon="check" active={screen.startsWith('manager-review')} onClick={() => go('manager-review')}>Kiểm tra danh sách</NavItem>
-          <NavItem icon="managerKey" heading active={managerAccountExpanded} expanded={managerAccountExpanded} onClick={() => go('manager-account-check')}>Tài khoản gửi</NavItem>
-          <div className={'subnav' + (managerAccountExpanded ? '' : ' collapsed')} aria-hidden={!managerAccountExpanded} inert={!managerAccountExpanded}>
-            <div className="subnav-items">
-              <button className={managerAccountCheckActive ? 'active' : ''} type="button" aria-current={managerAccountCheckActive ? 'page' : undefined} onClick={() => go('manager-account-check')}>Kiểm tra tài khoản gửi</button>
-              <button className={managerAccountExpanded && !managerAccountCheckActive ? 'active' : ''} type="button" aria-current={managerAccountExpanded && !managerAccountCheckActive ? 'page' : undefined} onClick={() => go('manager-account-list')}>Danh sách tài khoản gửi</button>
-            </div>
-          </div>
+          <NavItem icon="managerKey" active={managerAccountExpanded} onClick={() => go('manager-account-home')}>Tài khoản gửi</NavItem>
         </> : <>
           <NavItem icon="search" heading expanded={searchExpanded} onClick={() => go('criteria')}>Tìm kiếm Contact</NavItem>
           <div className={'subnav' + (searchExpanded ? '' : ' collapsed')} aria-hidden={!searchExpanded} inert={!searchExpanded}>
@@ -162,7 +156,7 @@ function Home({ manager, screen, go, accountEmail, onLogout, live }: { manager: 
         <span>Hệ thống tìm kiếm &amp; tiếp cận khách hàng B2B</span>
         <button className="account account-button" type="button" onClick={() => go('profile')} aria-label="Xem thông tin tài khoản">
           <img width="20" height="20" src="/icons/user.svg" alt="" />
-          {manager ? 'Trưởng phòng Marketing' : 'Nhân viên Marketing'}
+          {manager ? (thaoSenderScreen ? 'Trưởng phòng' : 'Trưởng phòng Marketing') : 'Nhân viên Marketing'}
         </button>
       </header>
       {screen === 'home' ? <section className="home-content">

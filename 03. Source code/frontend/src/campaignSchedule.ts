@@ -48,3 +48,10 @@ export function scheduleStartError(value: string, from: string, to: string, now 
   const time = `${String((start.getUTCHours() + 7) % 24).padStart(2, '0')}:${String(start.getUTCMinutes()).padStart(2, '0')}`;
   return time < from || time >= to ? 'Giờ bắt đầu phải nằm trong khung giờ gửi.' : '';
 }
+
+
+export function sendDuration(count: number, rate: number, from?: string, to?: string) {
+  if (!Number.isInteger(count) || count < 1 || !Number.isInteger(rate) || rate < 1) return '—';
+  const minutes = Math.ceil(count * 60 / rate);
+  return `Sau ${Math.floor(minutes / 60)} giờ${minutes % 60 ? ` ${minutes % 60} phút` : ''} gửi trong ${from && to ? `khung ${from} - ${to}` : 'khung giờ'}`;
+}

@@ -141,3 +141,107 @@
   .mgr-toast { top: 16px; right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .mgr-page *, .mgr-page *::before, .mgr-page *::after { scroll-behavior: auto !important; } .mgr-dialog-backdrop, .mgr-dialog, .mgr-toast { animation: none; } .mgr-table td { transition: none; } }
+
+/* Sender account screens — Thảo frames 229:33515–231:33735. */
+.thao-sender-home > .next-title, .thao-sender-delete-page > .next-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.thao-sender-menu { display: grid; gap: 64px; margin-top: 52px; width: 531px; max-width: 100%; }
+.thao-sender-menu > button { min-height: 96px; padding: 24px; border: 1px solid #294567; border-radius: 8px; background: #0d1d33; color: #edf5ff; text-align: left; font: 700 24px/32px Inter, Arial, sans-serif; cursor: pointer; }
+.thao-sender-menu > button:hover { background: #203f64; }
+.thao-sender-menu > button:focus-visible { outline: 3px solid #bedbff; outline-offset: 3px; }
+.thao-sender-list-toolbar { display: flex; justify-content: flex-end; margin-top: 24px; }
+.thao-sender-list-toolbar .next-button { min-width: 240px; }
+.thao-sender-list > .next-card { margin-top: 20px; min-height: 384px; padding: 15px 15px 23px; }
+.thao-sender-list .next-table-wrap { border: 0; border-radius: 0; }
+.thao-sender-list .next-table { min-width: 1104px; table-layout: fixed; }
+.app-shell.thao-sender-shell .thao-sender-list .next-table th { background: transparent; font-size: 14px; line-height: 20px; height: 56px; border: 0; padding: 8px 8px 28px; white-space: nowrap; }
+.thao-sender-list .next-table-wrap .next-table td { height: 80px; box-sizing: border-box; padding: 12px 8px; border: 0; font-size: 16px; line-height: 24px; overflow-wrap: anywhere; }
+.thao-sender-list .next-table tbody tr { background: transparent; }
+.thao-sender-list .next-table tbody tr.selected, .thao-sender-list .next-table tbody tr:hover { background: #203f64; }
+ .thao-sender-list th:nth-child(1) { width: 192px; } .thao-sender-list th:nth-child(2) { width: 120px; } .thao-sender-list th:nth-child(3) { width: 196px; }
+.thao-sender-list th:nth-child(4) { width: 120px; } .thao-sender-list th:nth-child(5) { width: 137px; } .thao-sender-list th:nth-child(6) { width: 91px; }
+.thao-sender-list th:nth-child(7) { width: 108px; } .thao-sender-list th:nth-child(8) { width: 140px; }
+.thao-status-paused { color: #ffb5ba; }
+.thao-sender-success { position: fixed; bottom: 32px; right: 32px; width: 480px; min-height: 96px; max-width: calc(100vw - 48px); display: grid; gap: 8px; padding: 16px 24px; background: #142b47; border: 1px solid #397b68; border-radius: 10px; z-index: 20; }
+.thao-sender-form > .next-card { margin-top: 40px; padding: 16px 24px 28px; min-height: 488px; box-sizing: border-box; }
+.thao-sender-form .next-card > form { display: flex; flex-direction: column; min-height: 442px; }
+.thao-sender-form .next-card .thao-form-note { margin: 0; font-size: 16px; line-height: 24px; white-space: pre-wrap; }
+.thao-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 40px 24px; margin-top: 24px; }
+.thao-sender-form .next-field { margin: 0; gap: 4px; font-size: 16px; line-height: 24px; }
+.thao-sender-form .next-field input { height: 44px; box-sizing: border-box; padding: 8px 16px; font: 400 16px/24px Arial,sans-serif; }
+.thao-sender-form .next-field input::placeholder { color: #96afcf; opacity: 1; }
+.thao-sender-edit .thao-form-grid { margin-top: 32px; }
+.thao-sender-form .next-card .thao-form-update-note { margin: 48px 0 0; font-size: 16px; line-height: 24px; }
+.thao-form-actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: auto; padding-top: 32px; }
+.thao-form-actions > .next-button { min-width: 240px; }
+.thao-sender-detail > .next-card { margin-top: 40px; }
+.thao-sender-detail .next-sender-detail-grid > div { padding: 16px; min-height: 96px; }
+.thao-sender-detail .next-sender-detail-grid dd { font-weight: 700; }
+.thao-sender-delete { max-width: 640px; margin: 100px auto 0; padding: 32px; border: 1px solid #294567; border-radius: 12px; background: #142b47; }
+.thao-sender-delete h2 { margin: 0 0 16px; font-size: 24px; line-height: 32px; }
+.thao-sender-delete p { color: #b4c7e2; line-height: 24px; }
+.thao-sender-delete .next-details { grid-template-columns: 160px minmax(0,1fr); row-gap: 16px; margin: 24px 0; }
+.thao-delete-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 24px; }
+.thao-delete-actions .primary { background: #ffa8ae; border-color: #ffa8ae; color: #edf5ff; }
+@media(max-width: 700px) {
+  .thao-sender-menu { gap: 24px; margin-top: 24px; }
+  .thao-form-grid { grid-template-columns: minmax(0,1fr); gap: 24px; }
+  .thao-sender-form > .next-card { margin-top: 24px; }
+  .thao-form-actions { margin-top: 32px; }
+  .thao-form-actions > .next-button { min-width: 0; flex: 1; }
+  .thao-sender-delete { margin-top: 32px; padding: 24px; }
+  .thao-sender-delete .next-details { grid-template-columns: 1fr; gap: 8px; }
+}
+
+.thao-sender-shell .topbar > span { font-weight: 400; color: #b4c7e2; }
+.thao-sender-shell .sidebar-manager { padding-inline: 16px; }
+.thao-sender-shell .sidebar-manager nav { margin-top: 16px; gap: 8px; }
+.thao-sender-shell .sidebar-manager .brand { padding-left: 8px; gap: 12px; }
+.thao-sender-form .next-field label { margin-bottom: 4px; }
+
+.thao-sender-shell .next-title { padding: 15px 23px; border-radius: 12px; }
+.thao-sender-shell .next-title p { margin-top: 8px; }
+.thao-sender-form > .next-card { padding: 15px 23px 27px; border-radius: 12px; }
+.thao-detail-actions { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.thao-detail-actions > .next-connection-settings { margin: 0; }
+.thao-sender-delete { margin-top: 162px; padding: 24px; min-height: 460px; }
+.thao-sender-delete h2 { margin: 0; }
+.thao-sender-delete > h2 + p { margin: 16px 0 0; min-height: 48px; color: #edf5ff; }
+.thao-sender-delete .next-details { grid-template-columns: 176px minmax(0,1fr); gap: 18px 0; margin: 20px 0 0; }
+.thao-sender-delete .next-details dd { font-weight: 700; }
+.thao-sender-delete .thao-delete-note { margin: 30px 0 0; min-height: 48px; }
+.thao-delete-actions { justify-content: space-between; padding-left: 17px; }
+.thao-delete-actions .next-button { width: 240px; }
+@media(max-width:700px) {
+  .thao-sender-delete { margin-top: 32px; }
+  .thao-sender-delete .next-details { grid-template-columns: 1fr; gap: 8px; }
+  .thao-delete-actions { padding-left: 0; }
+  .thao-delete-actions .next-button { width: auto; min-width: 0; flex: 1; }
+}
+
+.thao-detail-actions > .next-button { min-width: 240px; }
+@media(max-width:700px) { .thao-sender-success { right: 24px; bottom: 24px; } }
+
+
+/* UC12 review feedback — Figma 486:8948, 486:8984 and 486:9025. */
+.next-manager-review-reject > .next-card { margin-top: 40px; padding: 24px; min-height: 480px; border-radius: 12px; }
+.next-manager-review-reject .next-card > h2 { margin-bottom: 32px; font-size: 24px; line-height: 32px; }
+.next-manager-review-reject .next-details { margin: 0; grid-template-columns: 276px minmax(0,1fr); gap: 0; grid-auto-rows: minmax(58px,auto); }
+.next-manager-review-reject .next-details dt { font-weight: 700; }
+.next-manager-review-reject .next-field { margin: 22px 0 0; }
+.next-manager-review-reject .next-field label { margin-bottom: 18px; }
+.next-manager-review-reject .next-required-marker { display: none; }
+.next-manager-review-reject .next-field textarea { height: 112px; min-height: 112px; }
+.next-manager-review-reject .next-card > .mgr-callout { margin: 18px 0 0; background: #132f53; color: #b4c7e2; font-size: 16px; line-height: 24px; }
+.next-manager-review-reject > .next-actions-bar { justify-content: space-between; margin-top: 16px; }
+.next-manager-review-reject > .next-actions-bar > .next-button:first-child { min-width: 160px; }
+.next-manager-review-result .next-table-wrap { border: 0; border-radius: 6px; }
+.next-manager-review-result .next-table td { border-top: 0; border-bottom: 1px solid #294567; }
+.next-manager-review-result .next-table tbody tr:nth-child(odd) { background: #102541; }
+@media(max-width:700px) {
+  .next-manager-review-reject > .next-card { margin-top: 24px; padding: 24px 16px; }
+  .next-manager-review-reject .next-details { grid-template-columns: minmax(0,1fr); grid-auto-rows: auto; gap: 8px; }
+  .next-manager-review-reject .next-details dd { margin-bottom: 16px; }
+}
+
+.next-manager-review-result .next-table { table-layout: fixed; }
+.next-manager-review-result .next-table th:first-child { width: 352px; }

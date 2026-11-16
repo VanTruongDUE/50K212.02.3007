@@ -12,3 +12,9 @@ test('a proxy error with a null body still produces a recoverable API error',asy
   t.mock.method(globalThis,'fetch',async()=>new Response('null',{status:502}));
   await assert.rejects(()=>api('campaigns'),error=>error instanceof ApiError&&error.status===502);
 });
+
+
+test('technical Not Found is explained in Vietnamese while keeping its status',async t=>{
+  t.mock.method(globalThis,'fetch',async()=>new Response(JSON.stringify({message:'Not Found'}),{status:404}));
+  await assert.rejects(()=>api('email-templates/1/apply','POST',{campaignId:1}), error=>error instanceof ApiError&&error.status===404&&!error.message.includes('Not Found')&&error.message.includes('quyền truy cập'));
+});

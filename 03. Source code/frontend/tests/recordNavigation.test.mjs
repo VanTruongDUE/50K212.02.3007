@@ -52,14 +52,14 @@ test('search context stays inside search routes', () => {
 });
 
 test('returning to a collection or new form drops the previous record ID', () => {
-  for (const screen of ['response-list', 'campaign-list', 'followup-list', 'manager-account-list', 'template-create']) {
+  for (const screen of ['response-list', 'campaign-list', 'followup-list', 'manager-account-list', 'manager-account-home', 'manager-account-update-list', 'manager-account-delete-list', 'manager-account-added', 'manager-account-updated', 'manager-account-deleted', 'template-create']) {
     const key = recordKey(screen);
     assert.equal(navigationParams(screen, new URLSearchParams(`screen=${screen}&${key}=2`), { key, id: '2' }).has(key), false);
   }
 });
 
 test('old detail URLs without identity must require a new selection', () => {
-  for (const screen of ['contact-list-detail', 'response-detail', 'followup-result', 'campaign-editor', 'template-edit']) assert.equal(recordRequired(screen), true);
+  for (const screen of ['contact-list-detail', 'response-detail', 'followup-result', 'campaign-editor', 'template-edit', 'manager-account-detail', 'manager-account-edit', 'manager-account-delete', 'manager-account-connection']) assert.equal(recordRequired(screen), true);
   assert.equal(recordRequired('followup-create'), false);
   assert.equal(recordRequired('response-list'), false);
 });

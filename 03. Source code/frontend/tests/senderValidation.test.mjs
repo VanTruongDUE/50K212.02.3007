@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { senderValidation } from '../src/senderValidation.ts';
+import { senderValidation, senderProfileValidation } from '../src/senderValidation.ts';
 
 const valid = { name: 'Marketing', email: 'marketing@example.com', smtpHost: 'smtp.gmail.com', smtpPort: '465', smtpUser: 'marketing@example.com', quotaDaily: '100' };
 test('valid Gmail configuration and boundary ports retain the existing API limits', () => {
@@ -21,4 +21,14 @@ test('sender name and code follow the Figma fields without accepting whitespace 
   assert.equal(senderValidation({ ...valid, name: 'x'.repeat(50), code: 'MKT-01' }).name, undefined);
   assert.ok(senderValidation({ ...valid, name: 'x'.repeat(51) }).name);
   for (const code of ['', ' ', '<script>', 'x'.repeat(51)]) assert.ok(senderValidation({ ...valid, code }).code);
+});
+
+
+test('sender profile form validates hourly limits without requiring connection fields', () => {
+  const form = { name: 'Marketing', code: 'MKT01', email: 'marketing@example.com', quotaDaily: '100', quotaHourly: '50' };
+  assert.deepEqual(senderProfileValidation(form), {});
+  for (const quotaHourly of ['', '0', '101', '1.5']) assert.ok(senderProfileValidation({...form,quotaHourly}).quotaHourly);
+  const {code, ...update} = form;
+  assert.deepEqual(senderProfileValidation(update), {});
+  assert.equal(code, 'MKT01');
 });

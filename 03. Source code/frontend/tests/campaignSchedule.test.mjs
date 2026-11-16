@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { expectedFinish, scheduleError, scheduleStartError, scheduleOptionsError } from '../src/campaignSchedule.ts';
+import { expectedFinish, sendDuration, scheduleError, scheduleStartError, scheduleOptionsError } from '../src/campaignSchedule.ts';
 
 test('scheduled confirmation rejects expired and over-90-day schedules, with exact 15-minute boundary', () => {
   const now = Date.parse('2026-11-15T00:00:00Z');
@@ -30,4 +30,12 @@ test('daily allowance carries remaining recipients to next GMT+7 day and resets 
   assert.equal(expectedFinish('2026-11-15T01:00:00Z', 2, 50, '08:00', '17:00', false, 2, 1, now), '2026-11-16T01:00:00.000Z');
   assert.equal(expectedFinish('2026-11-16T01:00:00Z', 2, 50, '08:00', '17:00', false, 2, 1, now), '2026-11-16T01:01:12.000Z');
   assert.equal(expectedFinish('2026-11-15T16:59:00Z', 2, 50, '08:00', '17:00', true, 2, 1, now), '2026-11-15T17:00:12.000Z');
+});
+
+
+test('immediate confirmation uses duration, independent of an old saved start', () => {
+  assert.equal(sendDuration(800,50), 'Sau 16 giờ gửi trong khung giờ');
+  assert.equal(sendDuration(18,50), 'Sau 0 giờ 22 phút gửi trong khung giờ');
+  assert.equal(sendDuration(7,50,'08:00','17:00'), 'Sau 0 giờ 9 phút gửi trong khung 08:00 - 17:00');
+  assert.equal(sendDuration(0,50), '—');
 });

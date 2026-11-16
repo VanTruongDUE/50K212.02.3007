@@ -33,9 +33,13 @@ export async function api<T>(
       typeof result.message === "string"
         ? result.message
         : result.message?.message;
-    throw new ApiError(
-      message || `Yêu cầu không thành công (${response.status}).`, response.status, result,
-    );
+    const technical = !message || /^(Not Found|Bad Request|Unauthorized|Forbidden|Conflict|Internal Server Error|Service Unavailable)$/i.test(message);
+    const fallback = response.status === 404 ? 'Không tìm thấy dữ liệu hoặc bạn không có quyền truy cập. Vui lòng chọn lại từ danh sách.'
+      : response.status === 401 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+      : response.status === 403 ? 'Bạn không có quyền thực hiện thao tác này.'
+      : response.status >= 500 ? 'Máy chủ tạm thời không xử lý được yêu cầu. Vui lòng thử lại.'
+      : 'Yêu cầu chưa hợp lệ. Kiểm tra thông tin và trạng thái hiện tại.';
+    throw new ApiError(technical ? fallback : message, response.status, result);
   }
   return response.status === 204
     ? (undefined as T)
