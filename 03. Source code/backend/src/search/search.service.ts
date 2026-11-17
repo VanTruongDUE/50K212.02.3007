@@ -17,6 +17,7 @@ import {
   Criteria,
   extractCandidates,
   estimateSize,
+  fillSampleMetadata,
   validateCriteria,
   validEmail,
 } from './search-data';
@@ -310,6 +311,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           c.provenance,
           estimateSize(c.provenance.publicEmailCount),
         );
+        fillSampleMetadata(c, job.criteria);
         if (results.length >= 100)
           throw Error(
             'Vượt giới hạn 100 Contact mới. Thu hẹp tiêu chí rồi tìm lại.',

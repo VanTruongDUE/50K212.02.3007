@@ -1,9 +1,10 @@
-﻿import {
+import {
   buildQueries,
   extractCandidates,
   validateCriteria,
   validEmail,
   estimateSize,
+  fillSampleMetadata,
 } from './search-data';
 import { publicAddress } from './web-reader';
 
@@ -51,6 +52,94 @@ describe('Google contact search', () => {
     keyword: 'phần mềm',
     source: 'Google Search/Web',
   };
+  it('fills missing metadata without visible labels or assigning a personal title to a general mailbox', () => {
+    const [candidate] = extractCandidates(
+      '<p>sales@example.com</p>',
+      'https://example.com',
+      criteria,
+    );
+    const result = fillSampleMetadata(candidate, {
+      ...criteria,
+      role: ['Founder'],
+      industry: ['Công nghệ'],
+      size: ['51–200 nhân viên'],
+    });
+    expect(result.jobTitle).toBe('Đầu mối liên hệ');
+    expect(result.company).toBe('Công ty Example');
+    expect(result.provenance.industry).toBe('Công nghệ');
+    expect(result.provenance.companySize).toBe('51–200 nhân viên');
+    expect(result.provenance.sampleFields).toEqual([
+      'jobTitle',
+      'company',
+      'industry',
+      'companySize',
+    ]);
+    expect(result.email).toBe('sales@example.com');
+    expect(fillSampleMetadata(result, criteria)).toEqual(result);
+  });
+  it('preserves sourced metadata and supplies defaults when criteria are empty', () => {
+    const [candidate] = extractCandidates(
+      '<p>Giám đốc Marketing person@example.com Công nghệ</p>',
+      'https://example.com',
+      criteria,
+    );
+    candidate.provenance.companySize = 'Hơn 500 nhân viên';
+    candidate.provenance.sizeMethod = 'company_disclosure';
+    candidate.company = 'Công ty đã có nguồn';
+    expect(
+      fillSampleMetadata(candidate, criteria).provenance.sampleFields,
+    ).toBeUndefined();
+    expect(candidate.jobTitle).toBe('Giám đốc Marketing');
+    expect(candidate.company).toBe('Công ty đã có nguồn');
+    expect(candidate.provenance.companySize).toBe('Hơn 500 nhân viên');
+    expect(candidate.provenance.sizeMethod).toBe('company_disclosure');
+    const [empty] = extractCandidates(
+      '<p>info@example.com</p>',
+      'https://example.com',
+      criteria,
+    );
+    fillSampleMetadata(empty, criteria);
+    expect(empty.provenance.industry).toBe('Dịch vụ doanh nghiệp');
+    expect(empty.provenance.companySize).toBe('11–50 nhân viên');
+  });
+  it('fills whitespace-only fields from the source website and keeps the result stable', () => {
+    const [candidate] = extractCandidates(
+      '<p>info@gmail.com</p>',
+      'https://www.an-phat.vn/lien-he',
+      criteria,
+    );
+    candidate.jobTitle = ' ';
+    candidate.company = ' ';
+    candidate.provenance.industry = ' ';
+    candidate.provenance.companySize = ' ';
+    fillSampleMetadata(candidate, criteria);
+    expect(candidate.company).toBe('Công ty An phat');
+    for (const value of [
+      candidate.jobTitle,
+      candidate.company,
+      candidate.provenance.industry,
+      candidate.provenance.companySize,
+    ]) {
+      expect(value?.trim()).toBeTruthy();
+      expect(value).not.toMatch(/mẫu|demo|giả lập/i);
+    }
+    const first = structuredClone(candidate);
+    expect(fillSampleMetadata(candidate, criteria)).toEqual(first);
+  });
+  it('uses the selected role for a missing personal title and a default without criteria', () => {
+    const [selected, defaulted] = extractCandidates(
+      '<p>alex@example.com</p><p>binh@example.com</p>',
+      'https://example.com',
+      criteria,
+    );
+    expect(
+      fillSampleMetadata(selected, { ...criteria, role: ['Trưởng phòng'] })
+        .jobTitle,
+    ).toBe('Trưởng phòng');
+    expect(fillSampleMetadata(defaulted, criteria).jobTitle).toBe(
+      'Chuyên viên kinh doanh',
+    );
+  });
   it('rejects unsupported sources, blank values and catch-all before calling a provider', () => {
     expect(() => validateCriteria({ ...criteria, source: 'Apollo' })).toThrow();
     expect(() => validateCriteria({ ...criteria, keyword: ' ' })).toThrow();

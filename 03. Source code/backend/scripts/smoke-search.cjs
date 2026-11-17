@@ -38,7 +38,9 @@ try{
  lists.push(result.list_id);contacts.push(...result.results.map(c=>c.id));
  if(result.received!==5||result.invalid!==1||result.duplicate!==2||result.new_count!==2)throw Error('Invalid classification counts '+JSON.stringify({received:result.received,invalid:result.invalid,duplicate:result.duplicate,new:result.new_count}));
  if(!result.results.every(c=>c.search_provenance.emailStatus==='source_and_syntax'))throw Error('Missing provenance');
+ if(!result.results.every(c=>[c.job_title,c.company,c.search_provenance.industry,c.search_provenance.companySize].every(v=>typeof v==='string'&&v.trim()&&!/mẫu|demo|giả lập/i.test(v))))throw Error('Missing search fallback metadata or visible sample labels');
  const list=check(await api.get('/api/contact-lists/'+result.list_id).set('Cookie',employee),200);if(list.employee_review!=='pending'||list.confirmed_at||list.manager_review!=='pending')throw Error('Search skipped review');
+ const persisted=await db.query('SELECT job_title,company,search_provenance FROM contacts WHERE id=ANY($1::bigint[])',[result.results.map(c=>c.id)]);if(!persisted.rows.every(c=>c.job_title&&c.company&&c.search_provenance.industry&&c.search_provenance.companySize))throw Error('Search fallback metadata was not persisted');
  await service.detail('NV001',first.job.id);try{await service.detail('OTHER-OWNER',first.job.id);throw Error('Owner boundary failed')}catch(e){if(e.status!==404)throw e}
  check(await api.patch(`/api/contact-lists/${list.id}/review`).set('Cookie',employee).send({result:'passed'}),200);
  check(await api.post(`/api/contact-lists/${list.id}/confirm`).set('Cookie',employee),201);

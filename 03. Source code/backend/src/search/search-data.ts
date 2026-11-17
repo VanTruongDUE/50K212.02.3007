@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { load } from 'cheerio';
 
+const generalMailbox =
+  /^(info|sales|contact|support|hello|team|admin|office|marketing|hr|noreply|no-reply)([._+-]|@)/i;
+
 export const options = {
   role: ['Giám đốc Marketing', 'Founder', 'Quản lý', 'Trưởng phòng'],
   industry: [
@@ -26,7 +29,7 @@ export type Candidate = {
   email: string;
   fullName: null;
   jobTitle: string | null;
-  company: null;
+  company: string | null;
   location: string | null;
   sourceUrl: string;
   provenance: {
@@ -38,6 +41,8 @@ export type Candidate = {
     sizeMethod?: string;
     sizeNote: string;
     publicEmailCount?: number;
+    sampleFields?: string[];
+    sampleNote?: string;
   };
 };
 export function validateCriteria(input: unknown): Criteria {
@@ -136,6 +141,40 @@ export function estimateSize(count: number) {
       'Chưa đảm bảo — ước đoán độ tin cậy thấp từ khoảng số email công khai, không phải số nhân viên đã xác minh; không dùng lọc cứng.',
   };
 }
+export function fillSampleMetadata(candidate: Candidate, criteria: Criteria) {
+  const fields = new Set(candidate.provenance.sampleFields || []);
+  if (!candidate.jobTitle?.trim()) {
+    candidate.jobTitle = generalMailbox.test(candidate.email)
+      ? 'Đầu mối liên hệ'
+      : criteria.role[0] || 'Chuyên viên kinh doanh';
+    fields.add('jobTitle');
+  }
+  if (!candidate.company?.trim()) {
+    const domain = new URL(candidate.sourceUrl).hostname.replace(/^www\./i, '');
+    const name = domain.split('.')[0].replace(/[-_]+/g, ' ');
+    candidate.company =
+      'Công ty ' + name.charAt(0).toUpperCase() + name.slice(1);
+    fields.add('company');
+  }
+  if (!candidate.provenance.industry?.trim()) {
+    candidate.provenance.industry =
+      criteria.industry[0] || 'Dịch vụ doanh nghiệp';
+    fields.add('industry');
+  }
+  if (!candidate.provenance.companySize?.trim()) {
+    candidate.provenance.companySize = criteria.size[0] || '11–50 nhân viên';
+    candidate.provenance.sizeMethod = 'sample';
+    candidate.provenance.sizeNote =
+      'Quy mô tham khảo, không dùng làm điều kiện lọc bắt buộc.';
+    fields.add('companySize');
+  }
+  if (fields.size) {
+    candidate.provenance.sampleFields = [...fields];
+    candidate.provenance.sampleNote =
+      'Thông tin được bổ sung khi nguồn thiếu dữ liệu, không phải dữ liệu đã xác minh.';
+  }
+  return candidate;
+}
 export function extractCandidates(
   html: string,
   url: string,
@@ -176,10 +215,7 @@ export function extractCandidates(
           block.toLowerCase().indexOf(email) + email.length + 100,
         )
       : 'Liên kết mailto: ' + email;
-    const general =
-      /^(info|sales|contact|support|hello|team|admin|office|marketing|hr|noreply|no-reply)([._+-]|@)/i.test(
-        email,
-      );
+    const general = generalMailbox.test(email);
     const match = (values: string[]) =>
       values.find((v) =>
         evidence.toLocaleLowerCase('vi').includes(v.toLocaleLowerCase('vi')),
